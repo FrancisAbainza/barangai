@@ -1,12 +1,12 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
-const isProtectedRoute = createRouteMatcher(['/home(.*)', '/document-request(.*)', '/complaint(.*)', '/transparency(.*)', '/security(.*)'])
-const isAdminRoute = createRouteMatcher(["/user-management(.*)"]);
+const isProtectedRoute = createRouteMatcher(['/portal(.*)'])
+const isAdminRoute = createRouteMatcher(["/portal/user-management(.*)"]);
 const isPublicOnlyRoute = createRouteMatcher(['/'])
 
 export default clerkMiddleware(async (auth, req) => {
-  const { sessionClaims } = await auth();
+  const { sessionClaims, userId } = await auth();
   const isAdmin = sessionClaims?.metadata?.role === "admin";
 
   if (isAdminRoute(req) && !isAdmin) {
@@ -17,10 +17,9 @@ export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
     await auth.protect();
   }
-  
-  const { userId } = await auth()
+
   if (userId && isPublicOnlyRoute(req)) {
-    return NextResponse.redirect(new URL('/home', req.url))
+    return NextResponse.redirect(new URL('/portal', req.url))
   }
 })
 

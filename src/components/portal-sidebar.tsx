@@ -14,7 +14,7 @@ import {
   SportShoe,
   Shield,
 } from "lucide-react";
-import { useUser, UserButton, Show } from "@clerk/nextjs";
+import { useUser, UserButton } from "@clerk/nextjs";
 import {
   Sidebar,
   SidebarContent,
@@ -30,15 +30,15 @@ import Image from "next/image";
 import { barangayLogoSrc, barangayName } from "@/lib/data";
 
 const residentMenuItems = [
-  { title: "Home", href: "/home", icon: Home },
-  { title: "News", href: "/news", icon: Megaphone },
-  { title: "Document Request", href: "/document-request", icon: FileText },
-  { title: "Community Hub", href: "/community-hub", icon: Store },
-  { title: "Court Reservation", href: "/court-reservation", icon: SportShoe },
-  { title: "Complaint", href: "/complaint", icon: MessageSquareWarning },
-  { title: "Transparency", href: "/transparency", icon: Eye },
-  { title: "Security", href: "/security", icon: Shield },
-  { title: "About Us", href: "/about-us", icon: Info },
+  { title: "Home", href: "/portal", icon: Home },
+  { title: "News & Announcements", href: "/portal/news", icon: Megaphone },
+  { title: "Document Request", href: "/portal/document-request", icon: FileText },
+  { title: "Community Hub", href: "/portal/community-hub", icon: Store },
+  { title: "Court Reservation", href: "/portal/court-reservation", icon: SportShoe },
+  { title: "Complaint", href: "/portal/complaint", icon: MessageSquareWarning },
+  { title: "Transparency", href: "/portal/transparency", icon: Eye },
+  { title: "Security", href: "/portal/security", icon: Shield },
+  { title: "About Us", href: "/portal/about-us", icon: Info },
 ];
 
 const adminMenuItems = [
@@ -49,20 +49,15 @@ const adminMenuItems = [
 export default function PortalSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user } = useUser();
   const collapsed = state === "collapsed";
 
   const isAdmin = user?.publicMetadata?.role === "admin";
   const menuItems = isAdmin ? adminMenuItems : residentMenuItems;
-
   const fullName = user?.fullName ?? "User";
 
-  if (!isLoaded || !isSignedIn) {
-    return null;
-  }
-
   return (
-    <Show when="signed-in">
+    <>
       <Sidebar collapsible="icon" className="hidden md:flex border-r-0">
         {/* Header */}
         {!collapsed && (
@@ -106,19 +101,19 @@ export default function PortalSidebar() {
         </SidebarContent>
 
         {/* User Section */}
-        <SidebarFooter className="border-t border-sidebar-border px-5 py-2">
-          <div className="flex w-full items-center gap-3">
+        <SidebarFooter className="border-t border-sidebar-border">
+          <div className="flex w-full items-center justify-center gap-3">
             <UserButton />
             {!collapsed && (
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{fullName}</p>
-                <p className="truncate text-xs text-sidebar-foreground/60">{isAdmin ? "Admin": "Resident"}</p>
+                <p className="truncate text-xs text-sidebar-foreground/60">{isAdmin ? "Admin" : "Resident"}</p>
               </div>
             )}
           </div>
         </SidebarFooter>
       </Sidebar>
       <SidebarTrigger className="p-4 hidden md:flex" />
-    </Show>
+    </>
   );
 }

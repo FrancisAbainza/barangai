@@ -5,8 +5,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import PortalSidebar from "@/components/portal-sidebar";
-import PortalHeader from "@/components/portal-header";
+import { Toaster } from "@/components/ui/sonner";
 
 const roboto = Roboto({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -39,9 +38,8 @@ export default function RootLayout({
         <ClerkProvider>
           <TooltipProvider>
             <SidebarProvider className="h-svh overflow-hidden">
-              <PortalSidebar />
-              <PortalHeader />
               {children}
+              <Toaster />
             </SidebarProvider>
           </TooltipProvider>
         </ClerkProvider>
