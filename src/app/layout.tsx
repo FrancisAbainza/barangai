@@ -4,7 +4,6 @@ import { Geist, Geist_Mono, Roboto } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 
 const roboto = Roboto({ subsets: ['latin'], variable: '--font-sans' });
@@ -37,10 +36,8 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ClerkProvider>
           <TooltipProvider>
-            <SidebarProvider className="h-svh overflow-hidden">
-              {children}
-              <Toaster />
-            </SidebarProvider>
+            {children}
+            <Toaster />
           </TooltipProvider>
         </ClerkProvider>
       </body>
