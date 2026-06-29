@@ -94,7 +94,7 @@ export default function Home() {
           className="flex flex-col items-center justify-center text-center py-20 px-4"
           style={{
             background:
-              "linear-gradient(135deg, rgba(0, 56, 168, 0.25) 0%, transparent 50%, rgba(206, 17, 38, 0.25) 100%)",
+              "linear-gradient(135deg, rgba(0, 56, 168, 0.7) 0%, transparent 50%, rgba(206, 17, 38, 0.7) 100%)",
           }}
         >
           <div className="rounded-full overflow-hidden mb-8 w-40 h-40 relative shrink-0">

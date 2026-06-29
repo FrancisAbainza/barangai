@@ -8,15 +8,33 @@ import { Newspaper } from "lucide-react";
 import { NewsFormValues } from "@/schemas/news-schema";
 import NewsForm from "./news-form";
 import { toast } from "sonner";
+import { uploadFile } from "@/lib/storage";
+import { createNews } from "@/actions/news";
 
 export default function CreateNewsDialog() {
   const [open, setOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
-  const { mutateAsync: createNews } = useMutation({
+  const { mutateAsync: submitNews } = useMutation({
     mutationFn: async (data: NewsFormValues) => {
-      console.log(data);
+      const uploadedMedia = await Promise.all(
+        (data.media ?? []).map(async (item) => {
+          if (!item.file) return item;
+          const key = await uploadFile(item.file, "news/media");
+          return { ...item, key, file: undefined };
+        })
+      );
+
+      const uploadedAttachments = await Promise.all(
+        (data.attachments ?? []).map(async (item) => {
+          if (!item.file) return item;
+          const key = await uploadFile(item.file, "news/attachments");
+          return { ...item, key, file: undefined };
+        })
+      );
+
+      await createNews({ ...data, media: uploadedMedia, attachments: uploadedAttachments });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["news"] });
@@ -44,7 +62,7 @@ export default function CreateNewsDialog() {
 
         <NewsForm
           mode="create"
-          onSubmit={createNews}
+          onSubmit={submitNews}
           onCancel={() => setOpen(false)}
         />
       </DialogContent>
