@@ -1,38 +1,14 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDropzone, FileRejection } from "react-dropzone";
 import Image from "next/image";
+import { fetchFile } from "@/lib/storage";
 import { Badge } from "./ui/badge";
-import { XIcon, Upload, Video } from "lucide-react";
+import { XIcon, Upload, Video, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
-
-export type MediaItem = {
-  file?: File;
-  key?: string;
-  url?: string;
-  name: string;
-  type: "image" | "video";
-  size?: number;
-  contentType?: string;
-};
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024)
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
-
-interface MediaUploaderProps {
-  media?: MediaItem[];
-  onMediaChange: (media: MediaItem[]) => void;
-  maxFiles?: number;
-  accept?: "images" | "videos" | "both";
-}
 
 const ACCEPT_MAP = {
   images: { "image/*": [] },
@@ -46,31 +22,79 @@ const HINT_MAP = {
   both: "images or videos",
 };
 
+export type MediaItem = {
+  file?: File;
+  key?: string;
+  name: string;
+  type: "image" | "video";
+  size?: number;
+  contentType?: string;
+};
+
+function truncateName(name: string, max = 30): string {
+  return name.length > max ? name.slice(0, max) + "..." : name;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function ImagePreview({ item }: { item: MediaItem }) {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (item.file) {
+      const url = URL.createObjectURL(item.file);
+      setSrc(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    if (item.key) {
+      const url = fetchFile(item.key);
+      setSrc(url);
+    }
+  }, [item.file, item.key]);
+
+  if (!src) {
+    return (
+      <div className="size-16 shrink-0 bg-muted flex items-center justify-center">
+        <Upload className="size-6 text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative size-16 shrink-0">
+      <Image src={src} alt={item.name} fill sizes="64px" className="object-cover" unoptimized />
+    </div>
+  );
+}
+
+interface MediaUploaderProps {
+  media?: MediaItem[];
+  onMediaChange: (media: MediaItem[]) => void;
+  maxFiles?: number;
+  accept?: "images" | "videos" | "both";
+}
+
 export default function MediaUploader({
   media = [],
   onMediaChange,
-  maxFiles,
+  maxFiles = 3,
   accept = "both",
 }: MediaUploaderProps) {
-  const atLimit = maxFiles !== undefined && media.length >= maxFiles;
-
   const onDrop = useCallback(
-    (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
-      rejectedFiles.forEach((rejection) => {
-        rejection.errors.forEach((err) => {
-          if (err.code === "file-too-large") {
-            toast.error(`"${rejection.file.name}" exceeds the 500 MB size limit.`);
-          } else if (err.code === "file-invalid-type") {
-            toast.error(`"${rejection.file.name}" is not a supported file type.`);
-          }
-        });
-      });
-
-      if (acceptedFiles.length === 0) return;
-
-      const remaining =
-        maxFiles !== undefined ? maxFiles - media.length : acceptedFiles.length;
-
+    (acceptedFiles: File[]) => {
+      const remaining = maxFiles - media.length;
+      if (remaining <= 0) return;
+      if (acceptedFiles.length > remaining) {
+        toast.warning(
+          `Only ${remaining} more file(s) can be added (max ${maxFiles}).`
+        );
+      }
       const newItems: MediaItem[] = acceptedFiles
         .slice(0, remaining)
         .map((file) => ({
@@ -80,18 +104,34 @@ export default function MediaUploader({
           size: file.size,
           contentType: file.type || undefined,
         }));
-
       onMediaChange([...media, ...newItems]);
     },
     [media, onMediaChange, maxFiles],
   );
 
+  const onDropRejected = useCallback((rejections: FileRejection[]) => {
+    rejections.forEach(({ file, errors }) => {
+      errors.forEach((error) => {
+        if (error.code === "file-too-large") {
+          toast.error(`"${file.name}" exceeds the 500 MB size limit.`);
+        } else if (error.code === "file-invalid-type") {
+          toast.error(`"${file.name}" is not a supported file type.`);
+        } else {
+          toast.error(`"${file.name}": ${error.message}`);
+        }
+      });
+    });
+  }, []);
+
   const handleDelete = (index: number) => {
     onMediaChange(media.filter((_, i) => i !== index));
   };
 
+  const atLimit = media.length >= maxFiles;
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected,
     accept: ACCEPT_MAP[accept],
     maxSize: MAX_FILE_SIZE,
     multiple: true,
@@ -122,49 +162,19 @@ export default function MediaUploader({
             className="flex items-center gap-3 border rounded-md shadow-xs overflow-hidden mt-3 pr-3"
           >
             {item.type === "image" ? (
-              <div className="relative size-16 shrink-0">
-                {item.file || item.url ? (
-                  <Image
-                    src={item.file ? URL.createObjectURL(item.file) : item.url!}
-                    alt={item.name ?? `media ${index + 1}`}
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="size-16 shrink-0 bg-muted flex items-center justify-center">
-                    <Upload className="size-6 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
+              <ImagePreview item={item} />
             ) : (
               <div className="size-16 shrink-0 bg-muted flex items-center justify-center">
                 <Video className="size-6 text-muted-foreground" />
               </div>
             )}
 
-            <div className="flex-1 overflow-hidden py-3">
-              <p className="text-sm truncate">
-                {item.url ? (
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline-offset-4 hover:underline"
-                  >
-                    {item.name}
-                  </a>
-                ) : (
-                  item.name
-                )}
-              </p>
+            <div className="flex-1 py-3">
+              <p className="text-sm">{truncateName(item.name)}</p>
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                 <Badge variant="outline" className="text-xs py-0">
                   {item.type === "image" ? "Image" : "Video"}
                 </Badge>
-                {index === 0 && item.type === "image" && (
-                  <Badge className="text-xs py-0">Featured</Badge>
-                )}
                 {(item.file || typeof item.size === "number") && (
                   <span className="text-xs text-muted-foreground">
                     {formatFileSize(item.file?.size ?? item.size ?? 0)}
@@ -173,12 +183,23 @@ export default function MediaUploader({
               </div>
             </div>
 
-            <button type="button" onClick={() => handleDelete(index)}>
-              <XIcon className="text-destructive" />
+            <button
+              type="button"
+              onClick={() => handleDelete(index)}
+              className="text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <XIcon className="size-4" />
             </button>
           </div>
         ))}
       </div>
+
+      {atLimit && (
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-2">
+          <AlertCircle className="size-3.5" />
+          Maximum of {maxFiles} {maxFiles !== 1 ? "files" : "file"} reached.
+        </p>
+      )}
     </div>
   );
 }

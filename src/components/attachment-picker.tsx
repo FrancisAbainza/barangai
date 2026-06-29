@@ -27,11 +27,14 @@ const ACCEPTED_TYPES: Record<string, string[]> = {
 export type AttachmentItem = {
   file?: File;
   key?: string;
-  url?: string;
   name: string;
   size?: number;
   contentType?: string;
 };
+
+function truncateName(name: string, max = 30): string {
+  return name.length > max ? name.slice(0, max) + "..." : name;
+}
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -140,24 +143,11 @@ export default function AttachmentPicker({
           {files.map((item, index) => (
             <div
               key={index}
-              className="flex items-center gap-3 border rounded-md px-3 py-2"
+              className="flex items-center gap-3 border rounded-md px-3 py-2 overflow-hidden"
             >
               <FileText className="size-4 text-muted-foreground shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm truncate">
-                  {item.url ? (
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline-offset-4 hover:underline"
-                    >
-                      {item.name}
-                    </a>
-                  ) : (
-                    item.name
-                  )}
-                </p>
+              <div className="flex-1">
+                <p className="text-sm">{truncateName(item.name)}</p>
                 <p className="text-xs text-muted-foreground">
                   {getDisplaySize(item)}
                 </p>

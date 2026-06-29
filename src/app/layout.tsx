@@ -5,6 +5,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { QueryProvider } from "@/components/query-provider";
 
 const roboto = Roboto({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -36,8 +37,10 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ClerkProvider>
           <TooltipProvider>
-            {children}
-            <Toaster />
+            <QueryProvider>
+              {children}
+              <Toaster />
+            </QueryProvider>
           </TooltipProvider>
         </ClerkProvider>
       </body>

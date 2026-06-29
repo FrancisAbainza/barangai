@@ -88,9 +88,15 @@ export default function Home() {
     <>
       <LandingPageHeader />
 
-      <main className="pt-17">
+      <main className="pt-16">
         {/* ── Hero ── */}
-        <section className="flex flex-col items-center justify-center text-center py-20 px-4">
+        <section
+          className="flex flex-col items-center justify-center text-center py-20 px-4"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(0, 56, 168, 0.25) 0%, transparent 50%, rgba(206, 17, 38, 0.25) 100%)",
+          }}
+        >
           <div className="rounded-full overflow-hidden mb-8 w-40 h-40 relative shrink-0">
             <Image
               src={barangayLogoSrc}
@@ -119,7 +125,7 @@ export default function Home() {
         </section>
 
         {/* ── Emergency Hotlines Banner ── */}
-        <div className="bg-foreground text-background py-3 px-4">
+        <div className="bg-foreground text-background py-4 px-4">
           <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
             <span className="font-bold text-sm tracking-widest">
               EMERGENCY HOTLINES
