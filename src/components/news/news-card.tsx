@@ -2,10 +2,18 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Calendar, Megaphone, MessageSquare, MoreHorizontal, Pencil, Play, Share2, ThumbsDown, ThumbsUp, Trash2, TriangleAlert } from "lucide-react";
+import { Calendar, Download, FileText, Megaphone, MessageSquare, MoreHorizontal, Pencil, Play, Plus, Share2, ThumbsDown, ThumbsUp, Trash2, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { fetchFile } from "@/lib/storage";
 import type { NewsWithAuthor } from "@/actions/news";
+import type { AttachmentItem } from "@/components/attachment-picker";
 import EditNewsDialog from "./edit-news-dialog";
 import DeleteNewsDialog from "./delete-news-dialog";
 
@@ -42,38 +51,147 @@ function formatRole(role: string): string {
   return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
+function MediaViewerDialog({
+  media,
+  startIndex,
+  open,
+  onOpenChange,
+}: {
+  media: NewsWithAuthor["media"];
+  startIndex: number;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-w-3xl border-none bg-black p-0 text-white sm:max-w-3xl overflow-hidden **:data-[slot=dialog-close]:bg-black/50 **:data-[slot=dialog-close]:text-white **:data-[slot=dialog-close]:hover:bg-black/70"
+        showCloseButton
+      >
+        <DialogTitle className="sr-only">Media viewer</DialogTitle>
+        <Carousel opts={{ startIndex, loop: media.length > 1 }} className="w-full">
+          <CarouselContent className="ml-0">
+            {media.map((item, index) => {
+              const url = item.key ? fetchFile(item.key) : "";
+              return (
+                <CarouselItem key={index} className="flex items-center justify-center pl-0">
+                  <div className="relative aspect-video w-full">
+                    {item.type === "video" ? (
+                      <video
+                        src={url}
+                        controls
+                        autoPlay
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <Image
+                        src={url}
+                        alt={item.name}
+                        fill
+                        className="object-contain"
+                        unoptimized
+                      />
+                    )}
+                  </div>
+                </CarouselItem>
+              );
+            })}
+          </CarouselContent>
+          {media.length > 1 && (
+            <>
+              <CarouselPrevious className="left-4 text-foreground" />
+              <CarouselNext className="right-4 text-foreground" />
+            </>
+          )}
+        </Carousel>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function MediaGrid({ media }: { media: NewsWithAuthor["media"] }) {
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [startIndex, setStartIndex] = useState(0);
+
   if (!media.length) return null;
 
-  const items = media.slice(0, 4);
+  const items = media.slice(0, 2);
+  const remainingCount = media.length - items.length;
+
+  const openViewer = (index: number) => {
+    setStartIndex(index);
+    setViewerOpen(true);
+  };
 
   return (
-    <div
-      className={cn(
-        "grid gap-0.5 rounded-lg overflow-hidden",
-        items.length === 1 ? "grid-cols-1" : "grid-cols-2"
-      )}
-    >
-      {items.map((item, index) => {
-        const url = item.key ? fetchFile(item.key) : "";
-        return (
-          <div key={index} className="relative aspect-video bg-muted">
-            {item.type === "video" ? (
-              <>
-                <video src={url} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-white/80 rounded-full p-3">
-                    <Play className="size-5 fill-current" />
+    <>
+      <div
+        className={cn(
+          "grid gap-0.5 rounded-lg overflow-hidden",
+          items.length === 1 ? "grid-cols-1" : "grid-cols-2"
+        )}
+      >
+        {items.map((item, index) => {
+          const url = item.key ? fetchFile(item.key) : "";
+          const showMoreOverlay = index === items.length - 1 && remainingCount > 0;
+
+          return (
+            <button
+              key={index}
+              type="button"
+              onClick={() => openViewer(index)}
+              className="relative aspect-video bg-muted block w-full p-0 border-0 cursor-pointer min-h-[250px]"
+            >
+              {item.type === "video" ? (
+                <>
+                  <video src={url} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="bg-white/80 rounded-full p-3">
+                      <Play className="size-5 fill-current" />
+                    </div>
                   </div>
+                </>
+              ) : (
+                <Image src={url} alt={item.name} fill className="object-cover" unoptimized />
+              )}
+              {showMoreOverlay && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <span className="flex items-center gap-1 text-2xl font-semibold text-white">
+                    <Plus className="size-6" />
+                    {remainingCount}
+                  </span>
                 </div>
-              </>
-            ) : (
-              <Image src={url} alt={item.name} fill className="object-cover" unoptimized />
-            )}
-          </div>
-        );
-      })}
-    </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <MediaViewerDialog
+        media={media}
+        startIndex={startIndex}
+        open={viewerOpen}
+        onOpenChange={setViewerOpen}
+      />
+    </>
+  );
+}
+
+function DownloadableAttachment({ item }: { item: AttachmentItem }) {
+  const handleClick = () => {
+    if (!item.key) return;
+    window.open(fetchFile(item.key), "_blank");
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent transition-colors"
+    >
+      <FileText className="size-3.5 shrink-0 text-muted-foreground" />
+      <span className="truncate flex-1">{item.name}</span>
+      <Download className="size-3.5 shrink-0 text-muted-foreground" />
+    </button>
   );
 }
 
@@ -147,6 +265,14 @@ export default function NewsCard({ news }: { news: NewsWithAuthor }) {
         <p className="text-sm text-muted-foreground leading-relaxed">{news.content}</p>
 
         {news.media.length > 0 && <MediaGrid media={news.media} />}
+
+        {news.attachments.length > 0 && (
+          <div className="space-y-1 rounded-lg border p-1">
+            {news.attachments.map((item, index) => (
+              <DownloadableAttachment key={index} item={item} />
+            ))}
+          </div>
+        )}
       </CardContent>
 
       <CardFooter className="px-1 pb-1 pt-1 border-t gap-0">
