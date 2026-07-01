@@ -16,3 +16,5 @@ export const newsTable = pgTable("news", {
   createdAt: timestamp().notNull().defaultNow(),
   updatedAt: timestamp().notNull().defaultNow(),
 });
+
+export type News = typeof newsTable.$inferSelect;

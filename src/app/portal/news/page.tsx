@@ -1,4 +1,5 @@
 import CreateNewsDialog from "@/components/news/create-news-dialog";
+import NewsList from "@/components/news/news-list";
 import PageHeader from "@/components/page-header";
 import { barangayName } from "@/lib/data";
 import { Megaphone } from "lucide-react";
@@ -13,6 +14,7 @@ export default function NewsPage() {
       >
         <CreateNewsDialog />
       </PageHeader>
+      <NewsList />
     </div>
   );
 }
