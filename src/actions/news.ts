@@ -154,6 +154,56 @@ export async function getNews({ page = 0 }: { page?: number } = {}): Promise<New
   };
 }
 
+export async function getNewsById(id: number): Promise<NewsWithAuthor | null> {
+  const [item] = await db.select().from(newsTable).where(eq(newsTable.id, id));
+  if (!item) return null;
+
+  const client = await clerkClient();
+  const { data: users } = await client.users.getUserList({ userId: [item.authorId], limit: 1 });
+  const author = users[0];
+
+  const reactionCounts = await db
+    .select({ type: newsReactionsTable.type, count: sql<number>`count(*)`.mapWith(Number) })
+    .from(newsReactionsTable)
+    .where(eq(newsReactionsTable.newsId, id))
+    .groupBy(newsReactionsTable.type);
+
+  let likeCount = 0;
+  let dislikeCount = 0;
+  for (const row of reactionCounts) {
+    if (row.type === "like") likeCount = row.count;
+    else dislikeCount = row.count;
+  }
+
+  const [commentRow] = await db
+    .select({ count: sql<number>`count(*)`.mapWith(Number) })
+    .from(newsCommentsTable)
+    .where(eq(newsCommentsTable.newsId, id));
+
+  const { userId } = await auth();
+  let userReaction: "like" | "dislike" | null = null;
+  if (userId) {
+    const [reaction] = await db
+      .select({ type: newsReactionsTable.type })
+      .from(newsReactionsTable)
+      .where(and(eq(newsReactionsTable.newsId, id), eq(newsReactionsTable.userId, userId)));
+    userReaction = reaction?.type ?? null;
+  }
+
+  return {
+    ...item,
+    authorName: author
+      ? [author.firstName, author.lastName].filter(Boolean).join(" ") || author.username || "Unknown"
+      : "Unknown",
+    authorImageUrl: author?.imageUrl ?? "",
+    authorRole: (author?.publicMetadata?.role as string | undefined) ?? "resident",
+    likeCount,
+    dislikeCount,
+    userReaction,
+    commentCount: commentRow?.count ?? 0,
+  };
+}
+
 export async function setNewsReaction(newsId: number, type: "like" | "dislike") {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");

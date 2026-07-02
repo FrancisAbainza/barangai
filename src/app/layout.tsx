@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { ClerkProvider } from '@clerk/nextjs'
+import { ClerkProvider, Show } from '@clerk/nextjs'
 import { Geist, Geist_Mono, Roboto } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/query-provider";
+import LandingPageHeader from "@/components/landing-page-header";
 
 const roboto = Roboto({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -34,10 +35,13 @@ export default function RootLayout({
       lang="en"
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", roboto.variable)}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="flex flex-col">
         <ClerkProvider>
           <TooltipProvider>
             <QueryProvider>
+              <Show when="signed-out">
+                <LandingPageHeader />
+              </Show>
               {children}
               <Toaster />
             </QueryProvider>

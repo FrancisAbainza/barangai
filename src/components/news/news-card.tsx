@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Calendar, Download, FileText, Megaphone, MessageSquare, MoreHorizontal, Pencil, Pin, Play, Plus, Share2, ThumbsDown, ThumbsUp, Trash2, TriangleAlert } from "lucide-react";
@@ -200,8 +201,11 @@ function DownloadableAttachment({ item }: { item: AttachmentItem }) {
 }
 
 function NewsCardMenu({ news }: { news: NewsWithAuthor }) {
+  const { user } = useUser();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  if (user?.id !== news.authorId) return null;
 
   return (
     <>
@@ -230,6 +234,7 @@ function NewsCardMenu({ news }: { news: NewsWithAuthor }) {
 }
 
 function ReactionButtons({ news }: { news: NewsWithAuthor }) {
+  const { user } = useUser();
   const queryClient = useQueryClient();
 
   const { mutate, isPending } = useMutation({
@@ -285,7 +290,7 @@ function ReactionButtons({ news }: { news: NewsWithAuthor }) {
       <Button
         variant="ghost"
         size="sm"
-        disabled={isPending}
+        disabled={!user || isPending}
         onClick={() => mutate("like")}
         className={cn(
           "flex-1 gap-2 text-muted-foreground",
@@ -300,7 +305,7 @@ function ReactionButtons({ news }: { news: NewsWithAuthor }) {
       <Button
         variant="ghost"
         size="sm"
-        disabled={isPending}
+        disabled={!user || isPending}
         onClick={() => mutate("dislike")}
         className={cn(
           "flex-1 gap-2 text-muted-foreground",
@@ -313,6 +318,26 @@ function ReactionButtons({ news }: { news: NewsWithAuthor }) {
         </span>
       </Button>
     </>
+  );
+}
+
+function ShareButton({ news }: { news: NewsWithAuthor }) {
+  const handleShare = () => {
+    const postUrl = `${window.location.origin}/news/${news.id}`;
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`;
+    window.open(shareUrl, "_blank", "noopener,noreferrer,width=600,height=400");
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="flex-1 gap-2 text-muted-foreground"
+      onClick={handleShare}
+    >
+      <Share2 className="size-4" />
+      <span className="hidden md:inline">Share</span>
+    </Button>
   );
 }
 
@@ -399,10 +424,7 @@ export default function NewsCard({ news }: { news: NewsWithAuthor }) {
       <CardFooter className="px-1 pb-1 pt-1 border-t gap-0">
         <ReactionButtons news={news} />
         <CommentButton news={news} />
-        <Button variant="ghost" size="sm" className="flex-1 gap-2 text-muted-foreground">
-          <Share2 className="size-4" />
-          <span className="hidden md:inline">Share</span>
-        </Button>
+        <ShareButton news={news} />
       </CardFooter>
     </Card>
   );

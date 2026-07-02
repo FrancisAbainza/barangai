@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useUser } from "@clerk/nextjs";
+import { SignInButton, useUser } from "@clerk/nextjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { SendHorizonal } from "lucide-react";
@@ -63,7 +63,7 @@ function CommentItem({
               onClick={() => onReply(comment)}
               className={cn(
                 "text-xs text-muted-foreground hover:text-foreground transition-opacity",
-                isReplying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                isReplying ? "opacity-100 text-foreground" : "opacity-0 group-hover:opacity-100"
               )}
             >
               Reply
@@ -210,10 +210,14 @@ export default function CommentsDialog({
                   comment={comment}
                   isOwn={!!user && comment.userId === user.id}
                   onDelete={removeComment}
-                  onReply={(target) => {
-                    setReplyTo((current) => (current?.id === target.id ? null : target));
-                    setReplyContent("");
-                  }}
+                  onReply={
+                    user
+                      ? (target) => {
+                          setReplyTo((current) => (current?.id === target.id ? null : target));
+                          setReplyContent("");
+                        }
+                      : undefined
+                  }
                   isReplying={replyTo?.id === comment.id}
                 />
 
@@ -235,7 +239,7 @@ export default function CommentsDialog({
                   </div>
                 )}
 
-                {replyTo && (replyTo.parentId ?? replyTo.id) === comment.id && (
+                {user && replyTo && (replyTo.parentId ?? replyTo.id) === comment.id && (
                   <div className="ml-10 flex items-end gap-2">
                     <Avatar src={user?.imageUrl ?? ""} alt="You" />
                     <Textarea
@@ -271,30 +275,39 @@ export default function CommentsDialog({
           )}
         </div>
 
-        <div className="flex items-end gap-2 p-4 pt-3 border-t">
-          <Avatar src={user?.imageUrl ?? ""} alt="You" />
-          <Textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit();
-              }
-            }}
-            placeholder="Write a comment…"
-            className="min-h-9 max-h-32 resize-none rounded-2xl py-2"
-            disabled={isPosting}
-          />
-          <Button
-            size="icon"
-            className="shrink-0 rounded-full"
-            disabled={!content.trim() || isPosting}
-            onClick={handleSubmit}
-          >
-            <SendHorizonal className="size-4" />
-          </Button>
-        </div>
+        {user ? (
+          <div className="flex items-end gap-2 p-4 pt-3 border-t">
+            <Avatar src={user?.imageUrl ?? ""} alt="You" />
+            <Textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
+              placeholder="Write a comment…"
+              className="min-h-9 max-h-32 resize-none rounded-2xl py-2"
+              disabled={isPosting}
+            />
+            <Button
+              size="icon"
+              className="shrink-0 rounded-full"
+              disabled={!content.trim() || isPosting}
+              onClick={handleSubmit}
+            >
+              <SendHorizonal className="size-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-2 p-4 pt-3 border-t">
+            <p className="text-sm text-muted-foreground">Sign in to leave a comment.</p>
+            <SignInButton>
+              <Button size="sm">Sign In</Button>
+            </SignInButton>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
