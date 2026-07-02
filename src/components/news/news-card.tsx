@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Calendar, Download, FileText, Megaphone, MessageSquare, MoreHorizontal, Pencil, Play, Plus, Share2, ThumbsDown, ThumbsUp, Trash2, TriangleAlert } from "lucide-react";
+import { Calendar, Download, FileText, Megaphone, MessageSquare, MoreHorizontal, Pencil, Pin, Play, Plus, Share2, ThumbsDown, ThumbsUp, Trash2, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -25,7 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { fetchFile } from "@/lib/storage";
 import { setNewsReaction } from "@/actions/news";
-import type { NewsWithAuthor } from "@/actions/news";
+import type { NewsPage, NewsWithAuthor } from "@/actions/news";
 import type { AttachmentItem } from "@/components/attachment-picker";
 import EditNewsDialog from "./edit-news-dialog";
 import DeleteNewsDialog from "./delete-news-dialog";
@@ -236,28 +236,36 @@ function ReactionButtons({ news }: { news: NewsWithAuthor }) {
     mutationFn: (type: "like" | "dislike") => setNewsReaction(news.id, type),
     onMutate: async (type) => {
       await queryClient.cancelQueries({ queryKey: ["news"] });
-      const previousNews = queryClient.getQueryData<NewsWithAuthor[]>(["news"]);
+      const previousNews = queryClient.getQueryData<InfiniteData<NewsPage, number>>(["news"]);
 
-      queryClient.setQueryData<NewsWithAuthor[]>(["news"], (old) =>
-        old?.map((item) => {
-          if (item.id !== news.id) return item;
+      queryClient.setQueryData<InfiniteData<NewsPage, number>>(["news"], (old) => {
+        if (!old) return old;
 
-          const current = item.userReaction;
-          let { likeCount, dislikeCount } = item;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            items: page.items.map((item) => {
+              if (item.id !== news.id) return item;
 
-          if (current === "like") likeCount -= 1;
-          if (current === "dislike") dislikeCount -= 1;
+              const current = item.userReaction;
+              let { likeCount, dislikeCount } = item;
 
-          if (current === type) {
-            return { ...item, likeCount, dislikeCount, userReaction: null };
-          }
+              if (current === "like") likeCount -= 1;
+              if (current === "dislike") dislikeCount -= 1;
 
-          if (type === "like") likeCount += 1;
-          else dislikeCount += 1;
+              if (current === type) {
+                return { ...item, likeCount, dislikeCount, userReaction: null };
+              }
 
-          return { ...item, likeCount, dislikeCount, userReaction: type };
-        })
-      );
+              if (type === "like") likeCount += 1;
+              else dislikeCount += 1;
+
+              return { ...item, likeCount, dislikeCount, userReaction: type };
+            }),
+          })),
+        };
+      });
 
       return { previousNews };
     },
@@ -350,7 +358,15 @@ export default function NewsCard({ news }: { news: NewsWithAuthor }) {
             )}
           </div>
           <div>
-            <p className="font-semibold text-sm leading-tight">{news.authorName}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-semibold text-sm leading-tight">{news.authorName}</p>
+              {news.pinned && (
+                <span className="flex items-center gap-1 text-xs font-medium text-primary">
+                  <Pin className="size-3 fill-current" />
+                  Pinned
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
               {formatRole(news.authorRole)} &middot; {formatDate(new Date(news.createdAt))}
             </p>

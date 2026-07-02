@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { Calendar, LayoutList, Megaphone, TriangleAlert } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,11 +38,36 @@ function NewsCardSkeleton() {
   );
 }
 
+function LoadMoreTrigger({ onIntersect, disabled }: { onIntersect: () => void; disabled: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (disabled) return;
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) onIntersect();
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onIntersect, disabled]);
+
+  return <div ref={ref} className="h-1" />;
+}
+
 export default function NewsList() {
-  const { data: news = [], isLoading } = useQuery({
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["news"],
-    queryFn: () => getNews(),
+    queryFn: ({ pageParam }) => getNews({ page: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextPage,
   });
+
+  const news = data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <Tabs defaultValue="All">
@@ -73,7 +99,15 @@ export default function NewsList() {
                 No news posts found.
               </p>
             ) : (
-              filtered.map((item) => <NewsCard key={item.id} news={item} />)
+              <>
+                {filtered.map((item) => (
+                  <NewsCard key={item.id} news={item} />
+                ))}
+                {hasNextPage && (
+                  <LoadMoreTrigger onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                )}
+                {isFetchingNextPage && <NewsCardSkeleton />}
+              </>
             )}
           </TabsContent>
         );

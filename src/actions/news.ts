@@ -65,10 +65,23 @@ export async function updateNews(id: number, data: CreateNewsInput) {
     .where(eq(newsTable.id, id));
 }
 
-export async function getNews(): Promise<NewsWithAuthor[]> {
-  const news = await db.select().from(newsTable).orderBy(desc(newsTable.createdAt));
+const NEWS_PAGE_SIZE = 10;
 
-  if (news.length === 0) return [];
+export type NewsPage = {
+  items: NewsWithAuthor[];
+  nextPage: number | null;
+};
+
+export async function getNews({ page = 0 }: { page?: number } = {}): Promise<NewsPage> {
+  const news = await db
+    .select()
+    .from(newsTable)
+    // Pinned items float to the top; id tiebreaks createdAt so offset pagination stays stable across pages.
+    .orderBy(desc(newsTable.pinned), desc(newsTable.createdAt), desc(newsTable.id))
+    .limit(NEWS_PAGE_SIZE)
+    .offset(page * NEWS_PAGE_SIZE);
+
+  if (news.length === 0) return { items: [], nextPage: null };
 
   // Author info lives in Clerk, not the DB, so fetch it separately and join in memory.
   // Deduped IDs keep this to one batched request instead of one per news item.
@@ -128,14 +141,17 @@ export async function getNews(): Promise<NewsWithAuthor[]> {
     }
   }
 
-  return news.map((item) => ({
-    ...item,
-    ...(userMap.get(item.authorId) ?? { authorName: "Unknown", authorImageUrl: "", authorRole: "resident" }),
-    likeCount: countsMap.get(item.id)?.likeCount ?? 0,
-    dislikeCount: countsMap.get(item.id)?.dislikeCount ?? 0,
-    userReaction: userReactionMap.get(item.id) ?? null,
-    commentCount: commentCountMap.get(item.id) ?? 0,
-  }));
+  return {
+    items: news.map((item) => ({
+      ...item,
+      ...(userMap.get(item.authorId) ?? { authorName: "Unknown", authorImageUrl: "", authorRole: "resident" }),
+      likeCount: countsMap.get(item.id)?.likeCount ?? 0,
+      dislikeCount: countsMap.get(item.id)?.dislikeCount ?? 0,
+      userReaction: userReactionMap.get(item.id) ?? null,
+      commentCount: commentCountMap.get(item.id) ?? 0,
+    })),
+    nextPage: news.length < NEWS_PAGE_SIZE ? null : page + 1,
+  };
 }
 
 export async function setNewsReaction(newsId: number, type: "like" | "dislike") {
