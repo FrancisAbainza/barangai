@@ -1,4 +1,15 @@
-import { boolean, integer, json, pgEnum, pgTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import {
+  type AnyPgColumn,
+  boolean,
+  integer,
+  json,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  varchar,
+} from "drizzle-orm/pg-core";
 import type { MediaItem } from "@/components/media-uploader";
 import type { AttachmentItem } from "@/components/attachment-picker";
 
@@ -35,3 +46,16 @@ export const newsReactionsTable = pgTable(
 );
 
 export type NewsReaction = typeof newsReactionsTable.$inferSelect;
+
+export const newsCommentsTable = pgTable("news_comments", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  newsId: integer()
+    .notNull()
+    .references(() => newsTable.id, { onDelete: "cascade" }),
+  parentId: integer().references((): AnyPgColumn => newsCommentsTable.id, { onDelete: "cascade" }),
+  userId: varchar({ length: 255 }).notNull(),
+  content: text().notNull(),
+  createdAt: timestamp().notNull().defaultNow(),
+});
+
+export type NewsComment = typeof newsCommentsTable.$inferSelect;

@@ -29,6 +29,7 @@ import type { NewsWithAuthor } from "@/actions/news";
 import type { AttachmentItem } from "@/components/attachment-picker";
 import EditNewsDialog from "./edit-news-dialog";
 import DeleteNewsDialog from "./delete-news-dialog";
+import CommentsDialog from "./comments-dialog";
 
 const CATEGORY_CONFIG = {
   Announcement: { icon: Megaphone, className: "bg-green-700 text-white hover:bg-green-700" },
@@ -307,6 +308,28 @@ function ReactionButtons({ news }: { news: NewsWithAuthor }) {
   );
 }
 
+function CommentButton({ news }: { news: NewsWithAuthor }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="flex-1 gap-2 text-muted-foreground"
+        onClick={() => setOpen(true)}
+      >
+        <MessageSquare className="size-4" />
+        <span className="hidden md:inline">
+          Comment{news.commentCount > 0 ? ` (${news.commentCount})` : ""}
+        </span>
+      </Button>
+
+      <CommentsDialog news={news} open={open} onOpenChange={setOpen} />
+    </>
+  );
+}
+
 export default function NewsCard({ news }: { news: NewsWithAuthor }) {
   const categoryConfig = CATEGORY_CONFIG[news.category];
   const CategoryIcon = categoryConfig.icon;
@@ -359,10 +382,7 @@ export default function NewsCard({ news }: { news: NewsWithAuthor }) {
 
       <CardFooter className="px-1 pb-1 pt-1 border-t gap-0">
         <ReactionButtons news={news} />
-        <Button variant="ghost" size="sm" className="flex-1 gap-2 text-muted-foreground">
-          <MessageSquare className="size-4" />
-          <span className="hidden md:inline">Comment</span>
-        </Button>
+        <CommentButton news={news} />
         <Button variant="ghost" size="sm" className="flex-1 gap-2 text-muted-foreground">
           <Share2 className="size-4" />
           <span className="hidden md:inline">Share</span>

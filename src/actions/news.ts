@@ -2,7 +2,7 @@
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { db } from "@/db/config";
-import { newsReactionsTable, newsTable, type News } from "@/db/schema";
+import { newsCommentsTable, newsReactionsTable, newsTable, type News, type NewsComment } from "@/db/schema";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { NewsFormValues } from "@/schemas/news-schema";
 import type { MediaItem } from "@/components/media-uploader";
@@ -20,6 +20,12 @@ export type NewsWithAuthor = News & {
   likeCount: number;
   dislikeCount: number;
   userReaction: "like" | "dislike" | null;
+  commentCount: number;
+};
+
+export type NewsCommentWithAuthor = NewsComment & {
+  authorName: string;
+  authorImageUrl: string;
 };
 
 export async function createNews(data: CreateNewsInput) {
@@ -99,6 +105,16 @@ export async function getNews(): Promise<NewsWithAuthor[]> {
     countsMap.set(row.newsId, entry);
   }
 
+  const commentCounts = await db
+    .select({
+      newsId: newsCommentsTable.newsId,
+      count: sql<number>`count(*)`.mapWith(Number),
+    })
+    .from(newsCommentsTable)
+    .groupBy(newsCommentsTable.newsId);
+
+  const commentCountMap = new Map(commentCounts.map((row) => [row.newsId, row.count]));
+
   // Only look up the viewer's own reactions when signed in (guests have none to show).
   const { userId } = await auth();
   const userReactionMap = new Map<number, "like" | "dislike">();
@@ -118,6 +134,7 @@ export async function getNews(): Promise<NewsWithAuthor[]> {
     likeCount: countsMap.get(item.id)?.likeCount ?? 0,
     dislikeCount: countsMap.get(item.id)?.dislikeCount ?? 0,
     userReaction: userReactionMap.get(item.id) ?? null,
+    commentCount: commentCountMap.get(item.id) ?? 0,
   }));
 }
 
@@ -152,4 +169,60 @@ export async function deleteNews(id: number) {
   if (existing.authorId !== userId) throw new Error("Forbidden");
 
   await db.delete(newsTable).where(eq(newsTable.id, id));
+}
+
+export async function getNewsComments(newsId: number): Promise<NewsCommentWithAuthor[]> {
+  const comments = await db
+    .select()
+    .from(newsCommentsTable)
+    .where(eq(newsCommentsTable.newsId, newsId))
+    .orderBy(newsCommentsTable.createdAt);
+
+  if (comments.length === 0) return [];
+
+  const uniqueAuthorIds = [...new Set(comments.map((c) => c.userId))];
+  const client = await clerkClient();
+  const { data: users } = await client.users.getUserList({ userId: uniqueAuthorIds, limit: 100 });
+
+  const userMap = new Map(
+    users.map((u) => [
+      u.id,
+      {
+        authorName: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown",
+        authorImageUrl: u.imageUrl,
+      },
+    ])
+  );
+
+  return comments.map((comment) => ({
+    ...comment,
+    ...(userMap.get(comment.userId) ?? { authorName: "Unknown", authorImageUrl: "" }),
+  }));
+}
+
+export async function addNewsComment(newsId: number, content: string, parentId?: number) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const trimmed = content.trim();
+  if (!trimmed) throw new Error("Comment cannot be empty");
+
+  if (parentId !== undefined) {
+    const [parent] = await db.select().from(newsCommentsTable).where(eq(newsCommentsTable.id, parentId));
+    if (!parent || parent.newsId !== newsId) throw new Error("Comment not found");
+    if (parent.parentId !== null) throw new Error("Replies cannot be replied to");
+  }
+
+  await db.insert(newsCommentsTable).values({ newsId, userId, content: trimmed, parentId: parentId ?? null });
+}
+
+export async function deleteNewsComment(id: number) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const [existing] = await db.select().from(newsCommentsTable).where(eq(newsCommentsTable.id, id));
+  if (!existing) throw new Error("Comment not found");
+  if (existing.userId !== userId) throw new Error("Forbidden");
+
+  await db.delete(newsCommentsTable).where(eq(newsCommentsTable.id, id));
 }
