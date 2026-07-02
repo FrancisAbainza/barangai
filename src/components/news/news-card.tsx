@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Calendar, Download, FileText, Megaphone, MessageSquare, MoreHorizontal, Pencil, Play, Plus, Share2, ThumbsDown, ThumbsUp, Trash2, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { fetchFile } from "@/lib/storage";
+import { setNewsReaction } from "@/actions/news";
 import type { NewsWithAuthor } from "@/actions/news";
 import type { AttachmentItem } from "@/components/attachment-picker";
 import EditNewsDialog from "./edit-news-dialog";
@@ -225,6 +228,85 @@ function NewsCardMenu({ news }: { news: NewsWithAuthor }) {
   );
 }
 
+function ReactionButtons({ news }: { news: NewsWithAuthor }) {
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: (type: "like" | "dislike") => setNewsReaction(news.id, type),
+    onMutate: async (type) => {
+      await queryClient.cancelQueries({ queryKey: ["news"] });
+      const previousNews = queryClient.getQueryData<NewsWithAuthor[]>(["news"]);
+
+      queryClient.setQueryData<NewsWithAuthor[]>(["news"], (old) =>
+        old?.map((item) => {
+          if (item.id !== news.id) return item;
+
+          const current = item.userReaction;
+          let { likeCount, dislikeCount } = item;
+
+          if (current === "like") likeCount -= 1;
+          if (current === "dislike") dislikeCount -= 1;
+
+          if (current === type) {
+            return { ...item, likeCount, dislikeCount, userReaction: null };
+          }
+
+          if (type === "like") likeCount += 1;
+          else dislikeCount += 1;
+
+          return { ...item, likeCount, dislikeCount, userReaction: type };
+        })
+      );
+
+      return { previousNews };
+    },
+    onError: (_err, _type, context) => {
+      if (context?.previousNews) {
+        queryClient.setQueryData(["news"], context.previousNews);
+      }
+      toast.error("Failed to update your reaction. Please try again.");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["news"] });
+    },
+  });
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={isPending}
+        onClick={() => mutate("like")}
+        className={cn(
+          "flex-1 gap-2 text-muted-foreground",
+          news.userReaction === "like" && "text-blue-600 hover:text-blue-600"
+        )}
+      >
+        <ThumbsUp className={cn("size-4", news.userReaction === "like" && "fill-current")} />
+        <span className="hidden md:inline">
+          Like{news.likeCount > 0 ? ` (${news.likeCount})` : ""}
+        </span>
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={isPending}
+        onClick={() => mutate("dislike")}
+        className={cn(
+          "flex-1 gap-2 text-muted-foreground",
+          news.userReaction === "dislike" && "text-red-600 hover:text-red-600"
+        )}
+      >
+        <ThumbsDown className={cn("size-4", news.userReaction === "dislike" && "fill-current")} />
+        <span className="hidden md:inline">
+          Dislike{news.dislikeCount > 0 ? ` (${news.dislikeCount})` : ""}
+        </span>
+      </Button>
+    </>
+  );
+}
+
 export default function NewsCard({ news }: { news: NewsWithAuthor }) {
   const categoryConfig = CATEGORY_CONFIG[news.category];
   const CategoryIcon = categoryConfig.icon;
@@ -276,14 +358,7 @@ export default function NewsCard({ news }: { news: NewsWithAuthor }) {
       </CardContent>
 
       <CardFooter className="px-1 pb-1 pt-1 border-t gap-0">
-        <Button variant="ghost" size="sm" className="flex-1 gap-2 text-muted-foreground">
-          <ThumbsUp className="size-4" />
-          <span className="hidden md:inline">Like</span>
-        </Button>
-        <Button variant="ghost" size="sm" className="flex-1 gap-2 text-muted-foreground">
-          <ThumbsDown className="size-4" />
-          <span className="hidden md:inline">Dislike</span>
-        </Button>
+        <ReactionButtons news={news} />
         <Button variant="ghost" size="sm" className="flex-1 gap-2 text-muted-foreground">
           <MessageSquare className="size-4" />
           <span className="hidden md:inline">Comment</span>
