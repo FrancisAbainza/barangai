@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { isSuperAdminRole } from "@/lib/roles";
 import { fetchFile } from "@/lib/storage";
 import { setNewsReaction } from "@/actions/news";
 import type { NewsPage, NewsWithAuthor } from "@/actions/news";
@@ -205,7 +206,8 @@ function NewsCardMenu({ news }: { news: NewsWithAuthor }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  if (user?.id !== news.authorId) return null;
+  const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
+  if (user?.id !== news.authorId && !isSuperAdmin) return null;
 
   return (
     <>

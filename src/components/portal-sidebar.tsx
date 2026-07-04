@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/sidebar";
 import Image from "next/image";
 import { barangayLogoSrc, barangayName } from "@/lib/data";
+import { isAdminRole } from "@/lib/roles";
 
 const residentMenuItems = [
   { title: "Home", href: "/portal", icon: Home },
@@ -44,7 +45,7 @@ const residentMenuItems = [
 
 const adminMenuItems = [
   ...residentMenuItems,
-  { title: "User Management", href: "/dashboard/user-management", icon: Users },
+  { title: "User Management", href: "/portal/user-management", icon: Users },
 ];
 
 export default function PortalSidebar() {
@@ -53,7 +54,7 @@ export default function PortalSidebar() {
   const { user } = useUser();
   const collapsed = state === "collapsed";
 
-  const isAdmin = user?.publicMetadata?.role === "admin";
+  const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
   const menuItems = isAdmin ? adminMenuItems : residentMenuItems;
   const fullName = user?.fullName ?? "User";
 

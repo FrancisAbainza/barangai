@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import { isAdminRole } from '@/lib/roles'
 
 const isProtectedRoute = createRouteMatcher(['/portal(.*)'])
 const isAdminRoute = createRouteMatcher(["/portal/user-management(.*)"]);
@@ -7,7 +8,7 @@ const isPublicOnlyRoute = createRouteMatcher(['/'])
 
 export default clerkMiddleware(async (auth, req) => {
   const { sessionClaims, userId } = await auth();
-  const isAdmin = sessionClaims?.metadata?.role === "admin";
+  const isAdmin = isAdminRole(sessionClaims?.metadata?.role);
 
   if (isAdminRoute(req) && !isAdmin) {
     const url = new URL("/", req.url);

@@ -1,4 +1,4 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,7 @@ import ResidentProfileSection from "@/components/profile/resident-profile-sectio
 import { getResidentProfile } from "@/actions/resident-profile";
 import type { MediaItem } from "@/components/media-uploader";
 import { VALID_ID_TYPES } from "@/schemas/resident-profile-schema";
+import { getAuthRole } from "@/lib/auth";
 
 export default async function ProfilePage({
   params,
@@ -13,8 +14,7 @@ export default async function ProfilePage({
   params: Promise<{ userId: string }>;
 }) {
   const { userId: profileUserId } = await params;
-  const { userId, sessionClaims } = await auth();
-  const isAdmin = sessionClaims?.metadata?.role === "admin";
+  const { userId, isAdmin } = await getAuthRole();
 
   if (userId !== profileUserId && !isAdmin) {
     redirect("/portal");

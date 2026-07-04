@@ -1,6 +1,7 @@
 "use server";
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import { getAuthRole } from "@/lib/auth";
 import { db } from "@/db/config";
 import { newsCommentsTable, newsReactionsTable, newsTable, type News, type NewsComment } from "@/db/schema";
 import { and, desc, eq, sql } from "drizzle-orm";
@@ -44,12 +45,12 @@ export async function createNews(data: CreateNewsInput) {
 }
 
 export async function updateNews(id: number, data: CreateNewsInput) {
-  const { userId } = await auth();
+  const { userId, isSuperAdmin } = await getAuthRole();
   if (!userId) throw new Error("Unauthorized");
 
   const [existing] = await db.select().from(newsTable).where(eq(newsTable.id, id));
   if (!existing) throw new Error("News post not found");
-  if (existing.authorId !== userId) throw new Error("Forbidden");
+  if (existing.authorId !== userId && !isSuperAdmin) throw new Error("Forbidden");
 
   await db
     .update(newsTable)
@@ -227,12 +228,12 @@ export async function setNewsReaction(newsId: number, type: "like" | "dislike") 
 }
 
 export async function deleteNews(id: number) {
-  const { userId } = await auth();
+  const { userId, isSuperAdmin } = await getAuthRole();
   if (!userId) throw new Error("Unauthorized");
 
   const [existing] = await db.select().from(newsTable).where(eq(newsTable.id, id));
   if (!existing) throw new Error("News post not found");
-  if (existing.authorId !== userId) throw new Error("Forbidden");
+  if (existing.authorId !== userId && !isSuperAdmin) throw new Error("Forbidden");
 
   await db.delete(newsTable).where(eq(newsTable.id, id));
 }
