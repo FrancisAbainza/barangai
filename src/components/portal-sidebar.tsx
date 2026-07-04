@@ -13,6 +13,7 @@ import {
   Store,
   SportShoe,
   Shield,
+  User,
 } from "lucide-react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import {
@@ -103,7 +104,15 @@ export default function PortalSidebar() {
         {/* User Section */}
         <SidebarFooter className="border-t border-sidebar-border">
           <div className="flex w-full items-center justify-center gap-3">
-            <UserButton />
+            <UserButton>
+              <UserButton.MenuItems>
+                <UserButton.Link
+                  label="My Profile"
+                  labelIcon={<User className="size-4" />}
+                  href={`/portal/profile/${user?.id}`}
+                />
+              </UserButton.MenuItems>
+            </UserButton>
             {!collapsed && (
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{fullName}</p>
