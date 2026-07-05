@@ -7,3 +7,9 @@ export function isAdminRole(role?: string | null): boolean {
 export function isSuperAdminRole(role?: string | null): boolean {
   return role === "superadmin";
 }
+
+export function roleLabel(role?: string | null): string {
+  if (role === "superadmin") return "Super Admin";
+  if (role === "admin") return "Admin";
+  return "Resident";
+}

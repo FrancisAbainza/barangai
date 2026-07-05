@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import UserActionsMenu from "@/components/user-management/user-actions-menu";
+import { roleLabel } from "@/lib/roles";
 
 const ROLE_FILTERS = [
   { value: "all", label: "All Roles" },
@@ -47,12 +48,6 @@ function roleBadgeVariant(role: string) {
   if (role === "superadmin") return "default";
   if (role === "admin") return "secondary";
   return "outline";
-}
-
-function roleLabel(role: string) {
-  if (role === "superadmin") return "Super Admin";
-  if (role === "admin") return "Admin";
-  return "Resident";
 }
 
 function UserRowSkeleton() {

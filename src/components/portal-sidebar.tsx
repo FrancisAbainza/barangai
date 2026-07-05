@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/sidebar";
 import Image from "next/image";
 import { barangayLogoSrc, barangayName } from "@/lib/data";
-import { isAdminRole } from "@/lib/roles";
+import { isAdminRole, isSuperAdminRole } from "@/lib/roles";
 
 const residentMenuItems = [
   { title: "Home", href: "/portal", icon: Home },
@@ -55,6 +55,7 @@ export default function PortalSidebar() {
   const collapsed = state === "collapsed";
 
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
+  const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
   const menuItems = isAdmin ? adminMenuItems : residentMenuItems;
   const fullName = user?.fullName ?? "User";
 
@@ -117,7 +118,9 @@ export default function PortalSidebar() {
             {!collapsed && (
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{fullName}</p>
-                <p className="truncate text-xs text-sidebar-foreground/60">{isAdmin ? "Admin" : "Resident"}</p>
+                <p className="truncate text-xs text-sidebar-foreground/60">
+                  {isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "Resident"}
+                </p>
               </div>
             )}
           </div>

@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { isSuperAdminRole } from "@/lib/roles";
+import { isSuperAdminRole, roleLabel } from "@/lib/roles";
 import { fetchFile } from "@/lib/storage";
 import { setNewsReaction } from "@/actions/news";
 import type { NewsPage, NewsWithAuthor } from "@/actions/news";
@@ -51,10 +51,6 @@ function formatDate(date: Date): string {
     hour12: true,
   }).format(date);
   return `${dateStr} at ${timeStr}`;
-}
-
-function formatRole(role: string): string {
-  return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
 function MediaViewerDialog({
@@ -395,7 +391,7 @@ export default function NewsCard({ news }: { news: NewsWithAuthor }) {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {formatRole(news.authorRole)} &middot; {formatDate(new Date(news.createdAt))}
+              {roleLabel(news.authorRole)} &middot; {formatDate(new Date(news.createdAt))}
             </p>
           </div>
         </div>
