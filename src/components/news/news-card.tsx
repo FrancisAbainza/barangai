@@ -82,7 +82,6 @@ function MediaViewerDialog({
                       <video
                         src={url}
                         controls
-                        autoPlay
                         className="w-full h-full object-contain"
                       />
                     ) : (

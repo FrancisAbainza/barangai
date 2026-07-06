@@ -12,7 +12,7 @@ import type { ResidentProfileFormValues } from "@/schemas/resident-profile-schem
 import type { MediaItem } from "@/components/media-uploader";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { saveResidentProfile } from "@/actions/resident-profile";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -26,6 +26,7 @@ export default function ResidentProfileSection({
   defaultValues,
 }: ResidentProfileSectionProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const syncMedia = async (items: MediaItem[], original: MediaItem[]) => {
     const uploaded: MediaItem[] = await Promise.all(
@@ -63,6 +64,7 @@ export default function ResidentProfileSection({
     },
     onSuccess: () => {
       toast.success("Profile updated successfully.");
+      queryClient.invalidateQueries({ queryKey: ["resident-profile", userId] });
       router.refresh();
     },
     onError: () => {

@@ -99,3 +99,36 @@ export const officialsTable = pgTable("officials", {
 });
 
 export type Official = typeof officialsTable.$inferSelect;
+
+export const documentRequestTypeEnum = pgEnum("document_request_type", [
+  "Barangay Clearance",
+  "Certificate of Residency",
+  "Certificate of No Objection",
+  "Certificate of Indigency",
+  "Solo Parent Certification",
+  "Medical / Lab Assistance",
+]);
+
+export const documentRequestStatusEnum = pgEnum("document_request_status", [
+  "Pending",
+  "Processing",
+  "Ready for Pickup",
+  "Rejected",
+]);
+
+export const documentRequestsTable = pgTable("document_requests", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  documentType: documentRequestTypeEnum().notNull(),
+  requesterId: varchar({ length: 255 }).notNull(),
+  purpose: varchar({ length: 255 }).notNull(),
+  otherPurpose: varchar({ length: 255 }),
+  situationDescription: text(),
+  paymentReceipt: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  supportingDocuments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  receiveVia: varchar({ length: 255 }).notNull(),
+  status: documentRequestStatusEnum().notNull().default("Pending"),
+  createdAt: timestamp().notNull().defaultNow(),
+  updatedAt: timestamp().notNull().defaultNow(),
+});
+
+export type DocumentRequest = typeof documentRequestsTable.$inferSelect;
