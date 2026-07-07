@@ -12,7 +12,7 @@ import { CLEARANCE_PURPOSE_FEES, GCASH_ACCOUNT_NAME, GCASH_NUMBER } from "@/lib/
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Loader2, Send } from "lucide-react";
-import MediaUploader from "@/components/media-uploader";
+import FileUploader from "@/components/file-uploader";
 import {
   Select,
   SelectContent,
@@ -93,11 +93,11 @@ export default function ClearanceDocumentRequestForm({
                 Send payment to GCash {GCASH_NUMBER} ({GCASH_ACCOUNT_NAME}), then upload a
                 screenshot of the receipt.
               </FieldDescription>
-              <MediaUploader
-                media={field.value}
-                onMediaChange={field.onChange}
+              <FileUploader
+                files={field.value}
+                onFilesChange={field.onChange}
                 maxFiles={1}
-                accept="images"
+                accept={["images"]}
               />
               <FieldError errors={[fieldState.error]} />
             </Field>

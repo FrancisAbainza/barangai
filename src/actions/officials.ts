@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/db/config";
 import { officialsTable, type Official } from "@/db/schema";
 import type { OfficialFormValues } from "@/schemas/about-us-schema";
-import type { MediaItem } from "@/components/media-uploader";
+import type { MediaItem } from "@/components/file-uploader";
 
 export type OfficialSection = "barangay" | "sk";
 

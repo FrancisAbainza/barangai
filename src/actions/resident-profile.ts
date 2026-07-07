@@ -5,7 +5,7 @@ import { db } from "@/db/config";
 import { residentProfilesTable, type ResidentProfile } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import type { ResidentProfileFormValues } from "@/schemas/resident-profile-schema";
-import type { MediaItem } from "@/components/media-uploader";
+import type { MediaItem } from "@/components/file-uploader";
 
 type SaveResidentProfileInput = Omit<ResidentProfileFormValues, "validIdFront" | "validIdBack"> & {
   validIdFront: Omit<MediaItem, "file">[];

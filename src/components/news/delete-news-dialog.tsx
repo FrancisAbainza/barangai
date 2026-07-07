@@ -5,8 +5,7 @@ import { toast } from "sonner";
 import { deleteFile } from "@/lib/storage";
 import { deleteNews } from "@/actions/news";
 import type { NewsWithAuthor } from "@/actions/news";
-import type { MediaItem } from "../media-uploader";
-import type { AttachmentItem } from "../attachment-picker";
+import type { MediaItem } from "../file-uploader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +29,7 @@ export default function DeleteNewsDialog({ news, open, onOpenChange }: DeleteNew
   const { mutate: handleDelete, isPending } = useMutation({
     mutationFn: async () => {
       const media = news.media as MediaItem[];
-      const attachments = news.attachments as AttachmentItem[];
+      const attachments = news.attachments as MediaItem[];
       const keys = [
         ...media.map((m) => m.key),
         ...attachments.map((a) => a.key),

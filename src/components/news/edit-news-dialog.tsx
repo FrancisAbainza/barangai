@@ -4,8 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import NewsForm from "./news-form";
 import type { NewsFormValues } from "@/schemas/news-schema";
-import type { MediaItem } from "../media-uploader";
-import type { AttachmentItem } from "../attachment-picker";
+import type { MediaItem } from "../file-uploader";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { updateNews } from "@/actions/news";
 import type { NewsWithAuthor } from "@/actions/news";
@@ -25,7 +24,7 @@ export default function EditNewsDialog({ news, open, onOpenChange }: EditNewsDia
     category: news.category,
     content: news.content,
     media: news.media as MediaItem[],
-    attachments: news.attachments as AttachmentItem[],
+    attachments: news.attachments as MediaItem[],
     pinned: news.pinned,
   };
 
@@ -39,7 +38,7 @@ export default function EditNewsDialog({ news, open, onOpenChange }: EditNewsDia
         })
       );
 
-      const uploadedAttachments: AttachmentItem[] = await Promise.all(
+      const uploadedAttachments: MediaItem[] = await Promise.all(
         (data.attachments ?? []).map(async (item) => {
           if (!item.file) return item;
           const key = await uploadFile(item.file, "news/attachments");
@@ -51,7 +50,7 @@ export default function EditNewsDialog({ news, open, onOpenChange }: EditNewsDia
       const finalMediaKeys = new Set(uploadedMedia.map((i) => i.key).filter(Boolean));
       const removedMediaKeys = originalMediaKeys.filter((k) => !finalMediaKeys.has(k));
 
-      const originalAttachmentKeys = (news.attachments as AttachmentItem[]).map((i) => i.key).filter(Boolean);
+      const originalAttachmentKeys = (news.attachments as MediaItem[]).map((i) => i.key).filter(Boolean);
       const finalAttachmentKeys = new Set(uploadedAttachments.map((i) => i.key).filter(Boolean));
       const removedAttachmentKeys = originalAttachmentKeys.filter((k) => !finalAttachmentKeys.has(k));
 

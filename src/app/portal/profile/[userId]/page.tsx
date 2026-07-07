@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import ResidentProfileSection from "@/components/profile/resident-profile-section";
 import { getResidentProfile } from "@/actions/resident-profile";
-import type { MediaItem } from "@/components/media-uploader";
+import type { MediaItem } from "@/components/file-uploader";
 import { VALID_ID_TYPES } from "@/schemas/resident-profile-schema";
 import { getAuthRole } from "@/lib/auth";
 

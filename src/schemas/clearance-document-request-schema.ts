@@ -1,5 +1,5 @@
 import z from "zod";
-import type { MediaItem } from "@/components/media-uploader";
+import type { MediaItem } from "@/components/file-uploader";
 import { CLEARANCE_PURPOSES } from "@/lib/data";
 
 export { CLEARANCE_PURPOSES };

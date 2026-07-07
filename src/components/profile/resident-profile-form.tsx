@@ -12,7 +12,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save } from "lucide-react";
-import MediaUploader from "@/components/media-uploader";
+import FileUploader from "@/components/file-uploader";
 import {
   Select,
   SelectContent,
@@ -211,11 +211,11 @@ export default function ResidentProfileForm({
                   Valid ID Photo (Front){" "}
                   <span className="text-muted-foreground font-normal">(max 1)</span>
                 </FieldLabel>
-                <MediaUploader
-                  media={field.value}
-                  onMediaChange={field.onChange}
+                <FileUploader
+                  files={field.value}
+                  onFilesChange={field.onChange}
                   maxFiles={1}
-                  accept="images"
+                  accept={["images"]}
                 />
                 <FieldError errors={[fieldState.error]} />
               </Field>
@@ -233,11 +233,11 @@ export default function ResidentProfileForm({
                     (optional, max 1)
                   </span>
                 </FieldLabel>
-                <MediaUploader
-                  media={field.value}
-                  onMediaChange={field.onChange}
+                <FileUploader
+                  files={field.value}
+                  onFilesChange={field.onChange}
                   maxFiles={1}
-                  accept="images"
+                  accept={["images"]}
                 />
                 <FieldError errors={[fieldState.error]} />
               </Field>

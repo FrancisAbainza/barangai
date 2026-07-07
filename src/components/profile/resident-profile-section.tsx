@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { ResidentProfileFormValues } from "@/schemas/resident-profile-schema";
-import type { MediaItem } from "@/components/media-uploader";
+import type { MediaItem } from "@/components/file-uploader";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { saveResidentProfile } from "@/actions/resident-profile";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

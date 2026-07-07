@@ -1,5 +1,5 @@
 import z from "zod";
-import type { MediaItem } from "@/components/media-uploader";
+import type { MediaItem } from "@/components/file-uploader";
 
 export const MEDICAL_ASSISTANCE_REQUEST_PURPOSES = [
   "Hospitalization Assistance",

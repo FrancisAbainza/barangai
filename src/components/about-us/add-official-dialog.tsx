@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import type { OfficialFormValues } from "@/schemas/about-us-schema";
-import type { MediaItem } from "@/components/media-uploader";
+import type { MediaItem } from "@/components/file-uploader";
 import { uploadFile } from "@/lib/storage";
 import { createOfficial, type OfficialSection } from "@/actions/officials";
 import OfficialForm from "./official-form";

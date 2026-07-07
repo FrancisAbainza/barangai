@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import MediaUploader from "@/components/media-uploader";
+import FileUploader from "@/components/file-uploader";
 
 interface OfficialFormProps {
   defaultValues: OfficialFormValues;
@@ -66,11 +66,11 @@ export default function OfficialForm({
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel>Photo</FieldLabel>
-              <MediaUploader
-                media={field.value}
-                onMediaChange={field.onChange}
+              <FileUploader
+                files={field.value}
+                onFilesChange={field.onChange}
                 maxFiles={1}
-                accept="images"
+                accept={["images"]}
               />
               <FieldError errors={[fieldState.error]} />
             </Field>

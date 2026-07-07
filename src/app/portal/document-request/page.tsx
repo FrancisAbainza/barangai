@@ -3,7 +3,7 @@
 import { useUser } from "@clerk/nextjs";
 import PageHeader from "@/components/page-header";
 import ResidentDocumentRequest from "@/components/document-request/resident-document-request";
-import DocumentRequestRestricted from "@/components/document-request/document-request-restricted";
+import AdminDocumentRequestTable from "@/components/document-request/admin-document-request-table";
 import { isAdminRole } from "@/lib/roles";
 import { FileText } from "lucide-react";
 
@@ -19,7 +19,7 @@ export default function DocumentRequest() {
         description="Seamless online application and processing of barangay certificates."
       />
 
-      {isAdmin ? <DocumentRequestRestricted /> : <ResidentDocumentRequest />}
+      {isAdmin ? <AdminDocumentRequestTable /> : <ResidentDocumentRequest />}
     </div>
   );
 }

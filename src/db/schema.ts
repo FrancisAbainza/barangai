@@ -11,8 +11,7 @@ import {
   uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
-import type { MediaItem } from "@/components/media-uploader";
-import type { AttachmentItem } from "@/components/attachment-picker";
+import type { MediaItem } from "@/components/file-uploader";
 import { CIVIL_STATUS_OPTIONS, SEX_OPTIONS, VALID_ID_TYPES } from "@/schemas/resident-profile-schema";
 
 export const newsCategoryEnum = pgEnum("news_category", ["Announcement", "Event", "Emergency"]);
@@ -24,7 +23,7 @@ export const newsTable = pgTable("news", {
   category: newsCategoryEnum().notNull(),
   content: text().notNull(),
   media: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
-  attachments: json().$type<Omit<AttachmentItem, "file">[]>().notNull().default([]),
+  attachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
   pinned: boolean().notNull().default(false),
   authorId: varchar({ length: 255 }).notNull(),
   createdAt: timestamp().notNull().defaultNow(),
@@ -127,6 +126,10 @@ export const documentRequestsTable = pgTable("document_requests", {
   supportingDocuments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
   receiveVia: varchar({ length: 255 }).notNull(),
   status: documentRequestStatusEnum().notNull().default("Pending"),
+  pickupMessage: text(),
+  pickupAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  rejectionMessage: text(),
+  rejectionAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
   createdAt: timestamp().notNull().defaultNow(),
   updatedAt: timestamp().notNull().defaultNow(),
 });

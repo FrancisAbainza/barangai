@@ -17,17 +17,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface DeleteDocumentRequestDialogProps {
+interface AdminDeleteDocumentRequestDialogProps {
   request: DocumentRequest;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export default function DeleteDocumentRequestDialog({
+export default function AdminDeleteDocumentRequestDialog({
   request,
   open,
   onOpenChange,
-}: DeleteDocumentRequestDialogProps) {
+}: AdminDeleteDocumentRequestDialogProps) {
   const queryClient = useQueryClient();
 
   const { mutate: handleDelete, isPending } = useMutation({
@@ -57,7 +57,7 @@ export default function DeleteDocumentRequestDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete this request?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete your {request.documentType} request and all its files.
+            This will permanently delete this {request.documentType} request and all its files.
             This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>

@@ -6,12 +6,11 @@ import { db } from "@/db/config";
 import { newsCommentsTable, newsReactionsTable, newsTable, type News, type NewsComment } from "@/db/schema";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { NewsFormValues } from "@/schemas/news-schema";
-import type { MediaItem } from "@/components/media-uploader";
-import type { AttachmentItem } from "@/components/attachment-picker";
+import type { MediaItem } from "@/components/file-uploader";
 
 type CreateNewsInput = Omit<NewsFormValues, "media" | "attachments"> & {
   media: Omit<MediaItem, "file">[];
-  attachments: Omit<AttachmentItem, "file">[];
+  attachments: Omit<MediaItem, "file">[];
 };
 
 export type NewsWithAuthor = News & {

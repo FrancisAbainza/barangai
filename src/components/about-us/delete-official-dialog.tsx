@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import type { MediaItem } from "@/components/media-uploader";
+import type { MediaItem } from "@/components/file-uploader";
 import { deleteFile } from "@/lib/storage";
 import { deleteOfficial } from "@/actions/officials";
 import type { Official } from "@/db/schema";

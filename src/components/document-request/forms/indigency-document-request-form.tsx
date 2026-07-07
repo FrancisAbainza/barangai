@@ -13,7 +13,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
-import MediaUploader from "@/components/media-uploader";
+import FileUploader from "@/components/file-uploader";
 import {
   Select,
   SelectContent,
@@ -113,13 +113,14 @@ export default function IndigencyDocumentRequestForm({
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel>Supporting Documents</FieldLabel>
               <FieldDescription>
-                e.g. medical referral, proof of solo parenthood, hospital bill. Max of 5 images.
+                e.g. medical referral, proof of solo parenthood, hospital bill. Images or documents,
+                max of 5 files.
               </FieldDescription>
-              <MediaUploader
-                media={field.value}
-                onMediaChange={field.onChange}
+              <FileUploader
+                files={field.value}
+                onFilesChange={field.onChange}
                 maxFiles={5}
-                accept="images"
+                accept={["images", "documents"]}
               />
               <FieldError errors={[fieldState.error]} />
             </Field>

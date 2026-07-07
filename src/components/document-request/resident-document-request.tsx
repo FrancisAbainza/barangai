@@ -24,6 +24,7 @@ import SoloParentDocumentRequestDialog from "@/components/document-request/dialo
 import MedicalAssistanceDocumentRequestDialog from "@/components/document-request/dialogs/medical-assistance-document-request-dialog";
 import { getMyDocumentRequests } from "@/actions/document-requests";
 import { getResidentProfile } from "@/actions/resident-profile";
+import { statusBadgeVariant } from "@/lib/document-requests";
 import {
   ChevronRight,
   FileUser,
@@ -85,16 +86,8 @@ const documentTypes: DocumentType[] = [
   },
 ];
 
-type RequestStatus = "Pending" | "Processing" | "Ready for Pickup" | "Rejected";
-
 function formatSubmittedDate(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function statusBadgeVariant(status: RequestStatus) {
-  if (status === "Ready for Pickup") return "default";
-  if (status === "Rejected") return "destructive";
-  return "outline";
 }
 
 export default function ResidentDocumentRequest() {

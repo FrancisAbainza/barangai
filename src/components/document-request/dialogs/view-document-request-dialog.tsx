@@ -1,32 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { Download, FileText } from "lucide-react";
+import { Ban, Download, FileText, PackageCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { fetchFile } from "@/lib/storage";
+import { statusBadgeVariant, formatDate } from "@/lib/document-requests";
 import type { DocumentRequest } from "@/db/schema";
-import type { MediaItem } from "@/components/media-uploader";
+import type { MediaItem } from "@/components/file-uploader";
 
 interface ViewDocumentRequestDialogProps {
   request: DocumentRequest;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-function statusBadgeVariant(status: DocumentRequest["status"]) {
-  if (status === "Ready for Pickup") return "default";
-  if (status === "Rejected") return "destructive";
-  return "outline";
-}
-
-function formatDate(date: Date) {
-  return new Date(date).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 function MediaPreviewList({ items }: { items: MediaItem[] }) {
@@ -67,6 +54,8 @@ export default function ViewDocumentRequestDialog({
 }: ViewDocumentRequestDialogProps) {
   const paymentReceipt = request.paymentReceipt as MediaItem[];
   const supportingDocuments = request.supportingDocuments as MediaItem[];
+  const pickupAttachments = request.pickupAttachments as MediaItem[];
+  const rejectionAttachments = request.rejectionAttachments as MediaItem[];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -120,6 +109,42 @@ export default function ViewDocumentRequestDialog({
             <FieldLabel>Submission Date</FieldLabel>
             <p className="text-sm">{formatDate(request.createdAt)}</p>
           </Field>
+
+          {(request.pickupMessage || pickupAttachments.length > 0) && (
+            <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <div className="flex items-center gap-2">
+                <PackageCheck className="size-4 text-primary" />
+                <p className="text-sm font-semibold text-primary">Ready for Pickup</p>
+              </div>
+
+              {request.pickupMessage && <p className="text-sm">{request.pickupMessage}</p>}
+
+              {pickupAttachments.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Attachments</p>
+                  <MediaPreviewList items={pickupAttachments} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {(request.rejectionMessage || rejectionAttachments.length > 0) && (
+            <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+              <div className="flex items-center gap-2">
+                <Ban className="size-4 text-destructive" />
+                <p className="text-sm font-semibold text-destructive">Rejected</p>
+              </div>
+
+              {request.rejectionMessage && <p className="text-sm">{request.rejectionMessage}</p>}
+
+              {rejectionAttachments.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Attachments</p>
+                  <MediaPreviewList items={rejectionAttachments} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

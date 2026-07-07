@@ -28,7 +28,7 @@ import { isSuperAdminRole, roleLabel } from "@/lib/roles";
 import { fetchFile } from "@/lib/storage";
 import { setNewsReaction } from "@/actions/news";
 import type { NewsPage, NewsWithAuthor } from "@/actions/news";
-import type { AttachmentItem } from "@/components/attachment-picker";
+import type { MediaItem } from "@/components/file-uploader";
 import EditNewsDialog from "./edit-news-dialog";
 import DeleteNewsDialog from "./delete-news-dialog";
 import CommentsDialog from "./comments-dialog";
@@ -178,7 +178,7 @@ function MediaGrid({ media }: { media: NewsWithAuthor["media"] }) {
   );
 }
 
-function DownloadableAttachment({ item }: { item: AttachmentItem }) {
+function DownloadableAttachment({ item }: { item: MediaItem }) {
   const handleClick = () => {
     if (!item.key) return;
     window.open(fetchFile(item.key), "_blank");

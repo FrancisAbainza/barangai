@@ -8,8 +8,7 @@ import { Field, FieldError, FieldLabel } from "../ui/field";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Loader2, Newspaper, Save } from "lucide-react";
-import MediaUploader from "../media-uploader";
-import AttachmentPicker from "../attachment-picker";
+import FileUploader from "../file-uploader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Checkbox } from "../ui/checkbox";
 
@@ -102,10 +101,11 @@ export default function NewsForm({ mode = "create", defaultValues, onSubmit, onC
                 Media{" "}
                 <span className="text-muted-foreground font-normal">(optional, max 10)</span>
               </FieldLabel>
-              <MediaUploader
-                media={field.value}
-                onMediaChange={field.onChange}
+              <FileUploader
+                files={field.value}
+                onFilesChange={field.onChange}
                 maxFiles={10}
+                accept={["images", "videos"]}
               />
             </Field>
           )}
@@ -120,10 +120,11 @@ export default function NewsForm({ mode = "create", defaultValues, onSubmit, onC
                 Attachments{" "}
                 <span className="text-muted-foreground font-normal">(optional, max 3)</span>
               </FieldLabel>
-              <AttachmentPicker
+              <FileUploader
                 files={field.value}
                 onFilesChange={field.onChange}
                 maxFiles={3}
+                accept={["documents"]}
               />
             </Field>
           )}
