@@ -49,9 +49,15 @@ const adminMenuItems = [
 
 export default function PortalSidebar() {
   const pathname = usePathname();
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const { user } = useUser();
   const collapsed = state === "collapsed";
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
   const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
@@ -91,7 +97,7 @@ export default function PortalSidebar() {
                     tooltip={collapsed ? item.title : undefined}
                     className="gap-3"
                   >
-                    <Link href={item.href}>
+                    <Link href={item.href} onClick={handleNavClick}>
                       <Icon />
                       <span>{item.title}</span>
                     </Link>

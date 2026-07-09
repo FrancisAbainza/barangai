@@ -19,6 +19,9 @@ export default function ResidentComplaint() {
             <p className="text-sm text-muted-foreground">
               Let us know about incidents in your community so we can take action.
             </p>
+            <p className="text-xs text-muted-foreground">
+              Note: This is not a blotter. Use this form only for reporting non-emergency community concerns.
+            </p>
           </div>
         </div>
         <Button onClick={() => setIsReportDialogOpen(true)} className="gap-2">

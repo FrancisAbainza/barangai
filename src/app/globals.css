@@ -139,4 +139,8 @@
 }
 .gm-style-iw-c {
   max-height: none !important;
+  /* Google injects inline padding-right/padding-bottom to compensate for its internal
+     scrollbar, which conflicts with the static 12px padding and skews it to the left/top.
+     Force all four sides even so the content is centered. */
+  padding: 12px !important;
 }

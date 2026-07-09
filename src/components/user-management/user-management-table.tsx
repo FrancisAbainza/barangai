@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Search } from "lucide-react";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { getUsers } from "@/actions/user-management";
+import { Search, ShieldCheck, Users } from "lucide-react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { getUserStats, getUsers } from "@/actions/user-management";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import StatCard from "@/components/stat-card";
 import UserActionsMenu from "@/components/user-management/user-actions-menu";
 import { roleLabel } from "@/lib/roles";
 
@@ -114,6 +115,11 @@ export default function UserManagementTable() {
   const [role, setRole] = useState("all");
   const debouncedSearch = useDebouncedValue(search, 300);
 
+  const { data: stats, isLoading: isStatsLoading } = useQuery({
+    queryKey: ["users", "stats"],
+    queryFn: () => getUserStats(),
+  });
+
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
       queryKey: ["users", { search: debouncedSearch, role }],
@@ -127,6 +133,24 @@ export default function UserManagementTable() {
 
   return (
     <div className="space-y-4">
+      <div className="grid gap-4 grid-cols-2">
+        <StatCard
+          label="Residents"
+          value={stats?.residents ?? 0}
+          description="Registered residents"
+          icon={Users}
+          isLoading={isStatsLoading}
+        />
+        <StatCard
+          label="Admins"
+          value={stats?.admins ?? 0}
+          description="Admins and super admins"
+          icon={ShieldCheck}
+          isLoading={isStatsLoading}
+          iconClassName="bg-violet-500/10 text-violet-600"
+        />
+      </div>
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

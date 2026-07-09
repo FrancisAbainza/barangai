@@ -1,9 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search } from "lucide-react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { FileText, Hourglass, ListFilter, MapPinOff, Search } from "lucide-react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,9 +34,10 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoadMoreTrigger from "@/components/load-more-trigger";
+import StatCard from "@/components/stat-card";
 import AdminComplaintActionsMenu from "@/components/complaint/admin-complaint-actions-menu";
 import ComplaintsMapView from "@/components/complaint/complaints-map-view";
-import { getComplaints } from "@/actions/complaints";
+import { getComplaintStats, getComplaints } from "@/actions/complaints";
 import { statusBadgeVariant, priorityBadgeVariant, formatDate } from "@/lib/complaints";
 import { complaintCategoryEnum, complaintPriorityEnum, complaintStatusEnum, type Complaint } from "@/db/schema";
 
@@ -92,7 +103,29 @@ export default function AdminComplaint() {
   const [status, setStatus] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
+
+  const activeFilterCount = [
+    category !== "all",
+    priority !== "all",
+    status !== "all",
+    dateFrom !== "",
+    dateTo !== "",
+  ].filter(Boolean).length;
+
+  function clearFilters() {
+    setCategory("all");
+    setPriority("all");
+    setStatus("all");
+    setDateFrom("");
+    setDateTo("");
+  }
+
+  const { data: stats, isLoading: isStatsLoading } = useQuery({
+    queryKey: ["complaints", "admin", "stats"],
+    queryFn: () => getComplaintStats(),
+  });
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: [
@@ -126,8 +159,26 @@ export default function AdminComplaint() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3">
-        <div className="relative">
+      <div className="grid gap-4 grid-cols-2">
+        <StatCard
+          label="Total Complaints"
+          value={stats?.total ?? 0}
+          description="All complaints in system"
+          icon={FileText}
+          isLoading={isStatsLoading}
+        />
+        <StatCard
+          label="Pending"
+          value={stats?.pending ?? 0}
+          description="Awaiting review"
+          icon={Hourglass}
+          isLoading={isStatsLoading}
+          iconClassName="bg-amber-500/10 text-amber-600"
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -137,70 +188,108 @@ export default function AdminComplaint() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORY_FILTERS.map((filter) => (
-                <SelectItem key={filter.value} value={filter.value}>
-                  {filter.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="shrink-0">
+              <ListFilter />
+              Filters
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="rounded-full px-1.5">
+                  {activeFilterCount}
+                </Badge>
+              )}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Filter Complaints</DialogTitle>
+              <DialogDescription>
+                Narrow down complaints by category, priority, status, or date range.
+              </DialogDescription>
+            </DialogHeader>
 
-          <Select value={priority} onValueChange={setPriority}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PRIORITY_FILTERS.map((filter) => (
-                <SelectItem key={filter.value} value={filter.value}>
-                  {filter.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Category</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORY_FILTERS.map((filter) => (
+                      <SelectItem key={filter.value} value={filter.value}>
+                        {filter.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_FILTERS.map((filter) => (
-                <SelectItem key={filter.value} value={filter.value}>
-                  {filter.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <div className="space-y-1.5">
+                <Label>Priority</Label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRIORITY_FILTERS.map((filter) => (
+                      <SelectItem key={filter.value} value={filter.value}>
+                        {filter.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex gap-2 space-y-1">
-            <Label htmlFor="date-from" className="text-xs text-muted-foreground">
-              From
-            </Label>
-            <Input
-              id="date-from"
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-            />
-          </div>
+              <div className="space-y-1.5">
+                <Label>Status</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_FILTERS.map((filter) => (
+                      <SelectItem key={filter.value} value={filter.value}>
+                        {filter.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex gap-2 space-y-1">
-            <Label htmlFor="date-to" className="text-xs text-muted-foreground">
-              To
-            </Label>
-            <Input
-              id="date-to"
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
-          </div>
-        </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="date-from">From</Label>
+                <Input
+                  id="date-from"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="date-to">To</Label>
+                <Input
+                  id="date-to"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={clearFilters}
+                disabled={activeFilterCount === 0}
+              >
+                Clear filters
+              </Button>
+              <Button onClick={() => setFiltersOpen(false)}>Done</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Tabs value={view} onValueChange={(value) => setView(value as "table" | "map")}>
@@ -276,6 +365,14 @@ export default function AdminComplaint() {
         <TabsContent value="map" className="pt-2">
           {isLoading || (isFetchingNextPage && hasNextPage) ? (
             <Skeleton className="h-128 w-full rounded-lg" />
+          ) : complaints.length === 0 ? (
+            <div className="flex h-128 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-center">
+              <MapPinOff className="size-8 text-muted-foreground" />
+              <p className="text-sm font-medium">No complaints to display</p>
+              <p className="text-sm text-muted-foreground">
+                Complaints will appear here once residents file them.
+              </p>
+            </div>
           ) : (
             <ComplaintsMapView complaints={complaints} />
           )}

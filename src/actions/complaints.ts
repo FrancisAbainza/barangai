@@ -3,7 +3,7 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { and, desc, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { db } from "@/db/config";
 import { complaintsTable, type Complaint } from "@/db/schema";
@@ -98,8 +98,13 @@ export async function createComplaint(data: CreateComplaintInput) {
 
 const MY_COMPLAINTS_PAGE_SIZE = 10;
 
+export type ComplaintWithComplainant = Complaint & {
+  complainantName: string;
+  complainantEmail: string;
+};
+
 export type MyComplaintsPage = {
-  items: Complaint[];
+  items: ComplaintWithComplainant[];
   nextOffset: number | null;
 };
 
@@ -117,18 +122,24 @@ export async function getMyComplaints({
     .limit(MY_COMPLAINTS_PAGE_SIZE)
     .offset(offset);
 
+  if (complaints.length === 0) return { items: [], nextOffset: null };
+
+  // Complainant display info lives in Clerk, not the DB, so fetch and join in memory.
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+  const complainantName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || "Unknown";
+  const complainantEmail =
+    user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)?.emailAddress ??
+    user.emailAddresses[0]?.emailAddress ??
+    "—";
+
   return {
-    items: complaints,
+    items: complaints.map((complaint) => ({ ...complaint, complainantName, complainantEmail })),
     nextOffset: complaints.length < MY_COMPLAINTS_PAGE_SIZE ? null : offset + complaints.length,
   };
 }
 
 const COMPLAINTS_PAGE_SIZE = 20;
-
-export type ComplaintWithComplainant = Complaint & {
-  complainantName: string;
-  complainantEmail: string;
-};
 
 export type ComplaintsPage = {
   items: ComplaintWithComplainant[];
@@ -224,6 +235,25 @@ export async function getComplaints({
       }),
     })),
     nextOffset: complaints.length < COMPLAINTS_PAGE_SIZE ? null : offset + complaints.length,
+  };
+}
+
+export type ComplaintStats = {
+  total: number;
+  pending: number;
+};
+
+export async function getComplaintStats(): Promise<ComplaintStats> {
+  await requireAdmin();
+
+  const [totalResult, pendingResult] = await Promise.all([
+    db.select({ count: count() }).from(complaintsTable),
+    db.select({ count: count() }).from(complaintsTable).where(eq(complaintsTable.status, "Pending")),
+  ]);
+
+  return {
+    total: totalResult[0]?.count ?? 0,
+    pending: pendingResult[0]?.count ?? 0,
   };
 }
 

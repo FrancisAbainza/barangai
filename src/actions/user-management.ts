@@ -96,6 +96,45 @@ export async function getUsers({
   return { items, nextOffset: cursor };
 }
 
+// Clerk's Backend API caps list requests at 500 per page, so counting by role
+// (not a queryable field) means scanning every user in batches of this size.
+const STATS_SCAN_BATCH_SIZE = 500;
+
+export type UserStats = {
+  residents: number;
+  admins: number;
+};
+
+export async function getUserStats(): Promise<UserStats> {
+  await requireAdmin();
+
+  const client = await clerkClient();
+  let residents = 0;
+  let admins = 0;
+  let cursor = 0;
+
+  while (true) {
+    const { data: users, totalCount } = await client.users.getUserList({
+      limit: STATS_SCAN_BATCH_SIZE,
+      offset: cursor,
+    });
+
+    for (const user of users) {
+      const role = (user.publicMetadata?.role as string | undefined) ?? "resident";
+      if (role === "admin" || role === "superadmin") {
+        admins++;
+      } else {
+        residents++;
+      }
+    }
+
+    cursor += users.length;
+    if (users.length === 0 || cursor >= totalCount) break;
+  }
+
+  return { residents, admins };
+}
+
 export async function updateUserRole(userId: string, role: "admin" | "superadmin" | null) {
   await requireSuperAdmin();
 

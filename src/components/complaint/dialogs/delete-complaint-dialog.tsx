@@ -32,8 +32,12 @@ export default function DeleteComplaintDialog({
 
   const { mutate: handleDelete, isPending } = useMutation({
     mutationFn: async () => {
-      const evidence = complaint.evidence as MediaItem[];
-      const keys = evidence.map((item) => item.key).filter(Boolean) as string[];
+      const attachments = [
+        ...(complaint.evidence as MediaItem[]),
+        ...(complaint.resolutionAttachments as MediaItem[]),
+        ...(complaint.dismissalAttachments as MediaItem[]),
+      ];
+      const keys = attachments.map((item) => item.key).filter(Boolean) as string[];
 
       await Promise.all(keys.map((key) => deleteFile(key)));
       await deleteComplaint(complaint.id);

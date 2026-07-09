@@ -49,7 +49,7 @@ export default function ComplaintsMapView({ complaints }: { complaints: Complain
 
       <div className="h-128 w-full overflow-hidden rounded-lg border md:h-160">
         <Map
-          defaultZoom={14}
+          defaultZoom={15}
           defaultCenter={complaints[0]?.location.coordinates ?? DEFAULT_CENTER}
           mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
           gestureHandling="greedy"
@@ -71,7 +71,7 @@ export default function ComplaintsMapView({ complaints }: { complaints: Complain
               headerDisabled
               maxWidth={320}
             >
-              <div className="relative max-w-xs pr-3 pb-3">
+              <div className="relative max-w-xs">
                 <button
                   onClick={() => setActiveComplaintId(null)}
                   className="absolute top-0 right-2 z-10 flex size-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"

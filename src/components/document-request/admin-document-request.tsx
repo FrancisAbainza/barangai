@@ -1,9 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search } from "lucide-react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { FileText, Hourglass, ListFilter, Search } from "lucide-react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,8 +33,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import LoadMoreTrigger from "@/components/load-more-trigger";
+import StatCard from "@/components/stat-card";
 import AdminDocumentRequestActionsMenu from "@/components/document-request/admin-document-request-actions-menu";
-import { getDocumentRequests } from "@/actions/document-requests";
+import { getDocumentRequestStats, getDocumentRequests } from "@/actions/document-requests";
 import { statusBadgeVariant } from "@/lib/document-requests";
 import { documentRequestStatusEnum, documentRequestTypeEnum, type DocumentRequest } from "@/db/schema";
 
@@ -84,7 +95,27 @@ export default function AdminDocumentRequest() {
   const [status, setStatus] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
+
+  const activeFilterCount = [
+    documentType !== "all",
+    status !== "all",
+    dateFrom !== "",
+    dateTo !== "",
+  ].filter(Boolean).length;
+
+  function clearFilters() {
+    setDocumentType("all");
+    setStatus("all");
+    setDateFrom("");
+    setDateTo("");
+  }
+
+  const { data: stats, isLoading: isStatsLoading } = useQuery({
+    queryKey: ["document-requests", "admin", "stats"],
+    queryFn: () => getDocumentRequestStats(),
+  });
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: [
@@ -109,8 +140,26 @@ export default function AdminDocumentRequest() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3">
-        <div className="relative">
+      <div className="grid gap-4 grid-cols-2">
+        <StatCard
+          label="Total Requests"
+          value={stats?.total ?? 0}
+          description="All requests in system"
+          icon={FileText}
+          isLoading={isStatsLoading}
+        />
+        <StatCard
+          label="Pending"
+          value={stats?.pending ?? 0}
+          description="Awaiting review"
+          icon={Hourglass}
+          isLoading={isStatsLoading}
+          iconClassName="bg-amber-500/10 text-amber-600"
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -120,57 +169,92 @@ export default function AdminDocumentRequest() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Select value={documentType} onValueChange={setDocumentType}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DOCUMENT_TYPE_FILTERS.map((filter) => (
-                <SelectItem key={filter.value} value={filter.value}>
-                  {filter.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="shrink-0">
+              <ListFilter />
+              Filters
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="rounded-full px-1.5">
+                  {activeFilterCount}
+                </Badge>
+              )}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Filter Requests</DialogTitle>
+              <DialogDescription>
+                Narrow down document requests by type, status, or date range.
+              </DialogDescription>
+            </DialogHeader>
 
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_FILTERS.map((filter) => (
-                <SelectItem key={filter.value} value={filter.value}>
-                  {filter.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Document Type</Label>
+                <Select value={documentType} onValueChange={setDocumentType}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOCUMENT_TYPE_FILTERS.map((filter) => (
+                      <SelectItem key={filter.value} value={filter.value}>
+                        {filter.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex gap-2 space-y-1">
-            <Label htmlFor="date-from" className="text-xs text-muted-foreground">
-              From
-            </Label>
-            <Input
-              id="date-from"
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-            />
-          </div>
+              <div className="space-y-1.5">
+                <Label>Status</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_FILTERS.map((filter) => (
+                      <SelectItem key={filter.value} value={filter.value}>
+                        {filter.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex gap-2 space-y-1">
-            <Label htmlFor="date-to" className="text-xs text-muted-foreground">
-              To
-            </Label>
-            <Input
-              id="date-to"
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
-          </div>
-        </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="date-from">From</Label>
+                <Input
+                  id="date-from"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="date-to">To</Label>
+                <Input
+                  id="date-to"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={clearFilters}
+                disabled={activeFilterCount === 0}
+              >
+                Clear filters
+              </Button>
+              <Button onClick={() => setFiltersOpen(false)}>Done</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="rounded-lg border">

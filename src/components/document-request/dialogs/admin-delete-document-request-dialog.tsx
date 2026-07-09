@@ -32,11 +32,13 @@ export default function AdminDeleteDocumentRequestDialog({
 
   const { mutate: handleDelete, isPending } = useMutation({
     mutationFn: async () => {
-      const paymentReceipt = request.paymentReceipt as MediaItem[];
-      const supportingDocuments = request.supportingDocuments as MediaItem[];
-      const keys = [...paymentReceipt, ...supportingDocuments]
-        .map((item) => item.key)
-        .filter(Boolean) as string[];
+      const attachments = [
+        ...(request.paymentReceipt as MediaItem[]),
+        ...(request.supportingDocuments as MediaItem[]),
+        ...(request.pickupAttachments as MediaItem[]),
+        ...(request.rejectionAttachments as MediaItem[]),
+      ];
+      const keys = attachments.map((item) => item.key).filter(Boolean) as string[];
 
       await Promise.all(keys.map((key) => deleteFile(key)));
       await deleteDocumentRequest(request.id);

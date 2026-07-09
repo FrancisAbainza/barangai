@@ -4,7 +4,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { db } from "@/db/config";
 import { documentRequestsTable, type DocumentRequest } from "@/db/schema";
-import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import type { MediaItem } from "@/components/file-uploader";
 
 export type CreateDocumentRequestInput = {
@@ -154,6 +154,28 @@ export async function getDocumentRequests({
       ...(requesterMap.get(request.requesterId) ?? { requesterName: "Unknown", requesterEmail: "—" }),
     })),
     nextOffset: requests.length < DOCUMENT_REQUESTS_PAGE_SIZE ? null : offset + requests.length,
+  };
+}
+
+export type DocumentRequestStats = {
+  total: number;
+  pending: number;
+};
+
+export async function getDocumentRequestStats(): Promise<DocumentRequestStats> {
+  await requireAdmin();
+
+  const [totalResult, pendingResult] = await Promise.all([
+    db.select({ count: count() }).from(documentRequestsTable),
+    db
+      .select({ count: count() })
+      .from(documentRequestsTable)
+      .where(eq(documentRequestsTable.status, "Pending")),
+  ]);
+
+  return {
+    total: totalResult[0]?.count ?? 0,
+    pending: pendingResult[0]?.count ?? 0,
   };
 }
 
