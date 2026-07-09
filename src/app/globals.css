@@ -131,3 +131,12 @@
     @apply font-sans;
   }
 }
+
+/* Google Maps InfoWindow: grow to fit content instead of clipping it into an internal scrollbar. */
+.gm-style-iw-d {
+  overflow: visible !important;
+  max-height: none !important;
+}
+.gm-style-iw-c {
+  max-height: none !important;
+}

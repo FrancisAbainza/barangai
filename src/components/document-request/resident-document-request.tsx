@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import LoadMoreTrigger from "@/components/load-more-trigger";
 import DocumentRequestActionsMenu from "@/components/document-request/document-request-actions-menu";
 import ClearanceDocumentRequestDialog from "@/components/document-request/dialogs/clearance-document-request-dialog";
 import ResidencyDocumentRequestDialog from "@/components/document-request/dialogs/residency-document-request-dialog";
@@ -98,10 +99,20 @@ export default function ResidentDocumentRequest() {
   const [isSoloParentDialogOpen, setIsSoloParentDialogOpen] = useState(false);
   const [isMedicalAssistanceDialogOpen, setIsMedicalAssistanceDialogOpen] = useState(false);
 
-  const { data: myRequests = [], isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["document-requests"],
-    queryFn: getMyDocumentRequests,
+    queryFn: ({ pageParam }) => getMyDocumentRequests({ offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
   });
+
+  const myRequests = data?.pages.flatMap((page) => page.items) ?? [];
 
   const { user } = useUser();
   const { data: residentProfile, isLoading: isResidentProfileLoading } = useQuery({
@@ -183,20 +194,36 @@ export default function ResidentDocumentRequest() {
                   </TableCell>
                 </TableRow>
               ) : (
-                myRequests.map((request) => (
-                  <TableRow key={request.id}>
-                    <TableCell className="font-medium">{request.documentType}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatSubmittedDate(request.createdAt)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={statusBadgeVariant(request.status)}>{request.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DocumentRequestActionsMenu request={request} />
-                    </TableCell>
-                  </TableRow>
-                ))
+                <>
+                  {myRequests.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell className="font-medium">{request.documentType}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatSubmittedDate(request.createdAt)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusBadgeVariant(request.status)}>{request.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DocumentRequestActionsMenu request={request} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {hasNextPage && (
+                    <LoadMoreTrigger
+                      colSpan={4}
+                      onIntersect={fetchNextPage}
+                      disabled={isFetchingNextPage}
+                    />
+                  )}
+                  {isFetchingNextPage && (
+                    <TableRow>
+                      <TableCell colSpan={4}>
+                        <Skeleton className="h-5 w-full" />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </>
               )}
             </TableBody>
           </Table>

@@ -39,7 +39,6 @@ const residentMenuItems = [
   { title: "Court Reservation", href: "/portal/court-reservation", icon: SportShoe },
   { title: "Complaint", href: "/portal/complaint", icon: MessageSquareWarning },
   { title: "Transparency", href: "/portal/transparency", icon: Eye },
-  { title: "Security", href: "/portal/security", icon: Shield },
   { title: "About Us", href: "/portal/about-us", icon: Info },
 ];
 

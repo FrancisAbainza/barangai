@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import LoadMoreTrigger from "@/components/load-more-trigger";
 import AdminDocumentRequestActionsMenu from "@/components/document-request/admin-document-request-actions-menu";
 import { getDocumentRequests } from "@/actions/document-requests";
 import { statusBadgeVariant } from "@/lib/document-requests";
@@ -77,38 +78,7 @@ function RequestRowSkeleton() {
   );
 }
 
-function LoadMoreTrigger({
-  onIntersect,
-  disabled,
-}: {
-  onIntersect: () => void;
-  disabled: boolean;
-}) {
-  const ref = useRef<HTMLTableRowElement>(null);
-
-  useEffect(() => {
-    if (disabled) return;
-    const el = ref.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) onIntersect();
-      },
-      { rootMargin: "200px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [onIntersect, disabled]);
-
-  return (
-    <TableRow ref={ref}>
-      <TableCell colSpan={5} className="h-1 p-0" />
-    </TableRow>
-  );
-}
-
-export default function AdminDocumentRequestTable() {
+export default function AdminDocumentRequest() {
   const [search, setSearch] = useState("");
   const [documentType, setDocumentType] = useState("all");
   const [status, setStatus] = useState("all");
@@ -248,7 +218,7 @@ export default function AdminDocumentRequestTable() {
                   </TableRow>
                 ))}
                 {hasNextPage && (
-                  <LoadMoreTrigger onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                  <LoadMoreTrigger colSpan={5} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
                 )}
                 {isFetchingNextPage && <RequestRowSkeleton />}
               </>

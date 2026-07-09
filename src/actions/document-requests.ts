@@ -33,15 +33,31 @@ export async function createDocumentRequest(data: CreateDocumentRequestInput) {
   });
 }
 
-export async function getMyDocumentRequests(): Promise<DocumentRequest[]> {
+const MY_DOCUMENT_REQUESTS_PAGE_SIZE = 10;
+
+export type MyDocumentRequestsPage = {
+  items: DocumentRequest[];
+  nextOffset: number | null;
+};
+
+export async function getMyDocumentRequests({
+  offset = 0,
+}: { offset?: number } = {}): Promise<MyDocumentRequestsPage> {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  return db
+  const requests = await db
     .select()
     .from(documentRequestsTable)
     .where(eq(documentRequestsTable.requesterId, userId))
-    .orderBy(desc(documentRequestsTable.createdAt));
+    .orderBy(desc(documentRequestsTable.createdAt), desc(documentRequestsTable.id))
+    .limit(MY_DOCUMENT_REQUESTS_PAGE_SIZE)
+    .offset(offset);
+
+  return {
+    items: requests,
+    nextOffset: requests.length < MY_DOCUMENT_REQUESTS_PAGE_SIZE ? null : offset + requests.length,
+  };
 }
 
 const DOCUMENT_REQUESTS_PAGE_SIZE = 20;

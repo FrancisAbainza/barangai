@@ -12,7 +12,14 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import type { MediaItem } from "@/components/file-uploader";
+import type { LocationValue } from "@/components/map-picker";
 import { CIVIL_STATUS_OPTIONS, SEX_OPTIONS, VALID_ID_TYPES } from "@/schemas/resident-profile-schema";
+import {
+  COMPLAINT_CATEGORIES,
+  COMPLAINT_PRIORITIES,
+  COMPLAINT_STATUSES,
+  type ComplaintAiInsight,
+} from "@/schemas/complaint-schema";
 
 export const newsCategoryEnum = pgEnum("news_category", ["Announcement", "Event", "Emergency"]);
 export const newsReactionTypeEnum = pgEnum("news_reaction_type", ["like", "dislike"]);
@@ -135,3 +142,28 @@ export const documentRequestsTable = pgTable("document_requests", {
 });
 
 export type DocumentRequest = typeof documentRequestsTable.$inferSelect;
+
+export const complaintCategoryEnum = pgEnum("complaint_category", COMPLAINT_CATEGORIES);
+export const complaintPriorityEnum = pgEnum("complaint_priority", COMPLAINT_PRIORITIES);
+export const complaintStatusEnum = pgEnum("complaint_status", COMPLAINT_STATUSES);
+
+export const complaintsTable = pgTable("complaints", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  complainantId: varchar({ length: 255 }).notNull(),
+  subject: varchar({ length: 255 }).notNull(),
+  description: text().notNull(),
+  location: json().$type<LocationValue>().notNull(),
+  evidence: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  category: complaintCategoryEnum().notNull(),
+  priority: complaintPriorityEnum().notNull(),
+  status: complaintStatusEnum().notNull().default("Pending"),
+  resolutionMessage: text(),
+  resolutionAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  dismissalMessage: text(),
+  dismissalAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  aiInsight: json().$type<ComplaintAiInsight | null>(),
+  createdAt: timestamp().notNull().defaultNow(),
+  updatedAt: timestamp().notNull().defaultNow(),
+});
+
+export type Complaint = typeof complaintsTable.$inferSelect;

@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
-import { Ban, Download, FileText, IdCard, PackageCheck } from "lucide-react";
+import { Ban, IdCard, PackageCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
-import ImageLightbox from "@/components/image-lightbox";
+import MediaLightbox from "@/components/media-lightbox";
+import MediaPreviewList from "@/components/media-preview-list";
 import { fetchFile } from "@/lib/storage";
 import { statusBadgeVariant, formatDate } from "@/lib/document-requests";
 import { getResidentProfile } from "@/actions/resident-profile";
@@ -21,45 +22,6 @@ interface AdminViewDocumentRequestDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-function MediaPreviewList({ items }: { items: MediaItem[] }) {
-  return (
-    <div className="space-y-2">
-      {items.map((item, index) => {
-        const url = item.key ? fetchFile(item.key) : "";
-
-        if (item.type === "image") {
-          return (
-            <ImageLightbox key={index} src={url} alt={item.name} className="w-full">
-              <div className="flex items-center gap-3 rounded-md border p-2 transition-colors hover:bg-accent">
-                <div className="relative size-12 shrink-0 overflow-hidden rounded">
-                  <Image src={url} alt={item.name} fill sizes="48px" className="object-cover" unoptimized />
-                </div>
-                <span className="flex-1 truncate text-sm">{item.name}</span>
-              </div>
-            </ImageLightbox>
-          );
-        }
-
-        return (
-          <a
-            key={index}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-md border p-2 transition-colors hover:bg-accent"
-          >
-            <div className="flex size-12 shrink-0 items-center justify-center rounded bg-muted">
-              <FileText className="size-5 text-muted-foreground" />
-            </div>
-            <span className="flex-1 truncate text-sm">{item.name}</span>
-            <Download className="size-4 shrink-0 text-muted-foreground" />
-          </a>
-        );
-      })}
-    </div>
-  );
-}
-
 function ValidIdPreview({ label, item }: { label: string; item: MediaItem | undefined }) {
   if (!item?.key) return null;
   const url = fetchFile(item.key);
@@ -67,11 +29,11 @@ function ValidIdPreview({ label, item }: { label: string; item: MediaItem | unde
   return (
     <Field>
       <FieldLabel>{label}</FieldLabel>
-      <ImageLightbox src={url} alt={label} className="w-full">
+      <MediaLightbox src={url} alt={label} className="w-full">
         <div className="relative aspect-video w-full overflow-hidden rounded-md border">
           <Image src={url} alt={label} fill sizes="240px" className="object-cover" unoptimized />
         </div>
-      </ImageLightbox>
+      </MediaLightbox>
     </Field>
   );
 }
