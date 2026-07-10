@@ -4,7 +4,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getAuthRole } from "@/lib/auth";
 import { db } from "@/db/config";
 import { newsCommentsTable, newsReactionsTable, newsTable, type News, type NewsComment } from "@/db/schema";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import type { NewsFormValues } from "@/schemas/news-schema";
 import type { MediaItem } from "@/components/file-uploader";
 
@@ -72,10 +72,35 @@ export type NewsPage = {
   nextPage: number | null;
 };
 
-export async function getNews({ page = 0 }: { page?: number } = {}): Promise<NewsPage> {
+export async function getNews({
+  page = 0,
+  search,
+  category,
+}: {
+  page?: number;
+  search?: string;
+  category?: News["category"] | "all";
+} = {}): Promise<NewsPage> {
+  const conditions = [];
+
+  if (category && category !== "all") {
+    conditions.push(eq(newsTable.category, category));
+  }
+
+  const trimmedSearch = search?.trim();
+  if (trimmedSearch) {
+    conditions.push(
+      or(
+        ilike(newsTable.title, `%${trimmedSearch}%`),
+        ilike(newsTable.content, `%${trimmedSearch}%`)
+      )!
+    );
+  }
+
   const news = await db
     .select()
     .from(newsTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     // Pinned items float to the top; id tiebreaks createdAt so offset pagination stays stable across pages.
     .orderBy(desc(newsTable.pinned), desc(newsTable.createdAt), desc(newsTable.id))
     .limit(NEWS_PAGE_SIZE)

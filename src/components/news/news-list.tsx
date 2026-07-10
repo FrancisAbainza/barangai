@@ -1,22 +1,36 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Search } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Calendar, LayoutList, Megaphone, TriangleAlert } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getNews } from "@/actions/news";
+import { newsCategoryEnum, type News } from "@/db/schema";
 import NewsCard from "./news-card";
 
-type FilterTab = "All" | "Announcement" | "Event" | "Emergency";
-
-const TABS: { label: string; value: FilterTab; icon: LucideIcon }[] = [
-  { label: "All", value: "All", icon: LayoutList },
-  { label: "Announcements", value: "Announcement", icon: Megaphone },
-  { label: "Events", value: "Event", icon: Calendar },
-  { label: "Emergency", value: "Emergency", icon: TriangleAlert },
+const CATEGORY_FILTERS = [
+  { value: "all", label: "All Categories" },
+  ...newsCategoryEnum.enumValues.map((category) => ({ value: category, label: category })),
 ];
+
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timeout);
+  }, [value, delayMs]);
+
+  return debounced;
+}
 
 function NewsCardSkeleton() {
   return (
@@ -60,9 +74,13 @@ function LoadMoreTrigger({ onIntersect, disabled }: { onIntersect: () => void; d
 }
 
 export default function NewsList() {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<News["category"] | "all">("all");
+  const debouncedSearch = useDebouncedValue(search, 300);
+
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["news"],
-    queryFn: ({ pageParam }) => getNews({ page: pageParam }),
+    queryKey: ["news", { search: debouncedSearch, category }],
+    queryFn: ({ pageParam }) => getNews({ page: pageParam, search: debouncedSearch, category }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextPage,
   });
@@ -70,48 +88,50 @@ export default function NewsList() {
   const news = data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
-    <Tabs defaultValue="All">
-      <TabsList className="w-full">
-        {TABS.map((tab) => (
-          <TabsTrigger key={tab.value} value={tab.value} className="flex-1">
-            <tab.icon className="size-3.5" />
-            <span className="hidden md:inline">{tab.label}</span>
-          </TabsTrigger>
-        ))}
-      </TabsList>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by title or content…"
+            className="pl-8"
+          />
+        </div>
+        <Select value={category} onValueChange={(value) => setCategory(value as News["category"] | "all")}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {CATEGORY_FILTERS.map((filter) => (
+              <SelectItem key={filter.value} value={filter.value}>
+                {filter.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-      {TABS.map((tab) => {
-        const filtered =
-          tab.value === "All"
-            ? news
-            : news.filter((n) => n.category === tab.value);
-
-        return (
-          <TabsContent key={tab.value} value={tab.value} className="space-y-4 mt-4">
-            {isLoading ? (
-              <>
-                <NewsCardSkeleton />
-                <NewsCardSkeleton />
-                <NewsCardSkeleton />
-              </>
-            ) : filtered.length === 0 ? (
-              <p className="text-center py-16 text-sm text-muted-foreground">
-                No news posts found.
-              </p>
-            ) : (
-              <>
-                {filtered.map((item) => (
-                  <NewsCard key={item.id} news={item} />
-                ))}
-                {hasNextPage && (
-                  <LoadMoreTrigger onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
-                )}
-                {isFetchingNextPage && <NewsCardSkeleton />}
-              </>
-            )}
-          </TabsContent>
-        );
-      })}
-    </Tabs>
+      {isLoading ? (
+        <div className="space-y-4">
+          <NewsCardSkeleton />
+          <NewsCardSkeleton />
+          <NewsCardSkeleton />
+        </div>
+      ) : news.length === 0 ? (
+        <p className="text-center py-16 text-sm text-muted-foreground">No news posts found.</p>
+      ) : (
+        <div className="space-y-4">
+          {news.map((item) => (
+            <NewsCard key={item.id} news={item} />
+          ))}
+          {hasNextPage && (
+            <LoadMoreTrigger onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+          )}
+          {isFetchingNextPage && <NewsCardSkeleton />}
+        </div>
+      )}
+    </div>
   );
 }

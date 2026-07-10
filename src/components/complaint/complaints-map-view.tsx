@@ -74,7 +74,7 @@ export default function ComplaintsMapView({ complaints }: { complaints: Complain
               <div className="relative max-w-xs">
                 <button
                   onClick={() => setActiveComplaintId(null)}
-                  className="absolute top-0 right-2 z-10 flex size-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+                  className="absolute -top-2 -right-2 z-10 flex size-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
                   aria-label="Close"
                 >
                   <span className="block text-lg">&times;</span>

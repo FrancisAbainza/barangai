@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Hourglass, ListFilter, MapPinOff, Search } from "lucide-react";
+import { FileText, Hourglass, ListFilter, Map, MapPinOff, Search, Table as TableIcon } from "lucide-react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -294,8 +294,14 @@ export default function AdminComplaint() {
 
       <Tabs value={view} onValueChange={(value) => setView(value as "table" | "map")}>
         <TabsList>
-          <TabsTrigger value="table">Table</TabsTrigger>
-          <TabsTrigger value="map">Map</TabsTrigger>
+          <TabsTrigger value="table">
+            <TableIcon />
+            Table
+          </TabsTrigger>
+          <TabsTrigger value="map">
+            <Map />
+            Map
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="table" className="pt-2">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapPinOff } from "lucide-react";
+import { Map, MapPinOff, Table as TableIcon } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,8 +51,14 @@ export default function MyComplaintsTable() {
 
       <Tabs value={view} onValueChange={(value) => setView(value as "table" | "map")}>
         <TabsList>
-          <TabsTrigger value="table">Table</TabsTrigger>
-          <TabsTrigger value="map">Map</TabsTrigger>
+          <TabsTrigger value="table">
+            <TableIcon />
+            Table
+          </TabsTrigger>
+          <TabsTrigger value="map">
+            <Map />
+            Map
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="table" className="pt-2">

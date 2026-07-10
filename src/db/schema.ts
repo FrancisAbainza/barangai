@@ -4,6 +4,7 @@ import {
   date,
   integer,
   json,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -20,6 +21,7 @@ import {
   COMPLAINT_STATUSES,
   type ComplaintAiInsight,
 } from "@/schemas/complaint-schema";
+import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
 
 export const newsCategoryEnum = pgEnum("news_category", ["Announcement", "Event", "Emergency"]);
 export const newsReactionTypeEnum = pgEnum("news_reaction_type", ["like", "dislike"]);
@@ -167,3 +169,60 @@ export const complaintsTable = pgTable("complaints", {
 });
 
 export type Complaint = typeof complaintsTable.$inferSelect;
+
+export const transparencyCategoryEnum = pgEnum("transparency_category", TRANSPARENCY_CATEGORIES);
+
+export const transparencyProjectsTable = pgTable("transparency_projects", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  title: varchar({ length: 255 }).notNull(),
+  category: transparencyCategoryEnum().notNull(),
+  description: text().notNull(),
+  budget: numeric({ precision: 12, scale: 2 }),
+  location: json().$type<LocationValue | null>(),
+  media: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  attachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  authorId: varchar({ length: 255 }).notNull(),
+  createdAt: timestamp().notNull().defaultNow(),
+  updatedAt: timestamp().notNull().defaultNow(),
+});
+
+export type TransparencyProject = typeof transparencyProjectsTable.$inferSelect;
+
+export const transparencyReactionTypeEnum = pgEnum("transparency_reaction_type", ["like", "dislike"]);
+
+export const transparencyProjectReactionsTable = pgTable(
+  "transparency_project_reactions",
+  {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    projectId: integer()
+      .notNull()
+      .references(() => transparencyProjectsTable.id, { onDelete: "cascade" }),
+    userId: varchar({ length: 255 }).notNull(),
+    type: transparencyReactionTypeEnum().notNull(),
+    createdAt: timestamp().notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("transparency_project_reactions_project_id_user_id_idx").on(
+      table.projectId,
+      table.userId
+    ),
+  ]
+);
+
+export type TransparencyProjectReaction = typeof transparencyProjectReactionsTable.$inferSelect;
+
+export const transparencyProjectCommentsTable = pgTable("transparency_project_comments", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  projectId: integer()
+    .notNull()
+    .references(() => transparencyProjectsTable.id, { onDelete: "cascade" }),
+  parentId: integer().references(
+    (): AnyPgColumn => transparencyProjectCommentsTable.id,
+    { onDelete: "cascade" }
+  ),
+  userId: varchar({ length: 255 }).notNull(),
+  content: text().notNull(),
+  createdAt: timestamp().notNull().defaultNow(),
+});
+
+export type TransparencyProjectComment = typeof transparencyProjectCommentsTable.$inferSelect;
