@@ -35,7 +35,7 @@ function MediaViewerDialog({
         showCloseButton
       >
         <DialogTitle className="sr-only">Media viewer</DialogTitle>
-        <Carousel opts={{ startIndex, loop: media.length > 1 }} className="w-full">
+        <Carousel opts={{ startIndex }} className="w-full">
           <CarouselContent className="ml-0">
             {media.map((item, index) => {
               const url = item.key ? fetchFile(item.key) : "";

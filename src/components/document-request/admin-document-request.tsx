@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/table";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
-import AdminDocumentRequestActionsMenu from "@/components/document-request/admin-document-request-actions-menu";
+import DocumentRequestActionsMenu from "@/components/document-request/document-request-actions-menu";
 import { getDocumentRequestStats, getDocumentRequests } from "@/actions/document-requests";
 import { statusBadgeVariant } from "@/lib/document-requests";
 import { documentRequestStatusEnum, documentRequestTypeEnum, type DocumentRequest } from "@/db/schema";
@@ -297,7 +297,7 @@ export default function AdminDocumentRequest() {
                       <Badge variant={statusBadgeVariant(request.status)}>{request.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <AdminDocumentRequestActionsMenu request={request} />
+                      <DocumentRequestActionsMenu request={request} />
                     </TableCell>
                   </TableRow>
                 ))}

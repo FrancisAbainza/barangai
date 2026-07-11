@@ -33,10 +33,15 @@ export async function createDocumentRequest(data: CreateDocumentRequestInput) {
   });
 }
 
+export type DocumentRequestWithRequester = DocumentRequest & {
+  requesterName: string;
+  requesterEmail: string;
+};
+
 const MY_DOCUMENT_REQUESTS_PAGE_SIZE = 10;
 
 export type MyDocumentRequestsPage = {
-  items: DocumentRequest[];
+  items: DocumentRequestWithRequester[];
   nextOffset: number | null;
 };
 
@@ -54,18 +59,35 @@ export async function getMyDocumentRequests({
     .limit(MY_DOCUMENT_REQUESTS_PAGE_SIZE)
     .offset(offset);
 
+  if (requests.length === 0) return { items: [], nextOffset: null };
+
+  // Requester display info lives in Clerk, not the DB, so batch-fetch and join in memory.
+  const client = await clerkClient();
+  const uniqueRequesterIds = [...new Set(requests.map((r) => r.requesterId))];
+  const { data: requesters } = await client.users.getUserList({ userId: uniqueRequesterIds, limit: 100 });
+  const requesterMap = new Map(
+    requesters.map((u) => [
+      u.id,
+      {
+        requesterName: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown",
+        requesterEmail:
+          u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress ??
+          u.emailAddresses[0]?.emailAddress ??
+          "—",
+      },
+    ])
+  );
+
   return {
-    items: requests,
+    items: requests.map((request) => ({
+      ...request,
+      ...(requesterMap.get(request.requesterId) ?? { requesterName: "Unknown", requesterEmail: "—" }),
+    })),
     nextOffset: requests.length < MY_DOCUMENT_REQUESTS_PAGE_SIZE ? null : offset + requests.length,
   };
 }
 
 const DOCUMENT_REQUESTS_PAGE_SIZE = 20;
-
-export type DocumentRequestWithRequester = DocumentRequest & {
-  requesterName: string;
-  requesterEmail: string;
-};
 
 export type DocumentRequestsPage = {
   items: DocumentRequestWithRequester[];

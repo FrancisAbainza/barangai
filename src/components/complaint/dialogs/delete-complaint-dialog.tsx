@@ -58,7 +58,7 @@ export default function DeleteComplaintDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete this complaint?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete your &quot;{complaint.subject}&quot; complaint and all its
+            This will permanently delete the &quot;{complaint.subject}&quot; complaint and all its
             files. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>

@@ -35,7 +35,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
-import AdminComplaintActionsMenu from "@/components/complaint/admin-complaint-actions-menu";
+import ComplaintActionsMenu from "@/components/complaint/complaint-actions-menu";
 import ComplaintsMapView from "@/components/complaint/complaints-map-view";
 import { getComplaintStats, getComplaints } from "@/actions/complaints";
 import { statusBadgeVariant, priorityBadgeVariant, formatDate } from "@/lib/complaints";
@@ -353,7 +353,7 @@ export default function AdminComplaint() {
                           <Badge variant={statusBadgeVariant(complaint.status)}>{complaint.status}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <AdminComplaintActionsMenu complaint={complaint} />
+                          <ComplaintActionsMenu complaint={complaint} />
                         </TableCell>
                       </TableRow>
                     ))}

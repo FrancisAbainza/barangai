@@ -22,6 +22,7 @@ import {
   type ComplaintAiInsight,
 } from "@/schemas/complaint-schema";
 import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
+import { BUSINESS_CATEGORIES, BUSINESS_STATUSES, type OperatingHours } from "@/schemas/business-schema";
 
 export const newsCategoryEnum = pgEnum("news_category", ["Announcement", "Event", "Emergency"]);
 export const newsReactionTypeEnum = pgEnum("news_reaction_type", ["like", "dislike"]);
@@ -226,3 +227,27 @@ export const transparencyProjectCommentsTable = pgTable("transparency_project_co
 });
 
 export type TransparencyProjectComment = typeof transparencyProjectCommentsTable.$inferSelect;
+
+export const businessCategoryEnum = pgEnum("business_category", BUSINESS_CATEGORIES);
+export const businessStatusEnum = pgEnum("business_status", BUSINESS_STATUSES);
+
+export const businessesTable = pgTable("businesses", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar({ length: 255 }).notNull(),
+  description: text().notNull(),
+  category: businessCategoryEnum().notNull(),
+  contactNumber: varchar({ length: 20 }).notNull(),
+  socialMediaLink: varchar({ length: 255 }),
+  operatingHours: json().$type<OperatingHours>().notNull(),
+  photos: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  permit: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  location: json().$type<LocationValue | null>(),
+  ownerId: varchar({ length: 255 }).notNull(),
+  status: businessStatusEnum().notNull().default("Pending"),
+  rejectionReason: text(),
+  rejectionAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  createdAt: timestamp().notNull().defaultNow(),
+  updatedAt: timestamp().notNull().defaultNow(),
+});
+
+export type Business = typeof businessesTable.$inferSelect;

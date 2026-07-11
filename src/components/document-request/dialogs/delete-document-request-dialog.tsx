@@ -59,7 +59,7 @@ export default function DeleteDocumentRequestDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete this request?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete your {request.documentType} request and all its files.
+            This will permanently delete this {request.documentType} request and all its files.
             This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>

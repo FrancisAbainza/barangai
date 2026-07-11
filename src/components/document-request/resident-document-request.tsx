@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -16,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import LoadMoreTrigger from "@/components/load-more-trigger";
+import ResidentCredentialsBanner from "@/components/resident-credentials-banner";
 import DocumentRequestActionsMenu from "@/components/document-request/document-request-actions-menu";
 import ClearanceDocumentRequestDialog from "@/components/document-request/dialogs/clearance-document-request-dialog";
 import ResidencyDocumentRequestDialog from "@/components/document-request/dialogs/residency-document-request-dialog";
@@ -32,7 +31,6 @@ import {
   HandHeart,
   HeartPulse,
   Home,
-  IdCard,
   Truck,
   Users,
   type LucideIcon,
@@ -128,18 +126,10 @@ export default function ResidentDocumentRequest() {
       {isResidentProfileLoading ? (
         <Skeleton className="h-24 w-full rounded-xl" />
       ) : !hasResidentProfile ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card p-10 text-center shadow-sm">
-          <IdCard className="size-8 text-muted-foreground" />
-          <div>
-            <p className="font-semibold leading-tight">Complete your Resident Credentials</p>
-            <p className="text-sm text-muted-foreground">
-              You need to fill up your Resident Credentials form before you can request any document.
-            </p>
-          </div>
-          <Button asChild className="mt-1">
-            <Link href={`/portal/profile/${user?.id}`}>Complete Resident Credentials</Link>
-          </Button>
-        </div>
+        <ResidentCredentialsBanner
+          userId={user?.id}
+          description="You need to fill up your Resident Credentials form before you can request any document."
+        />
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {documentTypes.map(({ name, description, icon: Icon }) => (

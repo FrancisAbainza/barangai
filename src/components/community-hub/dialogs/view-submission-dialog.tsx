@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
-import { Ban, IdCard, PackageCheck } from "lucide-react";
+import { Ban, IdCard, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,14 +10,15 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import MediaLightbox from "@/components/media-lightbox";
 import MediaPreviewList from "@/components/media-preview-list";
+import MapView from "@/components/map-view";
 import { fetchFile } from "@/lib/storage";
-import { statusBadgeVariant, formatDate } from "@/lib/document-requests";
+import { statusBadgeVariant, formatDate, formatOperatingHours } from "@/lib/business";
 import { getResidentProfile } from "@/actions/resident-profile";
-import type { DocumentRequestWithRequester } from "@/actions/document-requests";
+import type { BusinessWithOwner } from "@/actions/business";
 import type { MediaItem } from "@/components/file-uploader";
 
-interface ViewDocumentRequestDialogProps {
-  request: DocumentRequestWithRequester;
+interface ViewSubmissionDialogProps {
+  business: BusinessWithOwner;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -38,19 +39,17 @@ function ValidIdPreview({ label, item }: { label: string; item: MediaItem | unde
   );
 }
 
-export default function ViewDocumentRequestDialog({
-  request,
+export default function ViewSubmissionDialog({
+  business,
   open,
   onOpenChange,
-}: ViewDocumentRequestDialogProps) {
-  const paymentReceipt = request.paymentReceipt as MediaItem[];
-  const supportingDocuments = request.supportingDocuments as MediaItem[];
-  const pickupAttachments = request.pickupAttachments as MediaItem[];
-  const rejectionAttachments = request.rejectionAttachments as MediaItem[];
+}: ViewSubmissionDialogProps) {
+  const photos = business.photos as MediaItem[];
+  const permit = business.permit as MediaItem[];
 
   const { data: profile, isLoading: isProfileLoading } = useQuery({
-    queryKey: ["resident-profile", request.requesterId],
-    queryFn: () => getResidentProfile(request.requesterId),
+    queryKey: ["resident-profile", business.ownerId],
+    queryFn: () => getResidentProfile(business.ownerId),
     enabled: open,
   });
 
@@ -58,103 +57,115 @@ export default function ViewDocumentRequestDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{request.documentType} Request</DialogTitle>
+          <DialogTitle>{business.name}</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="request">
+        <Tabs defaultValue="business">
           <TabsList className="w-full">
-            <TabsTrigger value="request" className="flex-1">
-              Request Info
+            <TabsTrigger value="business" className="flex-1">
+              Business Info
             </TabsTrigger>
-            <TabsTrigger value="requester" className="flex-1">
-              Requester Info
+            <TabsTrigger value="owner" className="flex-1">
+              Owner Info
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="request" className="space-y-4 pt-2">
+          <TabsContent value="business" className="space-y-4 pt-2">
             <Field>
               <FieldLabel>Status</FieldLabel>
               <div>
-                <Badge variant={statusBadgeVariant(request.status)}>{request.status}</Badge>
+                <Badge variant={statusBadgeVariant(business.status)}>{business.status}</Badge>
               </div>
             </Field>
 
+            {business.status === "Rejected" &&
+              (business.rejectionReason || (business.rejectionAttachments as MediaItem[]).length > 0) && (
+                <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                  <div className="flex items-center gap-2">
+                    <Ban className="size-4 text-destructive" />
+                    <p className="text-sm font-semibold text-destructive">Rejected</p>
+                  </div>
+
+                  {business.rejectionReason && <p className="text-sm">{business.rejectionReason}</p>}
+
+                  {(business.rejectionAttachments as MediaItem[]).length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground">Attachments</p>
+                      <MediaPreviewList items={business.rejectionAttachments as MediaItem[]} />
+                    </div>
+                  )}
+                </div>
+              )}
+
             <Field>
-              <FieldLabel>Purpose</FieldLabel>
-              <p className="text-sm">
-                {request.purpose === "Other" ? request.otherPurpose : request.purpose}
-              </p>
+              <FieldLabel>Category</FieldLabel>
+              <p className="text-sm">{business.category}</p>
             </Field>
 
-            {request.situationDescription && (
+            <Field>
+              <FieldLabel>Description</FieldLabel>
+              <p className="text-sm text-muted-foreground">{business.description}</p>
+            </Field>
+
+            <div className="grid grid-cols-2 gap-4">
               <Field>
-                <FieldLabel>Brief Description of the Situation</FieldLabel>
-                <p className="text-sm text-muted-foreground">{request.situationDescription}</p>
+                <FieldLabel>Contact Number</FieldLabel>
+                <p className="text-sm">{business.contactNumber}</p>
+              </Field>
+              <Field>
+                <FieldLabel>Social Media Link</FieldLabel>
+                {business.socialMediaLink ? (
+                  <a
+                    href={business.socialMediaLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary underline underline-offset-4"
+                  >
+                    {business.socialMediaLink}
+                  </a>
+                ) : (
+                  <p className="text-sm text-muted-foreground">—</p>
+                )}
+              </Field>
+            </div>
+
+            <Field>
+              <FieldLabel>Operating Hours</FieldLabel>
+              <p className="text-sm">{formatOperatingHours(business.operatingHours)}</p>
+            </Field>
+
+            {business.location && (
+              <Field>
+                <FieldLabel>Location</FieldLabel>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <MapPin className="mt-0.5 size-4 shrink-0" />
+                    <span>{business.location.address || "Address unavailable"}</span>
+                  </div>
+                  <MapView location={business.location} />
+                </div>
               </Field>
             )}
 
-            {paymentReceipt.length > 0 && (
+            {photos.length > 0 && (
               <Field>
-                <FieldLabel>Payment Receipt</FieldLabel>
-                <MediaPreviewList items={paymentReceipt} />
-              </Field>
-            )}
-
-            {supportingDocuments.length > 0 && (
-              <Field>
-                <FieldLabel>Supporting Documents</FieldLabel>
-                <MediaPreviewList items={supportingDocuments} />
+                <FieldLabel>Photos</FieldLabel>
+                <MediaPreviewList items={photos} />
               </Field>
             )}
 
             <Field>
-              <FieldLabel>Receive Document Via</FieldLabel>
-              <p className="text-sm">{request.receiveVia}</p>
+              <FieldLabel>Business Permit</FieldLabel>
+              <MediaPreviewList items={permit} />
             </Field>
 
             <Field>
               <FieldLabel>Submission Date</FieldLabel>
-              <p className="text-sm">{formatDate(request.createdAt)}</p>
+              <p className="text-sm">{formatDate(business.createdAt)}</p>
             </Field>
-
-            {(request.pickupMessage || pickupAttachments.length > 0) && (
-              <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
-                <div className="flex items-center gap-2">
-                  <PackageCheck className="size-4 text-primary" />
-                  <p className="text-sm font-semibold text-primary">Ready for Pickup</p>
-                </div>
-
-                {request.pickupMessage && <p className="text-sm">{request.pickupMessage}</p>}
-
-                {pickupAttachments.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Attachments</p>
-                    <MediaPreviewList items={pickupAttachments} />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {(request.rejectionMessage || rejectionAttachments.length > 0) && (
-              <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-                <div className="flex items-center gap-2">
-                  <Ban className="size-4 text-destructive" />
-                  <p className="text-sm font-semibold text-destructive">Rejected</p>
-                </div>
-
-                {request.rejectionMessage && <p className="text-sm">{request.rejectionMessage}</p>}
-
-                {rejectionAttachments.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Attachments</p>
-                    <MediaPreviewList items={rejectionAttachments} />
-                  </div>
-                )}
-              </div>
-            )}
           </TabsContent>
 
-          <TabsContent value="requester" className="space-y-4 pt-2">
+          <TabsContent value="owner" className="space-y-4 pt-2">
             {isProfileLoading ? (
               <div className="space-y-3">
                 <Skeleton className="h-4 w-full" />
@@ -177,7 +188,7 @@ export default function ViewDocumentRequestDialog({
                   </Field>
                   <Field>
                     <FieldLabel>Email</FieldLabel>
-                    <p className="text-sm">{request.requesterEmail}</p>
+                    <p className="text-sm">{business.ownerEmail}</p>
                   </Field>
                   <Field>
                     <FieldLabel>Birthdate</FieldLabel>

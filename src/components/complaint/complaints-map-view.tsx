@@ -4,6 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import { APIProvider, AdvancedMarker, InfoWindow, Map, Pin } from "@vis.gl/react-google-maps";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import ViewComplaintDialog from "@/components/complaint/dialogs/view-complaint-dialog";
 import { statusBadgeVariant, priorityBadgeVariant, formatDate } from "@/lib/complaints";
 import { fetchFile } from "@/lib/storage";
 import type { ComplaintWithComplainant } from "@/actions/complaints";
@@ -25,6 +27,7 @@ const STATUS_PIN_COLORS: Record<
 
 export default function ComplaintsMapView({ complaints }: { complaints: ComplaintWithComplainant[] }) {
   const [activeComplaintId, setActiveComplaintId] = useState<number | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
   const activeComplaint = complaints.find((complaint) => complaint.id === activeComplaintId) ?? null;
   const activeComplaintImage = (activeComplaint?.evidence as MediaItem[] | undefined)?.find(
     (item) => item.type === "image" && item.key
@@ -107,7 +110,7 @@ export default function ComplaintsMapView({ complaints }: { complaints: Complain
                   </Badge>
                 </div>
 
-                <div className="space-y-1 text-xs text-muted-foreground">
+                <div className="mb-3 space-y-1 text-xs text-muted-foreground">
                   <p>
                     <strong className="font-medium text-foreground">Location:</strong>{" "}
                     {activeComplaint.location.address}
@@ -121,6 +124,10 @@ export default function ComplaintsMapView({ complaints }: { complaints: Complain
                     {formatDate(activeComplaint.createdAt)}
                   </p>
                 </div>
+
+                <Button size="sm" className="w-full" onClick={() => setViewOpen(true)}>
+                  View Details
+                </Button>
               </div>
             </InfoWindow>
           )}
@@ -129,6 +136,10 @@ export default function ComplaintsMapView({ complaints }: { complaints: Complain
 
       {complaints.length === 0 && (
         <p className="pt-3 text-center text-sm text-muted-foreground">No complaints to display on the map.</p>
+      )}
+
+      {activeComplaint && (
+        <ViewComplaintDialog complaint={activeComplaint} open={viewOpen} onOpenChange={setViewOpen} />
       )}
     </APIProvider>
   );
