@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Download, FileText, Video } from "lucide-react";
 import MediaLightbox from "@/components/media-lightbox";
 import { fetchFile } from "@/lib/storage";
+import { truncateName } from "@/lib/utils";
 import type { MediaItem } from "@/components/file-uploader";
 
 export default function MediaPreviewList({ items }: { items: MediaItem[] }) {
@@ -25,7 +26,7 @@ export default function MediaPreviewList({ items }: { items: MediaItem[] }) {
                     <Video className="size-5 text-muted-foreground" />
                   </div>
                 )}
-                <span className="flex-1 truncate text-sm">{item.name}</span>
+                <span className="flex-1 truncate text-sm">{truncateName(item.name)}</span>
               </div>
             </MediaLightbox>
           );
@@ -42,7 +43,7 @@ export default function MediaPreviewList({ items }: { items: MediaItem[] }) {
             <div className="flex size-12 shrink-0 items-center justify-center rounded bg-muted">
               <FileText className="size-5 text-muted-foreground" />
             </div>
-            <span className="flex-1 truncate text-sm">{item.name}</span>
+            <span className="flex-1 truncate text-sm">{truncateName(item.name)}</span>
             <Download className="size-4 shrink-0 text-muted-foreground" />
           </a>
         );

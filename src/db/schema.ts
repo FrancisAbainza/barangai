@@ -23,6 +23,7 @@ import {
 } from "@/schemas/complaint-schema";
 import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
 import { BUSINESS_CATEGORIES, BUSINESS_STATUSES, type OperatingHours } from "@/schemas/business-schema";
+import { COURT_RESERVATION_STATUSES } from "@/schemas/court-reservation-schema";
 
 export const newsCategoryEnum = pgEnum("news_category", ["Announcement", "Event", "Emergency"]);
 export const newsReactionTypeEnum = pgEnum("news_reaction_type", ["like", "dislike"]);
@@ -138,7 +139,7 @@ export const documentRequestsTable = pgTable("document_requests", {
   status: documentRequestStatusEnum().notNull().default("Pending"),
   pickupMessage: text(),
   pickupAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
-  rejectionMessage: text(),
+  rejectionReason: text(),
   rejectionAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
   createdAt: timestamp().notNull().defaultNow(),
   updatedAt: timestamp().notNull().defaultNow(),
@@ -162,7 +163,7 @@ export const complaintsTable = pgTable("complaints", {
   status: complaintStatusEnum().notNull().default("Pending"),
   resolutionMessage: text(),
   resolutionAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
-  dismissalMessage: text(),
+  dismissalReason: text(),
   dismissalAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
   aiInsight: json().$type<ComplaintAiInsight | null>(),
   createdAt: timestamp().notNull().defaultNow(),
@@ -251,3 +252,22 @@ export const businessesTable = pgTable("businesses", {
 });
 
 export type Business = typeof businessesTable.$inferSelect;
+
+export const courtReservationStatusEnum = pgEnum("court_reservation_status", COURT_RESERVATION_STATUSES);
+
+export const courtReservationsTable = pgTable("court_reservations", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  requesterId: varchar({ length: 255 }).notNull(),
+  date: date().notNull(),
+  timeSlots: json().$type<number[]>().notNull(),
+  purpose: varchar({ length: 255 }).notNull(),
+  totalAmount: numeric({ precision: 10, scale: 2 }).notNull(),
+  gcashPayment: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  status: courtReservationStatusEnum().notNull().default("Pending"),
+  rejectionReason: text(),
+  rejectionAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  createdAt: timestamp().notNull().defaultNow(),
+  updatedAt: timestamp().notNull().defaultNow(),
+});
+
+export type CourtReservation = typeof courtReservationsTable.$inferSelect;

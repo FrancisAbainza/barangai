@@ -7,6 +7,7 @@ import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { Separator } from "./ui/separator";
 import { barangayLogoSrc, barangayName } from "@/lib/data";
@@ -19,6 +20,7 @@ const publicNavLinks = [
 
 export default function LandingPageHeader() {
   const pathname = usePathname();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card py-2 px-4">
@@ -56,7 +58,7 @@ export default function LandingPageHeader() {
           ))}
         </nav>
 
-        <Sheet>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="sm:hidden">
               <Menu className="h-5 w-5" />
@@ -85,6 +87,7 @@ export default function LandingPageHeader() {
                   <Link
                     key={href}
                     href={href}
+                    onClick={() => setIsSheetOpen(false)}
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                       isActive

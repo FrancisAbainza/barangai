@@ -19,7 +19,7 @@ interface ComplaintDismissalFormProps {
 }
 
 const baseDefaults: ComplaintDismissalFormValues = {
-  message: "",
+  reason: "",
   attachments: [],
 };
 
@@ -41,16 +41,16 @@ export default function ComplaintDismissalForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <fieldset disabled={isSubmitting} className="space-y-4">
-        <Field data-invalid={!!errors.message}>
-          <FieldLabel htmlFor="message">Message</FieldLabel>
+        <Field data-invalid={!!errors.reason}>
+          <FieldLabel htmlFor="reason">Reason</FieldLabel>
           <FieldDescription>Let the complainant know why this complaint was dismissed.</FieldDescription>
           <Textarea
-            {...register("message")}
-            id="message"
+            {...register("reason")}
+            id="reason"
             placeholder="e.g. This complaint could not be validated based on the submitted evidence."
-            aria-invalid={!!errors.message}
+            aria-invalid={!!errors.reason}
           />
-          <FieldError errors={[errors.message]} />
+          <FieldError errors={[errors.reason]} />
         </Field>
 
         <Controller

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
-import { Ban, IdCard, MapPin } from "lucide-react";
+import { Ban, IdCard, MapPin, Store } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -62,11 +62,13 @@ export default function ViewSubmissionDialog({
 
         <Tabs defaultValue="business">
           <TabsList className="w-full">
-            <TabsTrigger value="business" className="flex-1">
-              Business Info
+            <TabsTrigger value="business" className="flex-1" aria-label="Business Info">
+              <Store />
+              <span className="hidden sm:inline">Business Info</span>
             </TabsTrigger>
-            <TabsTrigger value="owner" className="flex-1">
-              Owner Info
+            <TabsTrigger value="owner" className="flex-1" aria-label="Owner Info">
+              <IdCard />
+              <span className="hidden sm:inline">Owner Info</span>
             </TabsTrigger>
           </TabsList>
 
@@ -107,7 +109,7 @@ export default function ViewSubmissionDialog({
               <p className="text-sm text-muted-foreground">{business.description}</p>
             </Field>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Field>
                 <FieldLabel>Contact Number</FieldLabel>
                 <p className="text-sm">{business.contactNumber}</p>

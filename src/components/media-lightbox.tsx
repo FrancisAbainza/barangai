@@ -40,7 +40,7 @@ export default function MediaLightbox({ src, alt, type = "image", className, chi
               controls
               autoPlay
               playsInline
-              className="block max-h-[85vh] max-w-[calc(100vw-2rem)] rounded-lg drop-shadow-2xl sm:max-w-3xl"
+              className="block max-h-[85vh] max-w-[calc(100vw-2rem)] rounded-lg drop-shadow-2xl sm:max-w-100vw"
             >
               Your browser does not support the video tag.
             </video>
@@ -49,7 +49,7 @@ export default function MediaLightbox({ src, alt, type = "image", className, chi
             <img
               src={src}
               alt={alt}
-              className="block max-h-[85vh] max-w-[calc(100vw-2rem)] rounded-lg drop-shadow-2xl sm:max-w-3xl"
+              className="block max-h-[85vh] max-w-[calc(100vw-2rem)] rounded-lg drop-shadow-2xl sm:max-w-100vw"
             />
           )}
           <DialogPrimitive.Close

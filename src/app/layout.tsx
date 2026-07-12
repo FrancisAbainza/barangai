@@ -36,7 +36,18 @@ export default function RootLayout({
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", roboto.variable)}
     >
       <body className="flex flex-col">
-        <ClerkProvider>
+        <ClerkProvider
+          appearance={{
+            elements: {
+              userButtonPopoverRootBox: {
+                pointerEvents: "auto",
+              },
+              organizationSwitcherPopoverRootBox: {
+                pointerEvents: "auto",
+              },
+            },
+          }}
+        >
           <TooltipProvider>
             <QueryProvider>
               <Show when="signed-out">

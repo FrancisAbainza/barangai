@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
-import { Ban, FileText, IdCard, PackageCheck } from "lucide-react";
+import { Ban, CalendarCheck, IdCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,13 +11,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MediaLightbox from "@/components/media-lightbox";
 import MediaPreviewList from "@/components/media-preview-list";
 import { fetchFile } from "@/lib/storage";
-import { statusBadgeVariant, formatDate } from "@/lib/document-requests";
 import { getResidentProfile } from "@/actions/resident-profile";
-import type { DocumentRequestWithRequester } from "@/actions/document-requests";
+import type { CourtReservationWithRequester } from "@/actions/court-reservations";
 import type { MediaItem } from "@/components/file-uploader";
+import {
+  statusBadgeVariant,
+  formatTimeSlots,
+  formatFee,
+  formatReservationDate,
+  formatSubmissionDate,
+} from "@/lib/court-reservations";
 
-interface ViewDocumentRequestDialogProps {
-  request: DocumentRequestWithRequester;
+interface ViewCourtReservationDialogProps {
+  reservation: CourtReservationWithRequester;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -38,19 +44,17 @@ function ValidIdPreview({ label, item }: { label: string; item: MediaItem | unde
   );
 }
 
-export default function ViewDocumentRequestDialog({
-  request,
+export default function ViewCourtReservationDialog({
+  reservation,
   open,
   onOpenChange,
-}: ViewDocumentRequestDialogProps) {
-  const paymentReceipt = request.paymentReceipt as MediaItem[];
-  const supportingDocuments = request.supportingDocuments as MediaItem[];
-  const pickupAttachments = request.pickupAttachments as MediaItem[];
-  const rejectionAttachments = request.rejectionAttachments as MediaItem[];
+}: ViewCourtReservationDialogProps) {
+  const gcashPayment = reservation.gcashPayment as MediaItem[];
+  const rejectionAttachments = reservation.rejectionAttachments as MediaItem[];
 
   const { data: profile, isLoading: isProfileLoading } = useQuery({
-    queryKey: ["resident-profile", request.requesterId],
-    queryFn: () => getResidentProfile(request.requesterId),
+    queryKey: ["resident-profile", reservation.requesterId],
+    queryFn: () => getResidentProfile(reservation.requesterId),
     enabled: open,
   });
 
@@ -58,14 +62,14 @@ export default function ViewDocumentRequestDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{request.documentType} Request</DialogTitle>
+          <DialogTitle>Court Reservation</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="request">
+        <Tabs defaultValue="reservation">
           <TabsList className="w-full">
-            <TabsTrigger value="request" className="flex-1" aria-label="Request Info">
-              <FileText />
-              <span className="hidden sm:inline">Request Info</span>
+            <TabsTrigger value="reservation" className="flex-1" aria-label="Reservation Info">
+              <CalendarCheck />
+              <span className="hidden sm:inline">Reservation Info</span>
             </TabsTrigger>
             <TabsTrigger value="requester" className="flex-1" aria-label="Requester Info">
               <IdCard />
@@ -73,78 +77,54 @@ export default function ViewDocumentRequestDialog({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="request" className="space-y-4 pt-2">
+          <TabsContent value="reservation" className="space-y-4 pt-2">
             <Field>
               <FieldLabel>Status</FieldLabel>
               <div>
-                <Badge variant={statusBadgeVariant(request.status)}>{request.status}</Badge>
+                <Badge variant={statusBadgeVariant(reservation.status)}>{reservation.status}</Badge>
               </div>
+            </Field>
+
+            <Field>
+              <FieldLabel>Date</FieldLabel>
+              <p className="text-sm">{formatReservationDate(reservation.date)}</p>
+            </Field>
+
+            <Field>
+              <FieldLabel>Time Slots</FieldLabel>
+              <p className="text-sm">{formatTimeSlots(reservation.timeSlots)}</p>
             </Field>
 
             <Field>
               <FieldLabel>Purpose</FieldLabel>
-              <p className="text-sm">
-                {request.purpose === "Other" ? request.otherPurpose : request.purpose}
-              </p>
+              <p className="text-sm">{reservation.purpose}</p>
             </Field>
-
-            {request.situationDescription && (
-              <Field>
-                <FieldLabel>Brief Description of the Situation</FieldLabel>
-                <p className="text-sm text-muted-foreground">{request.situationDescription}</p>
-              </Field>
-            )}
-
-            {paymentReceipt.length > 0 && (
-              <Field>
-                <FieldLabel>Payment Receipt</FieldLabel>
-                <MediaPreviewList items={paymentReceipt} />
-              </Field>
-            )}
-
-            {supportingDocuments.length > 0 && (
-              <Field>
-                <FieldLabel>Supporting Documents</FieldLabel>
-                <MediaPreviewList items={supportingDocuments} />
-              </Field>
-            )}
 
             <Field>
-              <FieldLabel>Receive Document Via</FieldLabel>
-              <p className="text-sm">{request.receiveVia}</p>
+              <FieldLabel>Total Amount</FieldLabel>
+              <p className="text-sm">{formatFee(Number(reservation.totalAmount))}</p>
             </Field>
+
+            {gcashPayment.length > 0 && (
+              <Field>
+                <FieldLabel>GCash Payment</FieldLabel>
+                <MediaPreviewList items={gcashPayment} />
+              </Field>
+            )}
 
             <Field>
               <FieldLabel>Submission Date</FieldLabel>
-              <p className="text-sm">{formatDate(request.createdAt)}</p>
+              <p className="text-sm">{formatSubmissionDate(reservation.createdAt)}</p>
             </Field>
 
-            {(request.pickupMessage || pickupAttachments.length > 0) && (
-              <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
-                <div className="flex items-center gap-2">
-                  <PackageCheck className="size-4 text-primary" />
-                  <p className="text-sm font-semibold text-primary">Ready for Pickup</p>
-                </div>
-
-                {request.pickupMessage && <p className="text-sm">{request.pickupMessage}</p>}
-
-                {pickupAttachments.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Attachments</p>
-                    <MediaPreviewList items={pickupAttachments} />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {(request.rejectionReason || rejectionAttachments.length > 0) && (
+            {(reservation.rejectionReason || rejectionAttachments.length > 0) && (
               <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
                 <div className="flex items-center gap-2">
                   <Ban className="size-4 text-destructive" />
                   <p className="text-sm font-semibold text-destructive">Rejected</p>
                 </div>
 
-                {request.rejectionReason && <p className="text-sm">{request.rejectionReason}</p>}
+                {reservation.rejectionReason && <p className="text-sm">{reservation.rejectionReason}</p>}
 
                 {rejectionAttachments.length > 0 && (
                   <div className="space-y-2">
@@ -179,11 +159,11 @@ export default function ViewDocumentRequestDialog({
                   </Field>
                   <Field>
                     <FieldLabel>Email</FieldLabel>
-                    <p className="text-sm">{request.requesterEmail}</p>
+                    <p className="text-sm">{reservation.requesterEmail}</p>
                   </Field>
                   <Field>
                     <FieldLabel>Birthdate</FieldLabel>
-                    <p className="text-sm">{formatDate(profile.birthdate)}</p>
+                    <p className="text-sm">{formatReservationDate(profile.birthdate)}</p>
                   </Field>
                   <Field>
                     <FieldLabel>Sex</FieldLabel>

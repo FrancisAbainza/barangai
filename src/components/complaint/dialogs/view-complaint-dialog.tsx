@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, CheckCircle2, IdCard, MapPin, Sparkles } from "lucide-react";
+import { Ban, CheckCircle2, IdCard, MapPin, MessageSquareWarning, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -100,15 +100,18 @@ export default function ViewComplaintDialog({
 
         <Tabs defaultValue="complaint">
           <TabsList className="w-full">
-            <TabsTrigger value="complaint" className="flex-1">
-              Complaint Info
+            <TabsTrigger value="complaint" className="flex-1" aria-label="Complaint Info">
+              <MessageSquareWarning />
+              <span className="hidden sm:inline">Complaint Info</span>
             </TabsTrigger>
-            <TabsTrigger value="complainant" className="flex-1">
-              Complainant Info
+            <TabsTrigger value="complainant" className="flex-1" aria-label="Complainant Info">
+              <IdCard />
+              <span className="hidden sm:inline">Complainant Info</span>
             </TabsTrigger>
             {isAdmin && (
-              <TabsTrigger value="ai-insight" className="flex-1">
-                AI Insight
+              <TabsTrigger value="ai-insight" className="flex-1" aria-label="AI Insight">
+                <Sparkles />
+                <span className="hidden sm:inline">AI Insight</span>
               </TabsTrigger>
             )}
           </TabsList>
@@ -179,14 +182,14 @@ export default function ViewComplaintDialog({
               </div>
             )}
 
-            {(complaint.dismissalMessage || dismissalAttachments.length > 0) && (
+            {(complaint.dismissalReason || dismissalAttachments.length > 0) && (
               <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
                 <div className="flex items-center gap-2">
                   <Ban className="size-4 text-destructive" />
                   <p className="text-sm font-semibold text-destructive">Dismissed</p>
                 </div>
 
-                {complaint.dismissalMessage && <p className="text-sm">{complaint.dismissalMessage}</p>}
+                {complaint.dismissalReason && <p className="text-sm">{complaint.dismissalReason}</p>}
 
                 {dismissalAttachments.length > 0 && (
                   <div className="space-y-2">

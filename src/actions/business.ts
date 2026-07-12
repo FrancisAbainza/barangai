@@ -1,7 +1,7 @@
 "use server";
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import { and, count, desc, eq, ilike, ne } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, lte, ne } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { db } from "@/db/config";
 import { businessesTable, type Business } from "@/db/schema";
@@ -85,11 +85,15 @@ export async function getBusinesses({
   search,
   category,
   status,
+  dateFrom,
+  dateTo,
 }: {
   offset?: number;
   search?: string;
   category?: Business["category"] | "all";
   status?: Business["status"] | "unverified" | "all";
+  dateFrom?: string;
+  dateTo?: string;
 } = {}): Promise<BusinessesPage> {
   await requireAdmin();
 
@@ -102,6 +106,14 @@ export async function getBusinesses({
     conditions.push(
       status === "unverified" ? ne(businessesTable.status, "Verified") : eq(businessesTable.status, status)
     );
+  }
+  if (dateFrom) {
+    conditions.push(gte(businessesTable.createdAt, new Date(dateFrom)));
+  }
+  if (dateTo) {
+    const end = new Date(dateTo);
+    end.setHours(23, 59, 59, 999);
+    conditions.push(lte(businessesTable.createdAt, end));
   }
 
   const trimmedSearch = search?.trim();

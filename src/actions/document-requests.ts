@@ -239,9 +239,9 @@ export async function setDocumentRequestStatus(
         : { pickupMessage: null, pickupAttachments: [] }),
       ...(status === "Rejected"
         ? details
-          ? { rejectionMessage: details.message, rejectionAttachments: details.attachments ?? [] }
+          ? { rejectionReason: details.message, rejectionAttachments: details.attachments ?? [] }
           : {}
-        : { rejectionMessage: null, rejectionAttachments: [] }),
+        : { rejectionReason: null, rejectionAttachments: [] }),
     })
     .where(eq(documentRequestsTable.id, id));
 }

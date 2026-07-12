@@ -20,3 +20,10 @@ export const CLEARANCE_PURPOSE_FEES: Record<(typeof CLEARANCE_PURPOSES)[number],
   "Bank / Loan Requirements": 80,
   "Business Clearance": 1000,
 };
+
+export const COURT_DAY_RATE = 50;
+export const COURT_NIGHT_RATE = 100;
+
+export function getCourtRateForHour(hour: number): number {
+  return hour >= 6 && hour < 18 ? COURT_DAY_RATE : COURT_NIGHT_RATE;
+}

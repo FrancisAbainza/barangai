@@ -31,7 +31,7 @@ function MediaViewerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-6xl border-none bg-black p-0 text-white sm:max-w-6xl overflow-hidden **:data-[slot=dialog-close]:bg-black/50 **:data-[slot=dialog-close]:text-white **:data-[slot=dialog-close]:hover:bg-black/70"
+        className="max-w-6xl border-none bg-black p-0 text-white sm:max-w-[80vw] overflow-hidden **:data-[slot=dialog-close]:bg-black/50 **:data-[slot=dialog-close]:text-white **:data-[slot=dialog-close]:hover:bg-black/70"
         showCloseButton
       >
         <DialogTitle className="sr-only">Media viewer</DialogTitle>

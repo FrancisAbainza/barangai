@@ -5,6 +5,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function truncateName(name: string, max = 20): string {
+  return name.length > max ? name.slice(0, max) + "..." : name;
+}
+
 export function formatDateTime(date: Date): string {
   const dateStr = new Intl.DateTimeFormat("en-US", {
     month: "long",

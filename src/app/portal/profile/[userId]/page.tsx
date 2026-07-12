@@ -7,6 +7,7 @@ import { getResidentProfile } from "@/actions/resident-profile";
 import type { MediaItem } from "@/components/file-uploader";
 import { VALID_ID_TYPES } from "@/schemas/resident-profile-schema";
 import { getAuthRole } from "@/lib/auth";
+import { roleLabel } from "@/lib/roles";
 
 export default async function ProfilePage({
   params,
@@ -50,7 +51,7 @@ export default async function ProfilePage({
             variant={profileRole === "admin" ? "default" : "secondary"}
             className="mt-2 capitalize"
           >
-            {profileRole}
+            {roleLabel(profileRole)}
           </Badge>
         </div>
       </div>

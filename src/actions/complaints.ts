@@ -281,9 +281,9 @@ export async function setComplaintStatus(
         : { resolutionMessage: null, resolutionAttachments: [] }),
       ...(status === "Dismissed"
         ? details
-          ? { dismissalMessage: details.message, dismissalAttachments: details.attachments ?? [] }
+          ? { dismissalReason: details.message, dismissalAttachments: details.attachments ?? [] }
           : {}
-        : { dismissalMessage: null, dismissalAttachments: [] }),
+        : { dismissalReason: null, dismissalAttachments: [] }),
     })
     .where(eq(complaintsTable.id, id));
 }

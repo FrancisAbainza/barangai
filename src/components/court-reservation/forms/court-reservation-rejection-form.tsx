@@ -3,38 +3,38 @@
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  documentRequestRejectionFormSchema,
-  DocumentRequestRejectionFormValues,
-} from "@/schemas/document-request-rejection-schema";
+  courtReservationRejectionFormSchema,
+  CourtReservationRejectionFormValues,
+} from "@/schemas/court-reservation-rejection-schema";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Ban, Loader2 } from "lucide-react";
 import FileUploader from "@/components/file-uploader";
 
-interface DocumentRequestRejectionFormProps {
-  defaultValues?: Partial<DocumentRequestRejectionFormValues>;
-  onSubmit: (data: DocumentRequestRejectionFormValues) => Promise<void>;
+interface CourtReservationRejectionFormProps {
+  defaultValues?: Partial<CourtReservationRejectionFormValues>;
+  onSubmit: (data: CourtReservationRejectionFormValues) => Promise<void>;
   onCancel?: () => void;
 }
 
-const baseDefaults: DocumentRequestRejectionFormValues = {
+const baseDefaults: CourtReservationRejectionFormValues = {
   reason: "",
   attachments: [],
 };
 
-export default function DocumentRequestRejectionForm({
+export default function CourtReservationRejectionForm({
   defaultValues,
   onSubmit,
   onCancel,
-}: DocumentRequestRejectionFormProps) {
+}: CourtReservationRejectionFormProps) {
   const {
     register,
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<DocumentRequestRejectionFormValues>({
-    resolver: zodResolver(documentRequestRejectionFormSchema),
+  } = useForm<CourtReservationRejectionFormValues>({
+    resolver: zodResolver(courtReservationRejectionFormSchema),
     defaultValues: { ...baseDefaults, ...defaultValues },
   });
 
@@ -43,11 +43,11 @@ export default function DocumentRequestRejectionForm({
       <fieldset disabled={isSubmitting} className="space-y-4">
         <Field data-invalid={!!errors.reason}>
           <FieldLabel htmlFor="reason">Reason</FieldLabel>
-          <FieldDescription>Let the requester know why their request was rejected.</FieldDescription>
+          <FieldDescription>Let the requester know why this reservation was rejected.</FieldDescription>
           <Textarea
             {...register("reason")}
             id="reason"
-            placeholder="e.g. Your submitted valid ID is unreadable. Please resubmit a clearer copy."
+            placeholder="e.g. The uploaded GCash payment receipt is unreadable. Please resubmit a clearer copy."
             aria-invalid={!!errors.reason}
           />
           <FieldError errors={[errors.reason]} />
@@ -59,9 +59,7 @@ export default function DocumentRequestRejectionForm({
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel>Attachments (optional)</FieldLabel>
-              <FieldDescription>
-                Attach any supporting file for this rejection, if needed.
-              </FieldDescription>
+              <FieldDescription>Attach any supporting file for this rejection, if needed.</FieldDescription>
               <FileUploader
                 files={field.value}
                 onFilesChange={field.onChange}
@@ -88,7 +86,7 @@ export default function DocumentRequestRejectionForm({
             ) : (
               <>
                 <Ban className="size-4" />
-                Reject Request
+                Reject Reservation
               </>
             )}
           </Button>

@@ -6,7 +6,7 @@ import { useDropzone } from "react-dropzone";
 import Image from "next/image";
 import { AlertCircle, FileText, Upload, Video, XIcon } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, truncateName } from "@/lib/utils";
 import { fetchFile } from "@/lib/storage";
 import { Badge } from "@/components/ui/badge";
 
@@ -49,10 +49,6 @@ export type MediaItem = {
   size?: number;
   contentType?: string;
 };
-
-function truncateName(name: string, max = 30): string {
-  return name.length > max ? name.slice(0, max) + "..." : name;
-}
 
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

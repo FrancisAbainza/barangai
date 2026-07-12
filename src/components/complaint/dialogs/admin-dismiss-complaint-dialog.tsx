@@ -33,7 +33,7 @@ export default function AdminDismissComplaintDialog({
       );
 
       await setComplaintStatus(complaint.id, "Dismissed", {
-        message: data.message,
+        message: data.reason,
         attachments,
       });
     },
