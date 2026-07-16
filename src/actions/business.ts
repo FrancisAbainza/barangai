@@ -1,8 +1,9 @@
 "use server";
 
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { and, count, desc, eq, gte, ilike, lte, ne } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
+import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { businessesTable, type Business } from "@/db/schema";
 import type { BusinessFormValues } from "@/schemas/business-schema";
@@ -56,26 +57,17 @@ async function fetchBusinessesPage(conditions: Parameters<typeof and>, offset: n
 
   // Owner display info lives in Clerk, not the DB, so batch-fetch and join in memory.
   const uniqueOwnerIds = [...new Set(businesses.map((b) => b.ownerId))];
-  const client = await clerkClient();
-  const { data: owners } = await client.users.getUserList({ userId: uniqueOwnerIds, limit: 100 });
-  const ownerMap = new Map(
-    owners.map((u) => [
-      u.id,
-      {
-        ownerName: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown",
-        ownerEmail:
-          u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress ??
-          u.emailAddresses[0]?.emailAddress ??
-          "—",
-      },
-    ])
-  );
+  const displayMap = await getUserDisplayInfoMap(uniqueOwnerIds);
 
   return {
-    items: businesses.map((business) => ({
-      ...business,
-      ...(ownerMap.get(business.ownerId) ?? { ownerName: "Unknown", ownerEmail: "—" }),
-    })),
+    items: businesses.map((business) => {
+      const info = displayMap.get(business.ownerId) ?? DELETED_USER_DISPLAY_INFO;
+      return {
+        ...business,
+        ownerName: info.fullName,
+        ownerEmail: info.email,
+      };
+    }),
     nextOffset: businesses.length < BUSINESSES_PAGE_SIZE ? null : offset + businesses.length,
   };
 }
@@ -128,7 +120,9 @@ export async function getBusinessesByUser(
   userId: string,
   { offset = 0 }: { offset?: number } = {}
 ): Promise<BusinessesPage> {
-  await requireAdmin();
+  const { userId: authUserId, isAdmin } = await getAuthRole();
+  if (!authUserId) throw new Error("Unauthorized");
+  if (authUserId !== userId && !isAdmin) throw new Error("Forbidden");
 
   return fetchBusinessesPage([eq(businessesTable.ownerId, userId)], offset);
 }

@@ -5,6 +5,7 @@ import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { and, count, desc, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
+import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { complaintsTable, type Complaint } from "@/db/schema";
 import {
@@ -133,29 +134,17 @@ async function fetchComplaintsPage(
   // Complainant display info lives in Clerk, not the DB, so batch-fetch and join in memory.
   // Also tolerates a since-deleted Clerk user when every row shares one complainant id.
   const uniqueComplainantIds = [...new Set(complaints.map((c) => c.complainantId))];
-  const client = await clerkClient();
-  const { data: complainants } = await client.users.getUserList({ userId: uniqueComplainantIds, limit: 100 });
-  const complainantMap = new Map(
-    complainants.map((u) => [
-      u.id,
-      {
-        complainantName: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown",
-        complainantEmail:
-          u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress ??
-          u.emailAddresses[0]?.emailAddress ??
-          "—",
-      },
-    ])
-  );
+  const displayMap = await getUserDisplayInfoMap(uniqueComplainantIds);
 
   return {
-    items: complaints.map((complaint) => ({
-      ...complaint,
-      ...(complainantMap.get(complaint.complainantId) ?? {
-        complainantName: "Unknown",
-        complainantEmail: "—",
-      }),
-    })),
+    items: complaints.map((complaint) => {
+      const info = displayMap.get(complaint.complainantId) ?? DELETED_USER_DISPLAY_INFO;
+      return {
+        ...complaint,
+        complainantName: info.fullName,
+        complainantEmail: info.email,
+      };
+    }),
     nextOffset: complaints.length < pageSize ? null : offset + complaints.length,
   };
 }
@@ -173,7 +162,9 @@ export async function getComplaintsByUser(
   userId: string,
   { offset = 0 }: { offset?: number } = {}
 ): Promise<MyComplaintsPage> {
-  await requireAdmin();
+  const { userId: authUserId, isAdmin } = await getAuthRole();
+  if (!authUserId) throw new Error("Unauthorized");
+  if (authUserId !== userId && !isAdmin) throw new Error("Forbidden");
 
   return fetchComplaintsPage([eq(complaintsTable.complainantId, userId)], offset, MY_COMPLAINTS_PAGE_SIZE);
 }

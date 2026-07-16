@@ -2,6 +2,7 @@
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
+import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { courtReservationsTable, type CourtReservation } from "@/db/schema";
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
@@ -88,26 +89,17 @@ async function fetchCourtReservationsPage(
   // Requester display info lives in Clerk, not the DB, so batch-fetch and join in memory.
   // Also tolerates a since-deleted Clerk user when every row shares one requester id.
   const uniqueRequesterIds = [...new Set(reservations.map((r) => r.requesterId))];
-  const client = await clerkClient();
-  const { data: requesters } = await client.users.getUserList({ userId: uniqueRequesterIds, limit: 100 });
-  const requesterMap = new Map(
-    requesters.map((u) => [
-      u.id,
-      {
-        requesterName: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown",
-        requesterEmail:
-          u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress ??
-          u.emailAddresses[0]?.emailAddress ??
-          "—",
-      },
-    ])
-  );
+  const displayMap = await getUserDisplayInfoMap(uniqueRequesterIds);
 
   return {
-    items: reservations.map((reservation) => ({
-      ...reservation,
-      ...(requesterMap.get(reservation.requesterId) ?? { requesterName: "Unknown", requesterEmail: "—" }),
-    })),
+    items: reservations.map((reservation) => {
+      const info = displayMap.get(reservation.requesterId) ?? DELETED_USER_DISPLAY_INFO;
+      return {
+        ...reservation,
+        requesterName: info.fullName,
+        requesterEmail: info.email,
+      };
+    }),
     nextOffset: reservations.length < pageSize ? null : offset + reservations.length,
   };
 }
@@ -129,7 +121,9 @@ export async function getCourtReservationsByUser(
   userId: string,
   { offset = 0 }: { offset?: number } = {}
 ): Promise<MyCourtReservationsPage> {
-  await requireAdmin();
+  const { userId: authUserId, isAdmin } = await getAuthRole();
+  if (!authUserId) throw new Error("Unauthorized");
+  if (authUserId !== userId && !isAdmin) throw new Error("Forbidden");
 
   return fetchCourtReservationsPage(
     [eq(courtReservationsTable.requesterId, userId)],

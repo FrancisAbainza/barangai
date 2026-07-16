@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { deleteUser } from "@/actions/user-management";
+import { deleteAllUserData } from "@/actions/user-management";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,26 +14,26 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface DeleteUserDialogProps {
+interface DeleteUserDataDialogProps {
   userId: string;
   userName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export default function DeleteUserDialog({
+export default function DeleteUserDataDialog({
   userId,
   userName,
   open,
   onOpenChange,
-}: DeleteUserDialogProps) {
+}: DeleteUserDataDialogProps) {
   const queryClient = useQueryClient();
 
   const { mutate: handleConfirm, isPending } = useMutation({
-    mutationFn: () => deleteUser(userId),
+    mutationFn: () => deleteAllUserData(userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast.success(`${userName} has been deleted.`);
+      queryClient.invalidateQueries({ queryKey: ["deletedUsers"] });
+      toast.success(`All data for ${userName} has been deleted.`);
       onOpenChange(false);
     },
     onError: (error) => {
@@ -45,11 +45,13 @@ export default function DeleteUserDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete {userName}?</AlertDialogTitle>
+          <AlertDialogTitle>Delete all data for {userName}?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete {userName}&apos;s account. Their submitted
-            data will remain in the system and can be found under Deleted Users,
-            where it can be fully erased separately. This action cannot be undone.
+            This permanently deletes every record {userName} left behind across the
+            portal — news posts, comments, reactions, resident profile, document
+            requests, complaints, transparency posts, businesses, court reservations,
+            and their entry in the deleted users list — along with any files they
+            uploaded. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -62,7 +64,7 @@ export default function DeleteUserDialog({
               handleConfirm();
             }}
           >
-            {isPending ? "Deleting…" : "Delete User"}
+            {isPending ? "Deleting…" : "Delete All Data"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

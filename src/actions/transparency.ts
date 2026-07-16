@@ -1,8 +1,9 @@
 "use server";
 
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
+import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import {
   transparencyProjectCommentsTable,
@@ -133,19 +134,7 @@ export async function getTransparencyProjects({
 
   // Author info lives in Clerk, not the DB, so fetch it separately and join in memory.
   const uniqueAuthorIds = [...new Set(projects.map((p) => p.authorId))];
-  const client = await clerkClient();
-  const { data: users } = await client.users.getUserList({ userId: uniqueAuthorIds, limit: 100 });
-
-  const userMap = new Map(
-    users.map((u) => [
-      u.id,
-      {
-        authorName: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown",
-        authorImageUrl: u.imageUrl,
-        authorRole: (u.publicMetadata?.role as string | undefined) ?? "resident",
-      },
-    ])
-  );
+  const displayMap = await getUserDisplayInfoMap(uniqueAuthorIds);
 
   // One grouped query for all items' reaction totals, split into like/dislike counts below.
   const reactionCounts = await db
@@ -189,14 +178,19 @@ export async function getTransparencyProjects({
   }
 
   return {
-    items: projects.map((item) => ({
-      ...item,
-      ...(userMap.get(item.authorId) ?? { authorName: "Unknown", authorImageUrl: "", authorRole: "resident" }),
-      likeCount: countsMap.get(item.id)?.likeCount ?? 0,
-      dislikeCount: countsMap.get(item.id)?.dislikeCount ?? 0,
-      userReaction: userReactionMap.get(item.id) ?? null,
-      commentCount: commentCountMap.get(item.id) ?? 0,
-    })),
+    items: projects.map((item) => {
+      const info = displayMap.get(item.authorId) ?? DELETED_USER_DISPLAY_INFO;
+      return {
+        ...item,
+        authorName: info.fullName,
+        authorImageUrl: info.imageUrl,
+        authorRole: info.role,
+        likeCount: countsMap.get(item.id)?.likeCount ?? 0,
+        dislikeCount: countsMap.get(item.id)?.dislikeCount ?? 0,
+        userReaction: userReactionMap.get(item.id) ?? null,
+        commentCount: commentCountMap.get(item.id) ?? 0,
+      };
+    }),
     nextPage: projects.length < TRANSPARENCY_PAGE_SIZE ? null : page + 1,
   };
 }
@@ -243,23 +237,16 @@ export async function getTransparencyProjectComments(
   if (comments.length === 0) return [];
 
   const uniqueAuthorIds = [...new Set(comments.map((c) => c.userId))];
-  const client = await clerkClient();
-  const { data: users } = await client.users.getUserList({ userId: uniqueAuthorIds, limit: 100 });
+  const displayMap = await getUserDisplayInfoMap(uniqueAuthorIds);
 
-  const userMap = new Map(
-    users.map((u) => [
-      u.id,
-      {
-        authorName: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown",
-        authorImageUrl: u.imageUrl,
-      },
-    ])
-  );
-
-  return comments.map((comment) => ({
-    ...comment,
-    ...(userMap.get(comment.userId) ?? { authorName: "Unknown", authorImageUrl: "" }),
-  }));
+  return comments.map((comment) => {
+    const info = displayMap.get(comment.userId) ?? DELETED_USER_DISPLAY_INFO;
+    return {
+      ...comment,
+      authorName: info.fullName,
+      authorImageUrl: info.imageUrl,
+    };
+  });
 }
 
 export async function addTransparencyProjectComment(

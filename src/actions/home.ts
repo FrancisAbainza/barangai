@@ -1,7 +1,8 @@
 "use server";
 
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { requireAdmin } from "@/lib/auth";
+import { getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import {
   businessesTable,
@@ -82,13 +83,8 @@ const NEEDS_ATTENTION_TOTAL_LIMIT = 8;
 // Batch-fetches display names for a set of Clerk user IDs; display info lives in
 // Clerk, not the DB, so every domain here needs the same join-in-memory step.
 async function getNameMap(userIds: string[]): Promise<Map<string, string>> {
-  if (userIds.length === 0) return new Map();
-
-  const client = await clerkClient();
-  const { data: users } = await client.users.getUserList({ userId: userIds, limit: 100 });
-  return new Map(
-    users.map((u) => [u.id, [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown"])
-  );
+  const displayMap = await getUserDisplayInfoMap(userIds);
+  return new Map([...displayMap].map(([id, info]) => [id, info.fullName]));
 }
 
 export async function getNeedsAttentionQueue(): Promise<NeedsAttentionItem[]> {
