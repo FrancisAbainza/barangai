@@ -2,6 +2,9 @@
 
 import { clerkClient } from "@clerk/nextjs/server";
 import type { User } from "@clerk/nextjs/server";
+import { desc, ilike, or } from "drizzle-orm";
+import { db } from "@/db/config";
+import { deletedUsersTable } from "@/db/schema";
 import { requireAdmin, requireSuperAdmin } from "@/lib/auth";
 
 const USERS_PAGE_SIZE = 20;
@@ -164,4 +167,57 @@ export async function deleteUser(userId: string) {
 
   const client = await clerkClient();
   await client.users.deleteUser(userId);
+}
+
+const DELETED_USERS_PAGE_SIZE = 20;
+
+export type DeletedManagedUser = {
+  id: number;
+  userId: string;
+  fullName: string;
+  email: string;
+  role: string | null;
+  joinedAt: number;
+  deletedAt: number;
+};
+
+export type DeletedUsersPage = {
+  items: DeletedManagedUser[];
+  nextOffset: number | null;
+};
+
+export async function getDeletedUsers({
+  offset = 0,
+  search,
+}: {
+  offset?: number;
+  search?: string;
+} = {}): Promise<DeletedUsersPage> {
+  await requireAdmin();
+
+  const query = search?.trim();
+  const whereClause = query
+    ? or(ilike(deletedUsersTable.fullName, `%${query}%`), ilike(deletedUsersTable.email, `%${query}%`))
+    : undefined;
+
+  const rows = await db
+    .select()
+    .from(deletedUsersTable)
+    .where(whereClause)
+    .orderBy(desc(deletedUsersTable.deletedAt))
+    .limit(DELETED_USERS_PAGE_SIZE + 1)
+    .offset(offset);
+
+  const hasMore = rows.length > DELETED_USERS_PAGE_SIZE;
+  const items = rows.slice(0, DELETED_USERS_PAGE_SIZE).map((row) => ({
+    id: row.id,
+    userId: row.userId,
+    fullName: row.fullName,
+    email: row.email,
+    role: row.role,
+    joinedAt: row.joinedAt.getTime(),
+    deletedAt: row.deletedAt.getTime(),
+  }));
+
+  return { items, nextOffset: hasMore ? offset + DELETED_USERS_PAGE_SIZE : null };
 }

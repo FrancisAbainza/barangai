@@ -1,13 +1,10 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
-import ResidentProfileSection from "@/components/profile/resident-profile-section";
+import OwnProfileView from "@/components/profile/own-profile-view";
+import OtherProfileView from "@/components/profile/other-profile-view";
+import DeletedProfileView from "@/components/profile/deleted-profile-view";
 import { getResidentProfile } from "@/actions/resident-profile";
-import type { MediaItem } from "@/components/file-uploader";
-import { VALID_ID_TYPES } from "@/schemas/resident-profile-schema";
 import { getAuthRole } from "@/lib/auth";
-import { roleLabel } from "@/lib/roles";
 
 export default async function ProfilePage({
   params,
@@ -22,58 +19,21 @@ export default async function ProfilePage({
   }
 
   const client = await clerkClient();
-  const profileUser = await client.users.getUser(profileUserId);
-  const fullName =
-    [profileUser.firstName, profileUser.lastName].filter(Boolean).join(" ") ||
-    profileUser.username ||
-    "Unknown";
-  const profileRole =
-    (profileUser.publicMetadata?.role as string | undefined) ?? "resident";
-  const residentProfile =
-    userId === profileUserId ? await getResidentProfile(profileUserId) : null;
+  // The profile owner may have since been deleted from Clerk (e.g. via user-management),
+  // so look up by list instead of `getUser`, which throws on a miss.
+  const { data: matches } = await client.users.getUserList({ userId: [profileUserId] });
+  const profileUser = matches[0] ?? null;
+  const residentProfile = await getResidentProfile(profileUserId);
+
+  if (!profileUser) {
+    return <DeletedProfileView profileUserId={profileUserId} residentProfile={residentProfile} />;
+  }
+
+  if (userId !== profileUserId) {
+    return <OtherProfileView profileUser={profileUser} residentProfile={residentProfile} />;
+  }
 
   return (
-    <div className="container space-y-6 m-auto">
-      <div className="flex items-center gap-4">
-        <Image
-          src={profileUser.imageUrl}
-          alt={fullName}
-          width={80}
-          height={80}
-          className="size-20 shrink-0 rounded-full object-cover"
-        />
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{fullName}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {profileUser.emailAddresses[0]?.emailAddress}
-          </p>
-          <Badge
-            variant={profileRole === "admin" ? "default" : "secondary"}
-            className="mt-2 capitalize"
-          >
-            {roleLabel(profileRole)}
-          </Badge>
-        </div>
-      </div>
-
-      {userId === profileUserId && (
-        <ResidentProfileSection
-          userId={profileUserId}
-          defaultValues={{
-            firstName: residentProfile?.firstName ?? profileUser.firstName ?? "",
-            lastName: residentProfile?.lastName ?? profileUser.lastName ?? "",
-            middleName: residentProfile?.middleName ?? "",
-            birthdate: residentProfile?.birthdate ?? "",
-            sex: residentProfile?.sex ?? "Male",
-            civilStatus: residentProfile?.civilStatus ?? "Single",
-            contactNumber: residentProfile?.contactNumber ?? "",
-            address: residentProfile?.address ?? "",
-            validIdType: residentProfile?.validIdType ?? VALID_ID_TYPES[0],
-            validIdFront: (residentProfile?.validIdFront as MediaItem[]) ?? [],
-            validIdBack: (residentProfile?.validIdBack as MediaItem[]) ?? [],
-          }}
-        />
-      )}
-    </div>
+    <OwnProfileView profileUser={profileUser} residentProfile={residentProfile} />
   );
 }

@@ -1,10 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Ban, MoreHorizontal, ShieldCheck, ShieldMinus, ShieldPlus, Trash2 } from "lucide-react";
+import {
+  Ban,
+  MoreHorizontal,
+  Shield,
+  ShieldCheck,
+  ShieldMinus,
+  ShieldPlus,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import { updateUserRole } from "@/actions/user-management";
 import { isSuperAdminRole } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
@@ -12,8 +22,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import BanUserDialog from "@/components/user-management/ban-user-dialog";
@@ -61,30 +74,45 @@ export default function UserActionsMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link href={`/portal/profile/${userId}`}>
+              <UserRound />
+              View Profile
+            </Link>
+          </DropdownMenuItem>
           {isSuperAdmin && (
             <>
-              <DropdownMenuLabel>Role</DropdownMenuLabel>
-              <DropdownMenuItem
-                disabled={role === "admin" || isChangingRole}
-                onSelect={() => changeRole("admin")}
-              >
-                <ShieldCheck />
-                Set as Admin
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={role === "superadmin" || isChangingRole}
-                onSelect={() => changeRole("superadmin")}
-              >
-                <ShieldPlus />
-                Set as Super Admin
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={role === "resident" || isChangingRole}
-                onSelect={() => changeRole(null)}
-              >
-                <ShieldMinus />
-                Set as Resident
-              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Shield />
+                  Role
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem
+                      disabled={role === "admin" || isChangingRole}
+                      onSelect={() => changeRole("admin")}
+                    >
+                      <ShieldCheck />
+                      Set as Admin
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={role === "superadmin" || isChangingRole}
+                      onSelect={() => changeRole("superadmin")}
+                    >
+                      <ShieldPlus />
+                      Set as Super Admin
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={role === "resident" || isChangingRole}
+                      onSelect={() => changeRole(null)}
+                    >
+                      <ShieldMinus />
+                      Set as Resident
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
               <DropdownMenuSeparator />
             </>
           )}

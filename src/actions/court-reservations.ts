@@ -62,25 +62,33 @@ export type MyCourtReservationsPage = {
   nextOffset: number | null;
 };
 
-export async function getMyCourtReservations({
-  offset = 0,
-}: { offset?: number } = {}): Promise<MyCourtReservationsPage> {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+const COURT_RESERVATIONS_PAGE_SIZE = 20;
 
+export type CourtReservationsPage = {
+  items: CourtReservationWithRequester[];
+  nextOffset: number | null;
+};
+
+async function fetchCourtReservationsPage(
+  conditions: Parameters<typeof and>,
+  offset: number,
+  pageSize: number,
+  orderFn: typeof asc | typeof desc = desc
+): Promise<CourtReservationsPage> {
   const reservations = await db
     .select()
     .from(courtReservationsTable)
-    .where(eq(courtReservationsTable.requesterId, userId))
-    .orderBy(desc(courtReservationsTable.createdAt), desc(courtReservationsTable.id))
-    .limit(MY_COURT_RESERVATIONS_PAGE_SIZE)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(orderFn(courtReservationsTable.createdAt), orderFn(courtReservationsTable.id))
+    .limit(pageSize)
     .offset(offset);
 
   if (reservations.length === 0) return { items: [], nextOffset: null };
 
   // Requester display info lives in Clerk, not the DB, so batch-fetch and join in memory.
-  const client = await clerkClient();
+  // Also tolerates a since-deleted Clerk user when every row shares one requester id.
   const uniqueRequesterIds = [...new Set(reservations.map((r) => r.requesterId))];
+  const client = await clerkClient();
   const { data: requesters } = await client.users.getUserList({ userId: uniqueRequesterIds, limit: 100 });
   const requesterMap = new Map(
     requesters.map((u) => [
@@ -100,17 +108,35 @@ export async function getMyCourtReservations({
       ...reservation,
       ...(requesterMap.get(reservation.requesterId) ?? { requesterName: "Unknown", requesterEmail: "—" }),
     })),
-    nextOffset:
-      reservations.length < MY_COURT_RESERVATIONS_PAGE_SIZE ? null : offset + reservations.length,
+    nextOffset: reservations.length < pageSize ? null : offset + reservations.length,
   };
 }
 
-const COURT_RESERVATIONS_PAGE_SIZE = 20;
+export async function getMyCourtReservations({
+  offset = 0,
+}: { offset?: number } = {}): Promise<MyCourtReservationsPage> {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
 
-export type CourtReservationsPage = {
-  items: CourtReservationWithRequester[];
-  nextOffset: number | null;
-};
+  return fetchCourtReservationsPage(
+    [eq(courtReservationsTable.requesterId, userId)],
+    offset,
+    MY_COURT_RESERVATIONS_PAGE_SIZE
+  );
+}
+
+export async function getCourtReservationsByUser(
+  userId: string,
+  { offset = 0 }: { offset?: number } = {}
+): Promise<MyCourtReservationsPage> {
+  await requireAdmin();
+
+  return fetchCourtReservationsPage(
+    [eq(courtReservationsTable.requesterId, userId)],
+    offset,
+    MY_COURT_RESERVATIONS_PAGE_SIZE
+  );
+}
 
 export async function getCourtReservations({
   offset = 0,
@@ -156,39 +182,7 @@ export async function getCourtReservations({
 
   const orderFn = sortOrder === "oldest" ? asc : desc;
 
-  const reservations = await db
-    .select()
-    .from(courtReservationsTable)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(orderFn(courtReservationsTable.createdAt), orderFn(courtReservationsTable.id))
-    .limit(COURT_RESERVATIONS_PAGE_SIZE)
-    .offset(offset);
-
-  if (reservations.length === 0) return { items: [], nextOffset: null };
-
-  // Requester display info lives in Clerk, not the DB, so batch-fetch and join in memory.
-  const uniqueRequesterIds = [...new Set(reservations.map((r) => r.requesterId))];
-  const { data: requesters } = await client.users.getUserList({ userId: uniqueRequesterIds, limit: 100 });
-  const requesterMap = new Map(
-    requesters.map((u) => [
-      u.id,
-      {
-        requesterName: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown",
-        requesterEmail:
-          u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress ??
-          u.emailAddresses[0]?.emailAddress ??
-          "—",
-      },
-    ])
-  );
-
-  return {
-    items: reservations.map((reservation) => ({
-      ...reservation,
-      ...(requesterMap.get(reservation.requesterId) ?? { requesterName: "Unknown", requesterEmail: "—" }),
-    })),
-    nextOffset: reservations.length < COURT_RESERVATIONS_PAGE_SIZE ? null : offset + reservations.length,
-  };
+  return fetchCourtReservationsPage(conditions, offset, COURT_RESERVATIONS_PAGE_SIZE, orderFn);
 }
 
 export type CourtReservationStats = {

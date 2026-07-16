@@ -124,6 +124,15 @@ export async function getBusinesses({
   return fetchBusinessesPage(conditions, offset);
 }
 
+export async function getBusinessesByUser(
+  userId: string,
+  { offset = 0 }: { offset?: number } = {}
+): Promise<BusinessesPage> {
+  await requireAdmin();
+
+  return fetchBusinessesPage([eq(businessesTable.ownerId, userId)], offset);
+}
+
 export async function getVerifiedBusinesses({
   offset = 0,
   search,

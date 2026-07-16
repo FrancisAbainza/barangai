@@ -45,25 +45,32 @@ export type MyDocumentRequestsPage = {
   nextOffset: number | null;
 };
 
-export async function getMyDocumentRequests({
-  offset = 0,
-}: { offset?: number } = {}): Promise<MyDocumentRequestsPage> {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+const DOCUMENT_REQUESTS_PAGE_SIZE = 20;
 
+export type DocumentRequestsPage = {
+  items: DocumentRequestWithRequester[];
+  nextOffset: number | null;
+};
+
+async function fetchDocumentRequestsPage(
+  conditions: Parameters<typeof and>,
+  offset: number,
+  pageSize: number
+): Promise<DocumentRequestsPage> {
   const requests = await db
     .select()
     .from(documentRequestsTable)
-    .where(eq(documentRequestsTable.requesterId, userId))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(documentRequestsTable.createdAt), desc(documentRequestsTable.id))
-    .limit(MY_DOCUMENT_REQUESTS_PAGE_SIZE)
+    .limit(pageSize)
     .offset(offset);
 
   if (requests.length === 0) return { items: [], nextOffset: null };
 
   // Requester display info lives in Clerk, not the DB, so batch-fetch and join in memory.
-  const client = await clerkClient();
+  // Also tolerates a since-deleted Clerk user when every row shares one requester id.
   const uniqueRequesterIds = [...new Set(requests.map((r) => r.requesterId))];
+  const client = await clerkClient();
   const { data: requesters } = await client.users.getUserList({ userId: uniqueRequesterIds, limit: 100 });
   const requesterMap = new Map(
     requesters.map((u) => [
@@ -83,16 +90,35 @@ export async function getMyDocumentRequests({
       ...request,
       ...(requesterMap.get(request.requesterId) ?? { requesterName: "Unknown", requesterEmail: "—" }),
     })),
-    nextOffset: requests.length < MY_DOCUMENT_REQUESTS_PAGE_SIZE ? null : offset + requests.length,
+    nextOffset: requests.length < pageSize ? null : offset + requests.length,
   };
 }
 
-const DOCUMENT_REQUESTS_PAGE_SIZE = 20;
+export async function getMyDocumentRequests({
+  offset = 0,
+}: { offset?: number } = {}): Promise<MyDocumentRequestsPage> {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
 
-export type DocumentRequestsPage = {
-  items: DocumentRequestWithRequester[];
-  nextOffset: number | null;
-};
+  return fetchDocumentRequestsPage(
+    [eq(documentRequestsTable.requesterId, userId)],
+    offset,
+    MY_DOCUMENT_REQUESTS_PAGE_SIZE
+  );
+}
+
+export async function getDocumentRequestsByUser(
+  userId: string,
+  { offset = 0 }: { offset?: number } = {}
+): Promise<MyDocumentRequestsPage> {
+  await requireAdmin();
+
+  return fetchDocumentRequestsPage(
+    [eq(documentRequestsTable.requesterId, userId)],
+    offset,
+    MY_DOCUMENT_REQUESTS_PAGE_SIZE
+  );
+}
 
 export async function getDocumentRequests({
   offset = 0,
@@ -144,39 +170,7 @@ export async function getDocumentRequests({
     );
   }
 
-  const requests = await db
-    .select()
-    .from(documentRequestsTable)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(documentRequestsTable.createdAt), desc(documentRequestsTable.id))
-    .limit(DOCUMENT_REQUESTS_PAGE_SIZE)
-    .offset(offset);
-
-  if (requests.length === 0) return { items: [], nextOffset: null };
-
-  // Requester display info lives in Clerk, not the DB, so batch-fetch and join in memory.
-  const uniqueRequesterIds = [...new Set(requests.map((r) => r.requesterId))];
-  const { data: requesters } = await client.users.getUserList({ userId: uniqueRequesterIds, limit: 100 });
-  const requesterMap = new Map(
-    requesters.map((u) => [
-      u.id,
-      {
-        requesterName: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown",
-        requesterEmail:
-          u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress ??
-          u.emailAddresses[0]?.emailAddress ??
-          "—",
-      },
-    ])
-  );
-
-  return {
-    items: requests.map((request) => ({
-      ...request,
-      ...(requesterMap.get(request.requesterId) ?? { requesterName: "Unknown", requesterEmail: "—" }),
-    })),
-    nextOffset: requests.length < DOCUMENT_REQUESTS_PAGE_SIZE ? null : offset + requests.length,
-  };
+  return fetchDocumentRequestsPage(conditions, offset, DOCUMENT_REQUESTS_PAGE_SIZE);
 }
 
 export type DocumentRequestStats = {

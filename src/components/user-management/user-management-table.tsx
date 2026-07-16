@@ -23,8 +23,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatCard from "@/components/stat-card";
 import UserActionsMenu from "@/components/user-management/user-actions-menu";
+import DeletedUsersTable from "@/components/user-management/deleted-users-table";
 import { roleLabel } from "@/lib/roles";
 
 const ROLE_FILTERS = [
@@ -151,118 +153,131 @@ export default function UserManagementTable() {
         />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or email…"
-            className="pl-8"
-          />
-        </div>
-        <Select value={role} onValueChange={setRole}>
-          <SelectTrigger className="w-full sm:w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {ROLE_FILTERS.map((filter) => (
-              <SelectItem key={filter.value} value={filter.value}>
-                {filter.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Tabs defaultValue="active">
+        <TabsList>
+          <TabsTrigger value="active">Active Users</TabsTrigger>
+          <TabsTrigger value="deleted">Deleted Users</TabsTrigger>
+        </TabsList>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <>
-                <UserRowSkeleton />
-                <UserRowSkeleton />
-                <UserRowSkeleton />
-              </>
-            ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
-                  No users found.
-                </TableCell>
-              </TableRow>
-            ) : (
-              <>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Image
-                          src={user.imageUrl}
-                          alt={user.fullName}
-                          width={36}
-                          height={36}
-                          className="size-9 shrink-0 rounded-full object-cover"
-                        />
-                        <div className="min-w-0">
-                          <p className="font-medium truncate">{user.fullName}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {user.email}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={roleBadgeVariant(user.role)} className="capitalize">
-                        {roleLabel(user.role)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {user.banned ? (
-                        <Badge variant="destructive">Banned</Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="text-emerald-600 border-emerald-600/30 dark:text-emerald-400"
-                        >
-                          Active
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(user.createdAt).toLocaleDateString("en-PH", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <UserActionsMenu
-                        userId={user.id}
-                        userName={user.fullName}
-                        role={user.role}
-                        isBanned={user.banned}
-                      />
+        <TabsContent value="active" className="space-y-4 pt-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name or email…"
+                className="pl-8"
+              />
+            </div>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLE_FILTERS.map((filter) => (
+                  <SelectItem key={filter.value} value={filter.value}>
+                    {filter.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <>
+                    <UserRowSkeleton />
+                    <UserRowSkeleton />
+                    <UserRowSkeleton />
+                  </>
+                ) : users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                      No users found.
                     </TableCell>
                   </TableRow>
-                ))}
-                {hasNextPage && (
-                  <LoadMoreTrigger onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                ) : (
+                  <>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Image
+                              src={user.imageUrl}
+                              alt={user.fullName}
+                              width={36}
+                              height={36}
+                              className="size-9 shrink-0 rounded-full object-cover"
+                            />
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{user.fullName}</p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {user.email}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={roleBadgeVariant(user.role)} className="capitalize">
+                            {roleLabel(user.role)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.banned ? (
+                            <Badge variant="destructive">Banned</Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-emerald-600 border-emerald-600/30 dark:text-emerald-400"
+                            >
+                              Active
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {new Date(user.createdAt).toLocaleDateString("en-PH", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <UserActionsMenu
+                            userId={user.id}
+                            userName={user.fullName}
+                            role={user.role}
+                            isBanned={user.banned}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {hasNextPage && (
+                      <LoadMoreTrigger onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                    )}
+                    {isFetchingNextPage && <UserRowSkeleton />}
+                  </>
                 )}
-                {isFetchingNextPage && <UserRowSkeleton />}
-              </>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="deleted" className="pt-2">
+          <DeletedUsersTable />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -108,43 +108,75 @@ export type MyComplaintsPage = {
   nextOffset: number | null;
 };
 
-export async function getMyComplaints({
-  offset = 0,
-}: { offset?: number } = {}): Promise<MyComplaintsPage> {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const complaints = await db
-    .select()
-    .from(complaintsTable)
-    .where(eq(complaintsTable.complainantId, userId))
-    .orderBy(desc(complaintsTable.createdAt), desc(complaintsTable.id))
-    .limit(MY_COMPLAINTS_PAGE_SIZE)
-    .offset(offset);
-
-  if (complaints.length === 0) return { items: [], nextOffset: null };
-
-  // Complainant display info lives in Clerk, not the DB, so fetch and join in memory.
-  const client = await clerkClient();
-  const user = await client.users.getUser(userId);
-  const complainantName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || "Unknown";
-  const complainantEmail =
-    user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)?.emailAddress ??
-    user.emailAddresses[0]?.emailAddress ??
-    "—";
-
-  return {
-    items: complaints.map((complaint) => ({ ...complaint, complainantName, complainantEmail })),
-    nextOffset: complaints.length < MY_COMPLAINTS_PAGE_SIZE ? null : offset + complaints.length,
-  };
-}
-
 const COMPLAINTS_PAGE_SIZE = 20;
 
 export type ComplaintsPage = {
   items: ComplaintWithComplainant[];
   nextOffset: number | null;
 };
+
+async function fetchComplaintsPage(
+  conditions: Parameters<typeof and>,
+  offset: number,
+  pageSize: number
+): Promise<ComplaintsPage> {
+  const complaints = await db
+    .select()
+    .from(complaintsTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(complaintsTable.createdAt), desc(complaintsTable.id))
+    .limit(pageSize)
+    .offset(offset);
+
+  if (complaints.length === 0) return { items: [], nextOffset: null };
+
+  // Complainant display info lives in Clerk, not the DB, so batch-fetch and join in memory.
+  // Also tolerates a since-deleted Clerk user when every row shares one complainant id.
+  const uniqueComplainantIds = [...new Set(complaints.map((c) => c.complainantId))];
+  const client = await clerkClient();
+  const { data: complainants } = await client.users.getUserList({ userId: uniqueComplainantIds, limit: 100 });
+  const complainantMap = new Map(
+    complainants.map((u) => [
+      u.id,
+      {
+        complainantName: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown",
+        complainantEmail:
+          u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress ??
+          u.emailAddresses[0]?.emailAddress ??
+          "—",
+      },
+    ])
+  );
+
+  return {
+    items: complaints.map((complaint) => ({
+      ...complaint,
+      ...(complainantMap.get(complaint.complainantId) ?? {
+        complainantName: "Unknown",
+        complainantEmail: "—",
+      }),
+    })),
+    nextOffset: complaints.length < pageSize ? null : offset + complaints.length,
+  };
+}
+
+export async function getMyComplaints({
+  offset = 0,
+}: { offset?: number } = {}): Promise<MyComplaintsPage> {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  return fetchComplaintsPage([eq(complaintsTable.complainantId, userId)], offset, MY_COMPLAINTS_PAGE_SIZE);
+}
+
+export async function getComplaintsByUser(
+  userId: string,
+  { offset = 0 }: { offset?: number } = {}
+): Promise<MyComplaintsPage> {
+  await requireAdmin();
+
+  return fetchComplaintsPage([eq(complaintsTable.complainantId, userId)], offset, MY_COMPLAINTS_PAGE_SIZE);
+}
 
 export async function getComplaints({
   offset = 0,
@@ -200,42 +232,7 @@ export async function getComplaints({
     );
   }
 
-  const complaints = await db
-    .select()
-    .from(complaintsTable)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(complaintsTable.createdAt), desc(complaintsTable.id))
-    .limit(COMPLAINTS_PAGE_SIZE)
-    .offset(offset);
-
-  if (complaints.length === 0) return { items: [], nextOffset: null };
-
-  // Complainant display info lives in Clerk, not the DB, so batch-fetch and join in memory.
-  const uniqueComplainantIds = [...new Set(complaints.map((c) => c.complainantId))];
-  const { data: complainants } = await client.users.getUserList({ userId: uniqueComplainantIds, limit: 100 });
-  const complainantMap = new Map(
-    complainants.map((u) => [
-      u.id,
-      {
-        complainantName: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "Unknown",
-        complainantEmail:
-          u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId)?.emailAddress ??
-          u.emailAddresses[0]?.emailAddress ??
-          "—",
-      },
-    ])
-  );
-
-  return {
-    items: complaints.map((complaint) => ({
-      ...complaint,
-      ...(complainantMap.get(complaint.complainantId) ?? {
-        complainantName: "Unknown",
-        complainantEmail: "—",
-      }),
-    })),
-    nextOffset: complaints.length < COMPLAINTS_PAGE_SIZE ? null : offset + complaints.length,
-  };
+  return fetchComplaintsPage(conditions, offset, COMPLAINTS_PAGE_SIZE);
 }
 
 export type ComplaintStats = {
