@@ -15,7 +15,7 @@ type CreateBusinessInput = Omit<BusinessFormValues, "photos" | "permit"> & {
 };
 
 export async function createBusiness(data: CreateBusinessInput) {
-  const { userId } = await auth();
+  const { userId, isAdmin } = await getAuthRole();
   if (!userId) throw new Error("Unauthorized");
 
   await db.insert(businessesTable).values({
@@ -29,6 +29,7 @@ export async function createBusiness(data: CreateBusinessInput) {
     permit: data.permit,
     location: data.location || null,
     ownerId: userId,
+    ...(isAdmin ? { status: "Verified" as const } : {}),
   });
 }
 

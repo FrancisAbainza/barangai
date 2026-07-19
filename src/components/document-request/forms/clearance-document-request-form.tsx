@@ -2,13 +2,15 @@
 
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import {
   clearanceDocumentRequestFormSchema,
   ClearanceDocumentRequestFormValues,
   CLEARANCE_PURPOSES,
   CLEARANCE_DELIVERY_METHODS,
 } from "@/schemas/clearance-document-request-schema";
-import { CLEARANCE_PURPOSE_FEES, GCASH_ACCOUNT_NAME, GCASH_NUMBER } from "@/lib/data";
+import { DEFAULT_CLEARANCE_PURPOSE_FEES, DEFAULT_GCASH_NUMBER, GCASH_ACCOUNT_NAME } from "@/lib/data";
+import { getBarangaySettings } from "@/actions/settings";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Loader2, Send } from "lucide-react";
@@ -54,6 +56,13 @@ export default function ClearanceDocumentRequestForm({
 
   const purpose = watch("purpose");
 
+  const { data: settings } = useQuery({
+    queryKey: ["barangay-settings"],
+    queryFn: () => getBarangaySettings(),
+  });
+  const gcashNumber = settings?.gcashNumber ?? DEFAULT_GCASH_NUMBER;
+  const purposeFees = settings?.clearancePurposeFees ?? DEFAULT_CLEARANCE_PURPOSE_FEES;
+
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <fieldset disabled={isSubmitting} className="space-y-4">
@@ -70,13 +79,13 @@ export default function ClearanceDocumentRequestForm({
                 <SelectContent>
                   {CLEARANCE_PURPOSES.map((option) => (
                     <SelectItem key={option} value={option}>
-                      {option} — {formatFee(CLEARANCE_PURPOSE_FEES[option])}
+                      {option} — {formatFee(purposeFees[option])}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <FieldDescription>
-                Amount due: {formatFee(CLEARANCE_PURPOSE_FEES[purpose])}
+                Amount due: {formatFee(purposeFees[purpose])}
               </FieldDescription>
               <FieldError errors={[fieldState.error]} />
             </Field>
@@ -90,7 +99,7 @@ export default function ClearanceDocumentRequestForm({
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel>Payment Receipt (GCash Only)</FieldLabel>
               <FieldDescription>
-                Send payment to GCash {GCASH_NUMBER} ({GCASH_ACCOUNT_NAME}), then upload a
+                Send payment to GCash {gcashNumber} ({GCASH_ACCOUNT_NAME}), then upload a
                 screenshot of the receipt.
               </FieldDescription>
               <FileUploader

@@ -19,7 +19,7 @@ export default function CommunityHubPage() {
         title="Community Hub"
         description="Discover and support local businesses in our business directory."
       >
-        {!isAdmin && <CreateBusinessDialog />}
+        <CreateBusinessDialog />
       </PageHeader>
 
       {isAdmin ? <AdminCommunityHub /> : <ResidentCommunityHub />}

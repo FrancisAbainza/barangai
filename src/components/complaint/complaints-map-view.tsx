@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import ViewComplaintDialog from "@/components/complaint/dialogs/view-complaint-dialog";
 import { statusBadgeVariant, priorityBadgeVariant, formatDate } from "@/lib/complaints";
 import { fetchFile } from "@/lib/storage";
+import MaduyaBoundaryOverlay from "@/components/maduya-boundary-overlay";
+import CurrentLocationControl from "@/components/current-location-control";
 import type { ComplaintWithComplainant } from "@/actions/complaints";
 import type { Complaint } from "@/db/schema";
 import type { MediaItem } from "@/components/file-uploader";
@@ -57,6 +59,8 @@ export default function ComplaintsMapView({ complaints }: { complaints: Complain
           mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
           gestureHandling="greedy"
         >
+          <MaduyaBoundaryOverlay />
+
           {complaints.map((complaint) => (
             <AdvancedMarker
               key={complaint.id}
@@ -133,6 +137,8 @@ export default function ComplaintsMapView({ complaints }: { complaints: Complain
           )}
         </Map>
       </div>
+
+      <CurrentLocationControl />
 
       {complaints.length === 0 && (
         <p className="pt-3 text-center text-sm text-muted-foreground">No complaints to display on the map.</p>

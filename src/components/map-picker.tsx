@@ -15,6 +15,7 @@ import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { coordinatesToAddress } from "@/lib/geocoding";
 import { getCurrentLocation } from "@/lib/geolocation";
+import MaduyaBoundaryOverlay from "@/components/maduya-boundary-overlay";
 
 export interface LocationValue {
   coordinates: google.maps.LatLngLiteral;
@@ -113,6 +114,8 @@ function MapPickerInner({ value, onChange }: MapPickerProps) {
           onClick={handleMapClick}
           gestureHandling="greedy"
         >
+          <MaduyaBoundaryOverlay />
+
           <MapContent location={value} onMarkerDragEnd={handleMarkerDragEnd} />
         </Map>
       </div>

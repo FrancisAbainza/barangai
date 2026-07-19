@@ -24,6 +24,7 @@ import {
 import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
 import { BUSINESS_CATEGORIES, BUSINESS_STATUSES, type OperatingHours } from "@/schemas/business-schema";
 import { COURT_RESERVATION_STATUSES } from "@/schemas/court-reservation-schema";
+import type { ClearancePurposeFees } from "@/lib/data";
 
 export const newsCategoryEnum = pgEnum("news_category", ["Announcement", "Event", "Emergency"]);
 export const newsReactionTypeEnum = pgEnum("news_reaction_type", ["like", "dislike"]);
@@ -301,3 +302,16 @@ export const deletedUsersTable = pgTable(
 );
 
 export type DeletedUser = typeof deletedUsersTable.$inferSelect;
+
+// Singleton row (id is always 1) holding admin-editable barangay-wide config, e.g. the
+// GCash number and per-purpose clearance fees shown on resident-facing request forms.
+export const barangaySettingsTable = pgTable("barangay_settings", {
+  id: integer().primaryKey().default(1),
+  gcashNumber: varchar({ length: 20 }).notNull(),
+  clearancePurposeFees: json().$type<ClearancePurposeFees>().notNull(),
+  courtDayRate: integer().notNull(),
+  courtNightRate: integer().notNull(),
+  updatedAt: timestamp().notNull().defaultNow(),
+});
+
+export type BarangaySettings = typeof barangaySettingsTable.$inferSelect;

@@ -8,6 +8,7 @@ import { courtReservationsTable, type CourtReservation } from "@/db/schema";
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { MediaItem } from "@/components/file-uploader";
 import { getCourtRateForHour } from "@/lib/data";
+import { getBarangaySettings } from "@/actions/settings";
 
 export async function getTakenTimeSlots(date: string, excludeReservationId?: number): Promise<number[]> {
   const conditions = [eq(courtReservationsTable.date, date), eq(courtReservationsTable.status, "Approved")];
@@ -31,7 +32,7 @@ export type CreateCourtReservationInput = {
 };
 
 export async function createCourtReservation(data: CreateCourtReservationInput) {
-  const { userId } = await auth();
+  const { userId, isAdmin } = await getAuthRole();
   if (!userId) throw new Error("Unauthorized");
 
   const takenSlots = await getTakenTimeSlots(data.date);
@@ -39,7 +40,11 @@ export async function createCourtReservation(data: CreateCourtReservationInput) 
     throw new Error("One or more selected time slots are no longer available.");
   }
 
-  const totalAmount = data.timeSlots.reduce((sum, hour) => sum + getCourtRateForHour(hour), 0);
+  const settings = await getBarangaySettings();
+  const totalAmount = data.timeSlots.reduce(
+    (sum, hour) => sum + getCourtRateForHour(hour, settings.courtDayRate, settings.courtNightRate),
+    0
+  );
 
   await db.insert(courtReservationsTable).values({
     requesterId: userId,
@@ -48,6 +53,8 @@ export async function createCourtReservation(data: CreateCourtReservationInput) 
     purpose: data.purpose,
     totalAmount: totalAmount.toString(),
     gcashPayment: data.gcashPayment,
+    // Reservations created from the admin panel skip the approval queue since an admin is the one creating them.
+    ...(isAdmin ? { status: "Approved" as const } : {}),
   });
 }
 

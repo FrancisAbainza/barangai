@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import ViewBusinessDialog from "@/components/community-hub/dialogs/view-business-dialog";
 import { cn } from "@/lib/utils";
 import { fetchFile } from "@/lib/storage";
+import MaduyaBoundaryOverlay from "@/components/maduya-boundary-overlay";
+import CurrentLocationControl from "@/components/current-location-control";
 import type { BusinessWithOwner } from "@/actions/business";
 import type { Business } from "@/db/schema";
 import type { LocationValue } from "@/components/map-picker";
@@ -116,6 +118,8 @@ export default function BusinessesMapView({ businesses }: { businesses: LocatedB
           mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
           gestureHandling="greedy"
         >
+          <MaduyaBoundaryOverlay />
+
           {businesses.map((business) => (
             <AdvancedMarker
               key={business.id}
@@ -190,6 +194,8 @@ export default function BusinessesMapView({ businesses }: { businesses: LocatedB
           )}
         </Map>
       </div>
+
+      <CurrentLocationControl />
 
       {activeBusiness && (
         <ViewBusinessDialog business={activeBusiness} open={viewOpen} onOpenChange={setViewOpen} />

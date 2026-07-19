@@ -2,6 +2,7 @@
 
 import { APIProvider, AdvancedMarker, Map, Pin } from "@vis.gl/react-google-maps";
 import { cn } from "@/lib/utils";
+import MaduyaBoundaryOverlay from "@/components/maduya-boundary-overlay";
 import type { LocationValue } from "@/components/map-picker";
 
 interface MapViewProps {
@@ -19,6 +20,8 @@ export default function MapView({ location, className }: MapViewProps) {
           mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
           gestureHandling="cooperative"
         >
+          <MaduyaBoundaryOverlay />
+
           <AdvancedMarker position={location.coordinates}>
             <Pin />
           </AdvancedMarker>

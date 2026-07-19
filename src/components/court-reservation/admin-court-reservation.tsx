@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { ArrowUpDown, CalendarCheck, Clock, Hourglass, ListFilter, Search } from "lucide-react";
+import { ArrowUpDown, CalendarCheck, Clock, Hourglass, ListFilter, Search, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +35,9 @@ import {
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
 import CourtReservationActionsMenu from "@/components/court-reservation/court-reservation-actions-menu";
+import CourtReservationDialog from "@/components/court-reservation/dialogs/court-reservation-dialog";
 import TimeSlotsDialog from "@/components/court-reservation/dialogs/time-slots-dialog";
+import AdminCourtSettingsDialog from "@/components/court-reservation/dialogs/admin-court-settings-dialog";
 import { getCourtReservations, getCourtReservationStats } from "@/actions/court-reservations";
 import {
   COURT_TIME_SLOTS,
@@ -100,6 +102,8 @@ export default function AdminCourtReservation() {
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [timeSlotsOpen, setTimeSlotsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [reserveOpen, setReserveOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const activeFilterCount = [date !== "", timeSlot !== "all"].filter(Boolean).length;
@@ -148,6 +152,28 @@ export default function AdminCourtReservation() {
           isLoading={isStatsLoading}
           iconClassName="bg-amber-500/10 text-amber-600"
         />
+      </div>
+
+      <div className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-card p-6 shadow-sm sm:flex-row md:items-center">
+        <div className="flex items-center gap-3">
+          <CalendarCheck className="self-center size-8 shrink-0 text-muted-foreground" />
+          <div>
+            <p className="font-semibold leading-tight">Need to reserve the court?</p>
+            <p className="text-sm text-muted-foreground">
+              Create a reservation directly — it will be approved automatically.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1 gap-2" onClick={() => setTimeSlotsOpen(true)}>
+            <Clock className="size-4" />
+            Time Slots
+          </Button>
+          <Button className="flex-1 gap-2" onClick={() => setReserveOpen(true)}>
+            <CalendarCheck className="size-4" />
+            Reserve Court
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -233,14 +259,16 @@ export default function AdminCourtReservation() {
             </DialogContent>
           </Dialog>
 
-          <Button variant="outline" className="shrink-0" onClick={() => setTimeSlotsOpen(true)}>
-            <Clock />
-            Time Slots
+          <Button variant="outline" className="shrink-0" onClick={() => setSettingsOpen(true)}>
+            <Settings />
+            Settings
           </Button>
         </div>
       </div>
 
       <TimeSlotsDialog open={timeSlotsOpen} onOpenChange={setTimeSlotsOpen} />
+      <AdminCourtSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <CourtReservationDialog open={reserveOpen} onOpenChange={setReserveOpen} />
 
       <div className="rounded-lg border">
         <Table>

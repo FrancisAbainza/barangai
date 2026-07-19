@@ -1,17 +1,26 @@
 "use client";
 
 import { useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import {
-  courtReservationFormSchema,
+  getCourtReservationFormSchema,
   CourtReservationFormValues,
 } from "@/schemas/court-reservation-schema";
-import { COURT_DAY_RATE, COURT_NIGHT_RATE, GCASH_ACCOUNT_NAME, GCASH_NUMBER, getCourtRateForHour } from "@/lib/data";
+import {
+  DEFAULT_COURT_DAY_RATE,
+  DEFAULT_COURT_NIGHT_RATE,
+  DEFAULT_GCASH_NUMBER,
+  GCASH_ACCOUNT_NAME,
+  getCourtRateForHour,
+} from "@/lib/data";
 import { COURT_TIME_SLOTS, formatFee } from "@/lib/court-reservations";
 import { cn } from "@/lib/utils";
+import { isAdminRole } from "@/lib/roles";
 import { getTakenTimeSlots } from "@/actions/court-reservations";
+import { getBarangaySettings } from "@/actions/settings";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -41,6 +50,9 @@ export default function CourtReservationForm({
   onSubmit,
   onCancel,
 }: CourtReservationFormProps) {
+  const { user } = useUser();
+  const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
+
   const {
     register,
     control,
@@ -49,19 +61,30 @@ export default function CourtReservationForm({
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<CourtReservationFormValues>({
-    resolver: zodResolver(courtReservationFormSchema),
+    resolver: zodResolver(getCourtReservationFormSchema(isAdmin)),
     defaultValues: { ...baseDefaults, ...defaultValues },
   });
 
   const date = watch("date");
   const selectedTimeSlots = watch("timeSlots");
-  const totalAmount = selectedTimeSlots.reduce((sum, hour) => sum + getCourtRateForHour(hour), 0);
 
   const { data: takenSlots = [] } = useQuery({
     queryKey: ["court-reservation-taken-slots", date],
     queryFn: () => getTakenTimeSlots(date),
     enabled: !!date,
   });
+
+  const { data: settings } = useQuery({
+    queryKey: ["barangay-settings"],
+    queryFn: () => getBarangaySettings(),
+  });
+  const gcashNumber = settings?.gcashNumber ?? DEFAULT_GCASH_NUMBER;
+  const dayRate = settings?.courtDayRate ?? DEFAULT_COURT_DAY_RATE;
+  const nightRate = settings?.courtNightRate ?? DEFAULT_COURT_NIGHT_RATE;
+  const totalAmount = selectedTimeSlots.reduce(
+    (sum, hour) => sum + getCourtRateForHour(hour, dayRate, nightRate),
+    0
+  );
 
   useEffect(() => {
     if (selectedTimeSlots.some((hour) => takenSlots.includes(hour))) {
@@ -108,8 +131,8 @@ export default function CourtReservationForm({
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel>Time Slots</FieldLabel>
               <FieldDescription>
-                {COURT_DAY_HOURS}: {formatFee(COURT_DAY_RATE)}/hour &middot; {COURT_NIGHT_HOURS}:{" "}
-                {formatFee(COURT_NIGHT_RATE)}/hour. Select one or more 1-hour slots.
+                {COURT_DAY_HOURS}: {formatFee(dayRate)}/hour &middot; {COURT_NIGHT_HOURS}:{" "}
+                {formatFee(nightRate)}/hour. Select one or more 1-hour slots.
                 {!date && " Pick a date first to see availability."}
               </FieldDescription>
               <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto rounded-lg border p-2 sm:grid-cols-3">
@@ -157,10 +180,16 @@ export default function CourtReservationForm({
           control={control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel>GCash Payment</FieldLabel>
+              <FieldLabel>
+                GCash Payment
+                {isAdmin && (
+                  <span className="font-normal text-muted-foreground"> (optional)</span>
+                )}
+              </FieldLabel>
               <FieldDescription>
-                Send {formatFee(totalAmount)} to GCash {GCASH_NUMBER} ({GCASH_ACCOUNT_NAME}), then
+                Send {formatFee(totalAmount)} to GCash {gcashNumber} ({GCASH_ACCOUNT_NAME}), then
                 upload a screenshot of the receipt.
+                {isAdmin && " Not required for admin-created reservations."}
               </FieldDescription>
               <FileUploader
                 files={field.value}

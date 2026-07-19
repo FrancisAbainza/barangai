@@ -4,14 +4,8 @@ import { auth } from "@clerk/nextjs/server";
 import { requireAdmin } from "@/lib/auth";
 import { getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
-import {
-  businessesTable,
-  complaintsTable,
-  courtReservationsTable,
-  documentRequestsTable,
-  newsTable,
-} from "@/db/schema";
-import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
+import { businessesTable, complaintsTable, courtReservationsTable, documentRequestsTable } from "@/db/schema";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 
 export type MyActivitySummary = {
   documentRequests: { total: number; active: number };
@@ -177,93 +171,27 @@ export async function getNeedsAttentionQueue(): Promise<NeedsAttentionItem[]> {
     .map(({ rank: _rank, ...item }) => item);
 }
 
-export type RecentActivityItem = {
-  id: string;
-  kind: AdminActivityKind;
-  title: string;
-  subtitle: string;
-  createdAt: Date;
-  href: string;
+export type AdminPendingCounts = {
+  documentRequests: number;
+  communityHub: number;
+  courtReservations: number;
+  complaints: number;
 };
 
-const RECENT_ACTIVITY_CANDIDATE_LIMIT = 5;
-const RECENT_ACTIVITY_TOTAL_LIMIT = 8;
-
-export async function getRecentActivityFeed(): Promise<RecentActivityItem[]> {
+export async function getAdminPendingCounts(): Promise<AdminPendingCounts> {
   await requireAdmin();
 
-  const [news, documentRequests, complaints, courtReservations, businesses] = await Promise.all([
-    db.select().from(newsTable).orderBy(desc(newsTable.createdAt)).limit(RECENT_ACTIVITY_CANDIDATE_LIMIT),
-    db
-      .select()
-      .from(documentRequestsTable)
-      .orderBy(desc(documentRequestsTable.createdAt))
-      .limit(RECENT_ACTIVITY_CANDIDATE_LIMIT),
-    db.select().from(complaintsTable).orderBy(desc(complaintsTable.createdAt)).limit(RECENT_ACTIVITY_CANDIDATE_LIMIT),
-    db
-      .select()
-      .from(courtReservationsTable)
-      .orderBy(desc(courtReservationsTable.createdAt))
-      .limit(RECENT_ACTIVITY_CANDIDATE_LIMIT),
-    db
-      .select()
-      .from(businessesTable)
-      .orderBy(desc(businessesTable.createdAt))
-      .limit(RECENT_ACTIVITY_CANDIDATE_LIMIT),
+  const [documentRequests, communityHub, courtReservations, complaints] = await Promise.all([
+    db.select({ count: count() }).from(documentRequestsTable).where(eq(documentRequestsTable.status, "Pending")),
+    db.select({ count: count() }).from(businessesTable).where(eq(businessesTable.status, "Pending")),
+    db.select({ count: count() }).from(courtReservationsTable).where(eq(courtReservationsTable.status, "Pending")),
+    db.select({ count: count() }).from(complaintsTable).where(eq(complaintsTable.status, "Pending")),
   ]);
 
-  const nameMap = await getNameMap([
-    ...new Set([
-      ...news.map((n) => n.authorId),
-      ...documentRequests.map((r) => r.requesterId),
-      ...complaints.map((c) => c.complainantId),
-      ...courtReservations.map((r) => r.requesterId),
-      ...businesses.map((b) => b.ownerId),
-    ]),
-  ]);
-
-  const items: RecentActivityItem[] = [
-    ...news.map((n) => ({
-      id: `news-${n.id}`,
-      kind: "news" as const,
-      title: n.title,
-      subtitle: `Posted by ${nameMap.get(n.authorId) ?? "Unknown"}`,
-      createdAt: n.createdAt,
-      href: "/portal/news",
-    })),
-    ...documentRequests.map((r) => ({
-      id: `document-request-${r.id}`,
-      kind: "document-request" as const,
-      title: `${r.documentType} requested`,
-      subtitle: `By ${nameMap.get(r.requesterId) ?? "Unknown"}`,
-      createdAt: r.createdAt,
-      href: "/portal/document-request",
-    })),
-    ...complaints.map((c) => ({
-      id: `complaint-${c.id}`,
-      kind: "complaint" as const,
-      title: c.subject,
-      subtitle: `Filed by ${nameMap.get(c.complainantId) ?? "Unknown"}`,
-      createdAt: c.createdAt,
-      href: "/portal/complaint",
-    })),
-    ...courtReservations.map((r) => ({
-      id: `court-reservation-${r.id}`,
-      kind: "court-reservation" as const,
-      title: `Court reservation: ${r.purpose}`,
-      subtitle: `By ${nameMap.get(r.requesterId) ?? "Unknown"}`,
-      createdAt: r.createdAt,
-      href: "/portal/court-reservation",
-    })),
-    ...businesses.map((b) => ({
-      id: `business-${b.id}`,
-      kind: "business" as const,
-      title: `${b.name} submitted`,
-      subtitle: `By ${nameMap.get(b.ownerId) ?? "Unknown"}`,
-      createdAt: b.createdAt,
-      href: "/portal/community-hub",
-    })),
-  ];
-
-  return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, RECENT_ACTIVITY_TOTAL_LIMIT);
+  return {
+    documentRequests: documentRequests[0]?.count ?? 0,
+    communityHub: communityHub[0]?.count ?? 0,
+    courtReservations: courtReservations[0]?.count ?? 0,
+    complaints: complaints[0]?.count ?? 0,
+  };
 }

@@ -6,6 +6,8 @@ import { APIProvider, AdvancedMarker, InfoWindow, Map, Pin } from "@vis.gl/react
 import { Badge } from "@/components/ui/badge";
 import { cn, formatDateTime } from "@/lib/utils";
 import { fetchFile } from "@/lib/storage";
+import MaduyaBoundaryOverlay from "@/components/maduya-boundary-overlay";
+import CurrentLocationControl from "@/components/current-location-control";
 import type { TransparencyProjectWithAuthor } from "@/actions/transparency";
 import type { TransparencyProject } from "@/db/schema";
 import type { LocationValue } from "@/components/map-picker";
@@ -113,6 +115,8 @@ export default function TransparencyProjectsMapView({
           mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}
           gestureHandling="greedy"
         >
+          <MaduyaBoundaryOverlay />
+
           {projectsWithLocation.map((project) => (
             <AdvancedMarker
               key={project.id}
@@ -190,6 +194,8 @@ export default function TransparencyProjectsMapView({
           )}
         </Map>
       </div>
+
+      <CurrentLocationControl />
 
       {projectsWithLocation.length === 0 && (
         <p className="pt-3 text-center text-sm text-muted-foreground">
