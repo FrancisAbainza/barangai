@@ -11,6 +11,7 @@ import {
   timestamp,
   uniqueIndex,
   varchar,
+  vector,
 } from "drizzle-orm/pg-core";
 import type { MediaItem } from "@/components/file-uploader";
 import type { LocationValue } from "@/components/map-picker";
@@ -25,6 +26,7 @@ import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
 import { BUSINESS_CATEGORIES, BUSINESS_STATUSES, type OperatingHours } from "@/schemas/business-schema";
 import { COURT_RESERVATION_STATUSES } from "@/schemas/court-reservation-schema";
 import type { ClearancePurposeFees } from "@/lib/data";
+import { KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS } from "@/lib/knowledge-base";
 
 export const newsCategoryEnum = pgEnum("news_category", ["Announcement", "Event", "Emergency"]);
 export const newsReactionTypeEnum = pgEnum("news_reaction_type", ["like", "dislike"]);
@@ -302,6 +304,35 @@ export const deletedUsersTable = pgTable(
 );
 
 export type DeletedUser = typeof deletedUsersTable.$inferSelect;
+
+// The AI assistant's RAG knowledge base. Only one document is active at a time — admins
+// replace it wholesale rather than managing a library, so `replaceKnowledgeBaseDocument`
+// (src/actions/knowledge-base.ts) deletes the previous row (cascading its chunks) on upload.
+export const knowledgeBaseDocumentsTable = pgTable("knowledge_base_documents", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  fileName: varchar({ length: 255 }).notNull(),
+  fileKey: varchar({ length: 512 }).notNull(),
+  chunkCount: integer().notNull().default(0),
+  uploadedBy: varchar({ length: 255 }).notNull(),
+  createdAt: timestamp().notNull().defaultNow(),
+});
+
+export type KnowledgeBaseDocument = typeof knowledgeBaseDocumentsTable.$inferSelect;
+
+// Chunked text + pgvector embedding per document. Similarity is ranked in Postgres via
+// drizzle-orm's cosineDistance() (see src/app/api/chat/route.ts) rather than in memory.
+export const knowledgeBaseChunksTable = pgTable("knowledge_base_chunks", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  documentId: integer()
+    .notNull()
+    .references(() => knowledgeBaseDocumentsTable.id, { onDelete: "cascade" }),
+  chunkIndex: integer().notNull(),
+  content: text().notNull(),
+  embedding: vector({ dimensions: KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS }).notNull(),
+  createdAt: timestamp().notNull().defaultNow(),
+});
+
+export type KnowledgeBaseChunk = typeof knowledgeBaseChunksTable.$inferSelect;
 
 // Singleton row (id is always 1) holding admin-editable barangay-wide config, e.g. the
 // GCash number and per-purpose clearance fees shown on resident-facing request forms.
