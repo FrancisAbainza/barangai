@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
-import { Ban, IdCard, MapPin, Store } from "lucide-react";
+import { Ban, IdCard, MapPin, Store, UserCog } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +12,7 @@ import MediaLightbox from "@/components/media-lightbox";
 import MediaPreviewList from "@/components/media-preview-list";
 import MapView from "@/components/map-view";
 import { fetchFile } from "@/lib/storage";
-import { statusBadgeVariant, formatDate, formatOperatingHours } from "@/lib/business";
+import { statusBadgeVariant, handlerLabel, formatDate, formatOperatingHours } from "@/lib/business";
 import { getResidentProfile } from "@/actions/resident-profile";
 import type { BusinessWithOwner } from "@/actions/business";
 import type { MediaItem } from "@/components/file-uploader";
@@ -79,6 +79,15 @@ export default function ViewSubmissionDialog({
                 <Badge variant={statusBadgeVariant(business.status)}>{business.status}</Badge>
               </div>
             </Field>
+
+            {business.handlerName && (
+              <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
+                <UserCog className="size-4 shrink-0 text-primary" />
+                <p className="text-sm">
+                  {handlerLabel(business.status)} <span className="font-semibold">{business.handlerName}</span>
+                </p>
+              </div>
+            )}
 
             {business.status === "Rejected" &&
               (business.rejectionReason || (business.rejectionAttachments as MediaItem[]).length > 0) && (

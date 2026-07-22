@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
-import { Ban, FileText, IdCard, PackageCheck } from "lucide-react";
+import { Ban, FileText, IdCard, PackageCheck, UserCog } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MediaLightbox from "@/components/media-lightbox";
 import MediaPreviewList from "@/components/media-preview-list";
 import { fetchFile } from "@/lib/storage";
-import { statusBadgeVariant, formatDate } from "@/lib/document-requests";
+import { statusBadgeVariant, handlerLabel, formatDate } from "@/lib/document-requests";
 import { getResidentProfile } from "@/actions/resident-profile";
 import type { DocumentRequestWithRequester } from "@/actions/document-requests";
 import type { MediaItem } from "@/components/file-uploader";
@@ -80,6 +80,15 @@ export default function ViewDocumentRequestDialog({
                 <Badge variant={statusBadgeVariant(request.status)}>{request.status}</Badge>
               </div>
             </Field>
+
+            {request.handlerName && (
+              <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
+                <UserCog className="size-4 shrink-0 text-primary" />
+                <p className="text-sm">
+                  {handlerLabel(request.status)} <span className="font-semibold">{request.handlerName}</span>
+                </p>
+              </div>
+            )}
 
             <Field>
               <FieldLabel>Purpose</FieldLabel>

@@ -6,6 +6,12 @@ export function statusBadgeVariant(status: DocumentRequest["status"]) {
   return "outline";
 }
 
+export function handlerLabel(status: DocumentRequest["status"]) {
+  if (status === "Ready for Pickup") return "Prepared by";
+  if (status === "Rejected") return "Rejected by";
+  return "Being processed by";
+}
+
 export function formatDate(date: Date | string) {
   return new Date(date).toLocaleDateString("en-US", {
     month: "long",

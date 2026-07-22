@@ -193,9 +193,7 @@ function ReactionButtons({ project }: { project: TransparencyProjectWithAuthor }
         )}
       >
         <ThumbsUp className={cn("size-4", project.userReaction === "like" && "fill-current")} />
-        <span className="hidden md:inline">
-          Like{project.likeCount > 0 ? ` (${project.likeCount})` : ""}
-        </span>
+        <span className="hidden md:inline">Like</span>
       </Button>
       <Button
         variant="ghost"
@@ -208,33 +206,57 @@ function ReactionButtons({ project }: { project: TransparencyProjectWithAuthor }
         )}
       >
         <ThumbsDown className={cn("size-4", project.userReaction === "dislike" && "fill-current")} />
-        <span className="hidden md:inline">
-          Dislike{project.dislikeCount > 0 ? ` (${project.dislikeCount})` : ""}
-        </span>
+        <span className="hidden md:inline">Dislike</span>
       </Button>
     </>
   );
 }
 
-function CommentButton({ project }: { project: TransparencyProjectWithAuthor }) {
-  const [open, setOpen] = useState(false);
+function CommentButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="flex-1 gap-2 text-muted-foreground"
+      onClick={onClick}
+    >
+      <MessageSquare className="size-4" />
+      <span className="hidden md:inline">Comment</span>
+    </Button>
+  );
+}
+
+function ReactionSummary({
+  project,
+  onCommentClick,
+}: {
+  project: TransparencyProjectWithAuthor;
+  onCommentClick: () => void;
+}) {
+  if (project.likeCount === 0 && project.dislikeCount === 0 && project.commentCount === 0) return null;
 
   return (
-    <>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="flex-1 gap-2 text-muted-foreground"
-        onClick={() => setOpen(true)}
-      >
-        <MessageSquare className="size-4" />
-        <span className="hidden md:inline">
-          Comment{project.commentCount > 0 ? ` (${project.commentCount})` : ""}
-        </span>
-      </Button>
-
-      <TransparencyCommentsDialog project={project} open={open} onOpenChange={setOpen} />
-    </>
+    <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div className="flex items-center gap-3">
+        {project.likeCount > 0 && (
+          <span className="flex items-center gap-1">
+            <ThumbsUp className="size-3.5 fill-current" />
+            {project.likeCount}
+          </span>
+        )}
+        {project.dislikeCount > 0 && (
+          <span className="flex items-center gap-1">
+            <ThumbsDown className="size-3.5 fill-current" />
+            {project.dislikeCount}
+          </span>
+        )}
+      </div>
+      {project.commentCount > 0 && (
+        <button type="button" onClick={onCommentClick} className="hover:underline">
+          {project.commentCount} comment{project.commentCount !== 1 ? "s" : ""}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -242,6 +264,7 @@ export default function TransparencyProjectCard({ project }: { project: Transpar
   const categoryConfig = CATEGORY_CONFIG[project.category];
   const CategoryIcon = categoryConfig.icon;
   const formattedBudget = formatBudget(project.budget);
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
   return (
     <Card>
@@ -293,12 +316,16 @@ export default function TransparencyProjectCard({ project }: { project: Transpar
         <MediaGrid media={project.media} />
 
         <AttachmentList attachments={project.attachments} />
+
+        <ReactionSummary project={project} onCommentClick={() => setCommentsOpen(true)} />
       </CardContent>
 
       <CardFooter className="px-1 pb-1 pt-1 border-t gap-0">
         <ReactionButtons project={project} />
-        <CommentButton project={project} />
+        <CommentButton onClick={() => setCommentsOpen(true)} />
       </CardFooter>
+
+      <TransparencyCommentsDialog project={project} open={commentsOpen} onOpenChange={setCommentsOpen} />
     </Card>
   );
 }

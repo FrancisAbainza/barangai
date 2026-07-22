@@ -6,6 +6,12 @@ export function statusBadgeVariant(status: CourtReservation["status"]) {
   return "outline";
 }
 
+export function handlerLabel(status: CourtReservation["status"]) {
+  if (status === "Approved") return "Approved by";
+  if (status === "Rejected") return "Rejected by";
+  return "Being processed by";
+}
+
 const courtHourFormat = new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: true });
 
 // hour is the slot's starting hour (0-23); Date handles the day rollover for the label.

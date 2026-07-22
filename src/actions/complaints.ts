@@ -102,6 +102,7 @@ const MY_COMPLAINTS_PAGE_SIZE = 10;
 export type ComplaintWithComplainant = Complaint & {
   complainantName: string;
   complainantEmail: string;
+  handlerName: string | null;
 };
 
 export type MyComplaintsPage = {
@@ -131,18 +132,23 @@ async function fetchComplaintsPage(
 
   if (complaints.length === 0) return { items: [], nextOffset: null };
 
-  // Complainant display info lives in Clerk, not the DB, so batch-fetch and join in memory.
+  // Complainant/handler display info lives in Clerk, not the DB, so batch-fetch and join in memory.
   // Also tolerates a since-deleted Clerk user when every row shares one complainant id.
   const uniqueComplainantIds = [...new Set(complaints.map((c) => c.complainantId))];
-  const displayMap = await getUserDisplayInfoMap(uniqueComplainantIds);
+  const uniqueHandlerIds = [...new Set(complaints.map((c) => c.handlerId).filter((id) => id !== null))];
+  const displayMap = await getUserDisplayInfoMap([...uniqueComplainantIds, ...uniqueHandlerIds]);
 
   return {
     items: complaints.map((complaint) => {
       const info = displayMap.get(complaint.complainantId) ?? DELETED_USER_DISPLAY_INFO;
+      const handlerName = complaint.handlerId
+        ? (displayMap.get(complaint.handlerId)?.fullName ?? DELETED_USER_DISPLAY_INFO.fullName)
+        : null;
       return {
         ...complaint,
         complainantName: info.fullName,
         complainantEmail: info.email,
+        handlerName,
       };
     }),
     nextOffset: complaints.length < pageSize ? null : offset + complaints.length,
@@ -255,12 +261,13 @@ export async function setComplaintStatus(
   status: Complaint["status"],
   details?: ComplaintStatusDetails
 ) {
-  await requireAdmin();
+  const handlerId = await requireAdmin();
 
   await db
     .update(complaintsTable)
     .set({
       status,
+      handlerId: status === "Pending" ? null : handlerId,
       updatedAt: new Date(),
       ...(status === "Resolved"
         ? details

@@ -29,13 +29,14 @@ export async function createBusiness(data: CreateBusinessInput) {
     permit: data.permit,
     location: data.location || null,
     ownerId: userId,
-    ...(isAdmin ? { status: "Verified" as const } : {}),
+    ...(isAdmin ? { status: "Verified" as const, handlerId: userId } : {}),
   });
 }
 
 export type BusinessWithOwner = Business & {
   ownerName: string;
   ownerEmail: string;
+  handlerName: string | null;
 };
 
 const BUSINESSES_PAGE_SIZE = 20;
@@ -56,17 +57,22 @@ async function fetchBusinessesPage(conditions: Parameters<typeof and>, offset: n
 
   if (businesses.length === 0) return { items: [], nextOffset: null };
 
-  // Owner display info lives in Clerk, not the DB, so batch-fetch and join in memory.
+  // Owner/handler display info lives in Clerk, not the DB, so batch-fetch and join in memory.
   const uniqueOwnerIds = [...new Set(businesses.map((b) => b.ownerId))];
-  const displayMap = await getUserDisplayInfoMap(uniqueOwnerIds);
+  const uniqueHandlerIds = [...new Set(businesses.map((b) => b.handlerId).filter((id) => id !== null))];
+  const displayMap = await getUserDisplayInfoMap([...uniqueOwnerIds, ...uniqueHandlerIds]);
 
   return {
     items: businesses.map((business) => {
       const info = displayMap.get(business.ownerId) ?? DELETED_USER_DISPLAY_INFO;
+      const handlerName = business.handlerId
+        ? (displayMap.get(business.handlerId)?.fullName ?? DELETED_USER_DISPLAY_INFO.fullName)
+        : null;
       return {
         ...business,
         ownerName: info.fullName,
         ownerEmail: info.email,
+        handlerName,
       };
     }),
     nextOffset: businesses.length < BUSINESSES_PAGE_SIZE ? null : offset + businesses.length,
@@ -189,12 +195,13 @@ export async function setBusinessStatus(
   status: Business["status"],
   details?: BusinessRejectionDetails
 ) {
-  await requireAdmin();
+  const handlerId = await requireAdmin();
 
   await db
     .update(businessesTable)
     .set({
       status,
+      handlerId: status === "Pending" ? null : handlerId,
       ...(status === "Rejected"
         ? details
           ? { rejectionReason: details.reason, rejectionAttachments: details.attachments ?? [] }

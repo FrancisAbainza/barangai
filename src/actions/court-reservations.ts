@@ -54,13 +54,14 @@ export async function createCourtReservation(data: CreateCourtReservationInput) 
     totalAmount: totalAmount.toString(),
     gcashPayment: data.gcashPayment,
     // Reservations created from the admin panel skip the approval queue since an admin is the one creating them.
-    ...(isAdmin ? { status: "Approved" as const } : {}),
+    ...(isAdmin ? { status: "Approved" as const, handlerId: userId } : {}),
   });
 }
 
 export type CourtReservationWithRequester = CourtReservation & {
   requesterName: string;
   requesterEmail: string;
+  handlerName: string | null;
 };
 
 const MY_COURT_RESERVATIONS_PAGE_SIZE = 10;
@@ -93,18 +94,23 @@ async function fetchCourtReservationsPage(
 
   if (reservations.length === 0) return { items: [], nextOffset: null };
 
-  // Requester display info lives in Clerk, not the DB, so batch-fetch and join in memory.
+  // Requester/handler display info lives in Clerk, not the DB, so batch-fetch and join in memory.
   // Also tolerates a since-deleted Clerk user when every row shares one requester id.
   const uniqueRequesterIds = [...new Set(reservations.map((r) => r.requesterId))];
-  const displayMap = await getUserDisplayInfoMap(uniqueRequesterIds);
+  const uniqueHandlerIds = [...new Set(reservations.map((r) => r.handlerId).filter((id) => id !== null))];
+  const displayMap = await getUserDisplayInfoMap([...uniqueRequesterIds, ...uniqueHandlerIds]);
 
   return {
     items: reservations.map((reservation) => {
       const info = displayMap.get(reservation.requesterId) ?? DELETED_USER_DISPLAY_INFO;
+      const handlerName = reservation.handlerId
+        ? (displayMap.get(reservation.handlerId)?.fullName ?? DELETED_USER_DISPLAY_INFO.fullName)
+        : null;
       return {
         ...reservation,
         requesterName: info.fullName,
         requesterEmail: info.email,
+        handlerName,
       };
     }),
     nextOffset: reservations.length < pageSize ? null : offset + reservations.length,
@@ -218,7 +224,7 @@ export async function setCourtReservationStatus(
   status: CourtReservation["status"],
   details?: CourtReservationRejectionDetails
 ) {
-  await requireAdmin();
+  const handlerId = await requireAdmin();
 
   if (status === "Approved") {
     const [reservation] = await db
@@ -239,6 +245,7 @@ export async function setCourtReservationStatus(
     .update(courtReservationsTable)
     .set({
       status,
+      handlerId: status === "Pending" ? null : handlerId,
       ...(status === "Rejected"
         ? details
           ? { rejectionReason: details.reason, rejectionAttachments: details.attachments ?? [] }

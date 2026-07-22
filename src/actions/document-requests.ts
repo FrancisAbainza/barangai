@@ -37,6 +37,7 @@ export async function createDocumentRequest(data: CreateDocumentRequestInput) {
 export type DocumentRequestWithRequester = DocumentRequest & {
   requesterName: string;
   requesterEmail: string;
+  handlerName: string | null;
 };
 
 const MY_DOCUMENT_REQUESTS_PAGE_SIZE = 10;
@@ -68,18 +69,23 @@ async function fetchDocumentRequestsPage(
 
   if (requests.length === 0) return { items: [], nextOffset: null };
 
-  // Requester display info lives in Clerk, not the DB, so batch-fetch and join in memory.
+  // Requester/handler display info lives in Clerk, not the DB, so batch-fetch and join in memory.
   // Also tolerates a since-deleted Clerk user when every row shares one requester id.
   const uniqueRequesterIds = [...new Set(requests.map((r) => r.requesterId))];
-  const displayMap = await getUserDisplayInfoMap(uniqueRequesterIds);
+  const uniqueHandlerIds = [...new Set(requests.map((r) => r.handlerId).filter((id) => id !== null))];
+  const displayMap = await getUserDisplayInfoMap([...uniqueRequesterIds, ...uniqueHandlerIds]);
 
   return {
     items: requests.map((request) => {
       const info = displayMap.get(request.requesterId) ?? DELETED_USER_DISPLAY_INFO;
+      const handlerName = request.handlerId
+        ? (displayMap.get(request.handlerId)?.fullName ?? DELETED_USER_DISPLAY_INFO.fullName)
+        : null;
       return {
         ...request,
         requesterName: info.fullName,
         requesterEmail: info.email,
+        handlerName,
       };
     }),
     nextOffset: requests.length < pageSize ? null : offset + requests.length,
@@ -213,12 +219,13 @@ export async function setDocumentRequestStatus(
   status: DocumentRequest["status"],
   details?: DocumentRequestStatusDetails
 ) {
-  await requireAdmin();
+  const handlerId = await requireAdmin();
 
   await db
     .update(documentRequestsTable)
     .set({
       status,
+      handlerId: status === "Pending" ? null : handlerId,
       updatedAt: new Date(),
       ...(status === "Ready for Pickup"
         ? details

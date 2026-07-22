@@ -8,6 +8,12 @@ export function statusBadgeVariant(status: Business["status"]) {
   return "outline";
 }
 
+export function handlerLabel(status: Business["status"]) {
+  if (status === "Verified") return "Verified by";
+  if (status === "Rejected") return "Rejected by";
+  return "Being processed by";
+}
+
 export function formatDate(date: Date | string) {
   return new Date(date).toLocaleDateString("en-US", {
     month: "long",

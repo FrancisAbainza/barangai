@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, CheckCircle2, IdCard, MapPin, MessageSquareWarning, Sparkles } from "lucide-react";
+import { Ban, CheckCircle2, IdCard, MapPin, MessageSquareWarning, Sparkles, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
   statusBadgeVariant,
   priorityBadgeVariant,
   publicSafetyRiskBadgeVariant,
+  handlerLabel,
   formatDate,
 } from "@/lib/complaints";
 import { getResidentProfile } from "@/actions/resident-profile";
@@ -123,6 +124,15 @@ export default function ViewComplaintDialog({
                 <Badge variant={statusBadgeVariant(complaint.status)}>{complaint.status}</Badge>
               </div>
             </Field>
+
+            {complaint.handlerName && (
+              <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
+                <UserCog className="size-4 shrink-0 text-primary" />
+                <p className="text-sm">
+                  {handlerLabel(complaint.status)} <span className="font-semibold">{complaint.handlerName}</span>
+                </p>
+              </div>
+            )}
 
             <Field>
               <FieldLabel>Category</FieldLabel>

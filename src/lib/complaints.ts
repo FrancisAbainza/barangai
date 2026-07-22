@@ -7,6 +7,12 @@ export function statusBadgeVariant(status: Complaint["status"]) {
   return "outline";
 }
 
+export function handlerLabel(status: Complaint["status"]) {
+  if (status === "Resolved") return "Resolved by";
+  if (status === "Dismissed") return "Dismissed by";
+  return "Being handled by";
+}
+
 export function priorityBadgeVariant(priority: Complaint["priority"]) {
   if (priority === "Urgent") return "destructive";
   if (priority === "High") return "default";

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
-import { Ban, CalendarCheck, IdCard } from "lucide-react";
+import { Ban, CalendarCheck, IdCard, UserCog } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +16,7 @@ import type { CourtReservationWithRequester } from "@/actions/court-reservations
 import type { MediaItem } from "@/components/file-uploader";
 import {
   statusBadgeVariant,
+  handlerLabel,
   formatTimeSlots,
   formatFee,
   formatReservationDate,
@@ -84,6 +85,16 @@ export default function ViewCourtReservationDialog({
                 <Badge variant={statusBadgeVariant(reservation.status)}>{reservation.status}</Badge>
               </div>
             </Field>
+
+            {reservation.handlerName && (
+              <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
+                <UserCog className="size-4 shrink-0 text-primary" />
+                <p className="text-sm">
+                  {handlerLabel(reservation.status)}{" "}
+                  <span className="font-semibold">{reservation.handlerName}</span>
+                </p>
+              </div>
+            )}
 
             <Field>
               <FieldLabel>Date</FieldLabel>

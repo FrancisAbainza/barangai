@@ -131,9 +131,7 @@ function ReactionButtons({ news }: { news: NewsWithAuthor }) {
         )}
       >
         <ThumbsUp className={cn("size-4", news.userReaction === "like" && "fill-current")} />
-        <span className="hidden md:inline">
-          Like{news.likeCount > 0 ? ` (${news.likeCount})` : ""}
-        </span>
+        <span className="hidden md:inline">Like</span>
       </Button>
       <Button
         variant="ghost"
@@ -146,9 +144,7 @@ function ReactionButtons({ news }: { news: NewsWithAuthor }) {
         )}
       >
         <ThumbsDown className={cn("size-4", news.userReaction === "dislike" && "fill-current")} />
-        <span className="hidden md:inline">
-          Dislike{news.dislikeCount > 0 ? ` (${news.dislikeCount})` : ""}
-        </span>
+        <span className="hidden md:inline">Dislike</span>
       </Button>
     </>
   );
@@ -174,31 +170,52 @@ function ShareButton({ news }: { news: NewsWithAuthor }) {
   );
 }
 
-function CommentButton({ news }: { news: NewsWithAuthor }) {
-  const [open, setOpen] = useState(false);
+function CommentButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="flex-1 gap-2 text-muted-foreground"
+      onClick={onClick}
+    >
+      <MessageSquare className="size-4" />
+      <span className="hidden md:inline">Comment</span>
+    </Button>
+  );
+}
+
+function ReactionSummary({ news, onCommentClick }: { news: NewsWithAuthor; onCommentClick: () => void }) {
+  if (news.likeCount === 0 && news.dislikeCount === 0 && news.commentCount === 0) return null;
 
   return (
-    <>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="flex-1 gap-2 text-muted-foreground"
-        onClick={() => setOpen(true)}
-      >
-        <MessageSquare className="size-4" />
-        <span className="hidden md:inline">
-          Comment{news.commentCount > 0 ? ` (${news.commentCount})` : ""}
-        </span>
-      </Button>
-
-      <CommentsDialog news={news} open={open} onOpenChange={setOpen} />
-    </>
+    <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div className="flex items-center gap-3">
+        {news.likeCount > 0 && (
+          <span className="flex items-center gap-1">
+            <ThumbsUp className="size-3.5 fill-current" />
+            {news.likeCount}
+          </span>
+        )}
+        {news.dislikeCount > 0 && (
+          <span className="flex items-center gap-1">
+            <ThumbsDown className="size-3.5 fill-current" />
+            {news.dislikeCount}
+          </span>
+        )}
+      </div>
+      {news.commentCount > 0 && (
+        <button type="button" onClick={onCommentClick} className="hover:underline">
+          {news.commentCount} comment{news.commentCount !== 1 ? "s" : ""}
+        </button>
+      )}
+    </div>
   );
 }
 
 export default function NewsCard({ news }: { news: NewsWithAuthor }) {
   const categoryConfig = CATEGORY_CONFIG[news.category];
   const CategoryIcon = categoryConfig.icon;
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
   return (
     <Card>
@@ -246,13 +263,17 @@ export default function NewsCard({ news }: { news: NewsWithAuthor }) {
         <MediaGrid media={news.media} />
 
         <AttachmentList attachments={news.attachments} />
+
+        <ReactionSummary news={news} onCommentClick={() => setCommentsOpen(true)} />
       </CardContent>
 
       <CardFooter className="px-1 pb-1 pt-1 border-t gap-0">
         <ReactionButtons news={news} />
-        <CommentButton news={news} />
+        <CommentButton onClick={() => setCommentsOpen(true)} />
         <ShareButton news={news} />
       </CardFooter>
+
+      <CommentsDialog news={news} open={commentsOpen} onOpenChange={setCommentsOpen} />
     </Card>
   );
 }
