@@ -12,6 +12,7 @@ import {
   Brain,
   Calendar,
   Cloud,
+  Eye,
   FileText,
   Globe,
   Mail,
@@ -54,10 +55,10 @@ const communityServices = [
     description: "Dedicated portal for hazard reporting and civic complaints.",
   },
   {
-    icon: MapPin,
-    title: "Tanod Tracking",
+    icon: Eye,
+    title: "Transparency",
     description:
-      "Real-time GPS tracking and emergency assistance requests.",
+      "Overview of barangay projects and budget transparency.",
   },
 ];
 
