@@ -20,6 +20,7 @@ import CourtReservationActionsMenu from "@/components/court-reservation/court-re
 import CourtReservationDialog from "@/components/court-reservation/dialogs/court-reservation-dialog";
 import TimeSlotsDialog from "@/components/court-reservation/dialogs/time-slots-dialog";
 import { getResidentProfile } from "@/actions/resident-profile";
+import { useDialogParam } from "@/hooks/use-dialog-param";
 import { getMyCourtReservations } from "@/actions/court-reservations";
 import { statusBadgeVariant, formatTimeSlots, formatFee } from "@/lib/court-reservations";
 import { CalendarCheck, Clock } from "lucide-react";
@@ -33,7 +34,7 @@ function formatReservationDate(date: string) {
 }
 
 export default function ResidentCourtReservation() {
-  const [isReserveDialogOpen, setIsReserveDialogOpen] = useState(false);
+  const [isReserveDialogOpen, setIsReserveDialogOpen] = useDialogParam("court-reservation");
   const [isTimeSlotsDialogOpen, setIsTimeSlotsDialogOpen] = useState(false);
 
   const { user } = useUser();
@@ -165,7 +166,7 @@ export default function ResidentCourtReservation() {
         </div>
       </div>
 
-      <CourtReservationDialog open={isReserveDialogOpen} onOpenChange={setIsReserveDialogOpen} />
+      <CourtReservationDialog open={isReserveDialogOpen && hasResidentProfile} onOpenChange={setIsReserveDialogOpen} />
       <TimeSlotsDialog open={isTimeSlotsDialogOpen} onOpenChange={setIsTimeSlotsDialogOpen} />
     </>
   );

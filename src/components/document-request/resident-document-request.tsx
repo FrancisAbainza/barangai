@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +23,7 @@ import SoloParentDocumentRequestDialog from "@/components/document-request/dialo
 import MedicalAssistanceDocumentRequestDialog from "@/components/document-request/dialogs/medical-assistance-document-request-dialog";
 import { getMyDocumentRequests } from "@/actions/document-requests";
 import { getResidentProfile } from "@/actions/resident-profile";
+import { useDialogParam } from "@/hooks/use-dialog-param";
 import { statusBadgeVariant } from "@/lib/document-requests";
 import {
   ChevronRight,
@@ -90,12 +90,13 @@ function formatSubmittedDate(date: Date) {
 }
 
 export default function ResidentDocumentRequest() {
-  const [selectedClearanceDocument, setSelectedClearanceDocument] = useState<string | null>(null);
-  const [isResidencyDialogOpen, setIsResidencyDialogOpen] = useState(false);
-  const [isNoObjectionDialogOpen, setIsNoObjectionDialogOpen] = useState(false);
-  const [isIndigencyDialogOpen, setIsIndigencyDialogOpen] = useState(false);
-  const [isSoloParentDialogOpen, setIsSoloParentDialogOpen] = useState(false);
-  const [isMedicalAssistanceDialogOpen, setIsMedicalAssistanceDialogOpen] = useState(false);
+  const [isClearanceDialogOpen, setIsClearanceDialogOpen] = useDialogParam("clearance-request");
+  const [isResidencyDialogOpen, setIsResidencyDialogOpen] = useDialogParam("residency-request");
+  const [isNoObjectionDialogOpen, setIsNoObjectionDialogOpen] = useDialogParam("no-objection-request");
+  const [isIndigencyDialogOpen, setIsIndigencyDialogOpen] = useDialogParam("indigency-request");
+  const [isSoloParentDialogOpen, setIsSoloParentDialogOpen] = useDialogParam("solo-parent-request");
+  const [isMedicalAssistanceDialogOpen, setIsMedicalAssistanceDialogOpen] =
+    useDialogParam("medical-assistance-request");
 
   const {
     data,
@@ -137,7 +138,7 @@ export default function ResidentDocumentRequest() {
               key={name}
               type="button"
               onClick={() => {
-                if (name === CLEARANCE_DOCUMENT_NAME) setSelectedClearanceDocument(name);
+                if (name === CLEARANCE_DOCUMENT_NAME) setIsClearanceDialogOpen(true);
                 else if (name === RESIDENCY_DOCUMENT_NAME) setIsResidencyDialogOpen(true);
                 else if (name === NO_OBJECTION_DOCUMENT_NAME) setIsNoObjectionDialogOpen(true);
                 else if (name === INDIGENCY_DOCUMENT_NAME) setIsIndigencyDialogOpen(true);
@@ -221,35 +222,33 @@ export default function ResidentDocumentRequest() {
       </div>
 
       <ResidencyDocumentRequestDialog
-        open={isResidencyDialogOpen}
+        open={isResidencyDialogOpen && hasResidentProfile}
         onOpenChange={setIsResidencyDialogOpen}
       />
 
       <NoObjectionDocumentRequestDialog
-        open={isNoObjectionDialogOpen}
+        open={isNoObjectionDialogOpen && hasResidentProfile}
         onOpenChange={setIsNoObjectionDialogOpen}
       />
 
       <ClearanceDocumentRequestDialog
-        documentName={selectedClearanceDocument ?? ""}
-        open={selectedClearanceDocument !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedClearanceDocument(null);
-        }}
+        documentName={CLEARANCE_DOCUMENT_NAME}
+        open={isClearanceDialogOpen && hasResidentProfile}
+        onOpenChange={setIsClearanceDialogOpen}
       />
 
       <IndigencyDocumentRequestDialog
-        open={isIndigencyDialogOpen}
+        open={isIndigencyDialogOpen && hasResidentProfile}
         onOpenChange={setIsIndigencyDialogOpen}
       />
 
       <SoloParentDocumentRequestDialog
-        open={isSoloParentDialogOpen}
+        open={isSoloParentDialogOpen && hasResidentProfile}
         onOpenChange={setIsSoloParentDialogOpen}
       />
 
       <MedicalAssistanceDocumentRequestDialog
-        open={isMedicalAssistanceDialogOpen}
+        open={isMedicalAssistanceDialogOpen && hasResidentProfile}
         onOpenChange={setIsMedicalAssistanceDialogOpen}
       />
     </>

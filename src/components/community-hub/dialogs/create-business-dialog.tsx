@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,9 +12,10 @@ import { toast } from "sonner";
 import { uploadFile } from "@/lib/storage";
 import { createBusiness } from "@/actions/business";
 import { getResidentProfile } from "@/actions/resident-profile";
+import { useDialogParam } from "@/hooks/use-dialog-param";
 
 export default function CreateBusinessDialog() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useDialogParam("submit-business");
 
   const { user } = useUser();
   const { data: residentProfile, isLoading: isResidentProfileLoading } = useQuery({
@@ -63,7 +63,7 @@ export default function CreateBusinessDialog() {
   const canSubmit = !isResidentProfileLoading && !!residentProfile;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open && canSubmit} onOpenChange={setOpen}>
       <div className="flex flex-col gap-1 shrink-0">
         <DialogTrigger asChild>
           <Button size="lg" className="gap-2" disabled={!canSubmit}>

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -9,10 +8,11 @@ import ReportComplaintDialog from "@/components/complaint/dialogs/report-complai
 import MyComplaintsTable from "@/components/complaint/my-complaints-table";
 import ResidentCredentialsBanner from "@/components/resident-credentials-banner";
 import { getResidentProfile } from "@/actions/resident-profile";
+import { useDialogParam } from "@/hooks/use-dialog-param";
 import { MessageSquareWarning, Plus } from "lucide-react";
 
 export default function ResidentComplaint() {
-  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useDialogParam("report-complaint");
 
   const { user } = useUser();
   const { data: residentProfile, isLoading: isResidentProfileLoading } = useQuery({
@@ -55,7 +55,7 @@ export default function ResidentComplaint() {
 
       <MyComplaintsTable />
 
-      <ReportComplaintDialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen} />
+      <ReportComplaintDialog open={isReportDialogOpen && hasResidentProfile} onOpenChange={setIsReportDialogOpen} />
     </>
   );
 }

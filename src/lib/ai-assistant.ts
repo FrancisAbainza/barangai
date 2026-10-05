@@ -6,6 +6,12 @@ import { db } from "@/db/config";
 import { knowledgeBaseChunksTable } from "@/db/schema";
 import { barangayName } from "@/lib/data";
 import { KNOWLEDGE_BASE_EMBEDDING_MODEL, KNOWLEDGE_BASE_TOP_K } from "@/lib/knowledge-base";
+import {
+  getPortalDialogHref,
+  isPortalDialogAvailable,
+  PORTAL_DIALOG_TARGETS,
+  type PortalDialogTargetId,
+} from "@/lib/portal-dialogs";
 import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/portal-navigation";
 
 // Server-only: everything the /api/chat route needs. Sections: tools, knowledge base, system prompt.
@@ -13,8 +19,9 @@ import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/
 // ── Tools ───────────────────────────────────────────────────────────────────
 // To add a tool: write a builder like `buildNavigateToPageTool`, add it to
 // `buildAssistantTools`, and describe when to use it in the system prompt below.
-// navigateToPage doesn't navigate by itself: its output is rendered as a button in the
-// chat panel (components/ai-assistant/chat-panel.tsx) that the user clicks to go there.
+// Neither tool acts by itself: each output is rendered as a button in the chat panel
+// (components/ai-assistant/chat-panel.tsx) that the user clicks — navigateToPage's goes
+// to a page, openFormDialog's goes to the form's page with `?dialog=<id>`, which opens it.
 
 function buildNavigateToPageTool(isAdmin: boolean) {
   const availableTargets = (
@@ -43,9 +50,34 @@ function buildNavigateToPageTool(isAdmin: boolean) {
   });
 }
 
+function buildOpenFormDialogTool(isAdmin: boolean) {
+  const dialogIds = (Object.keys(PORTAL_DIALOG_TARGETS) as PortalDialogTargetId[]).filter((id) =>
+    isPortalDialogAvailable(id, isAdmin),
+  ) as [PortalDialogTargetId, ...PortalDialogTargetId[]];
+
+  return tool({
+    description:
+      "Open a specific form so the user can fill it out right away. Prefer this over navigateToPage whenever " +
+      "the user's intent matches one of these forms. Available forms:\n" +
+      dialogIds.map((id) => `- ${id}: ${PORTAL_DIALOG_TARGETS[id].label} — ${PORTAL_DIALOG_TARGETS[id].description}`).join("\n"),
+    inputSchema: z.object({
+      dialog: z.enum(dialogIds).describe("The form to open."),
+      reason: z
+        .string()
+        .describe('A short, user-facing reason for opening the form, e.g. "to file your complaint".'),
+    }),
+    execute: async ({ dialog }) => ({
+      dialog,
+      href: getPortalDialogHref(dialog),
+      buttonShown: true,
+    }),
+  });
+}
+
 export function buildAssistantTools({ isAdmin }: { isAdmin: boolean }) {
   return {
     navigateToPage: buildNavigateToPageTool(isAdmin),
+    openFormDialog: buildOpenFormDialogTool(isAdmin),
   };
 }
 
@@ -93,7 +125,10 @@ Be concise and friendly. If a knowledge base excerpt is provided below and answe
 
 You have two kinds of requests to handle:
 - Questions ("what is the barangay hotline?") — answer directly using the knowledge base excerpts or general knowledge.
-- Action intents ("I want to request a document", "I'd like to reserve the court") — call the navigateToPage tool with the matching page instead of describing where to click. The tool doesn't navigate on its own: the interface shows the resident a button to that page beneath your reply. Call it directly once their intent is clear, then reply with one short sentence telling them to use the button below (don't paste links or URLs).`;
+- Action intents — use a tool instead of describing where to click. Neither tool acts on its own: the interface shows the user a button beneath your reply. Call the tool directly once their intent is clear, then reply with one short sentence telling them to use the button below (don't paste links or URLs). Pick exactly one tool per intent:
+  - openFormDialog — when the intent matches a specific form ("I want to file a complaint", "how do I request a barangay clearance?", "I'd like to reserve the court"). This takes them straight to the form, so prefer it whenever a matching form exists.
+  - navigateToPage — when they want to browse or manage a page rather than fill out one specific form ("show me my complaints", "where can I see the news?"), or when the intent is too broad to pick a form ("I want to request a document" without saying which — ask which document, or navigate to the page if they'd rather browse).
+  Never call both tools for the same intent.`;
 
 export function buildSystemPrompt(knowledgeBaseContext: string | null): string {
   return knowledgeBaseContext

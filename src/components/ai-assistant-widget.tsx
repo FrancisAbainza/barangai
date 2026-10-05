@@ -23,8 +23,8 @@ export function AiAssistantWidget() {
   const { user } = useUser();
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
 
-  // Controlled (rather than left to DialogTrigger) so clicking a navigation button
-  // in the chat can close the widget and let the user see the page.
+  // Controlled (rather than left to DialogTrigger) so clicking a navigation or form
+  // button in the chat can close the widget and let the user see the page.
   const [open, setOpen] = useState(false);
 
   // Lifted above the Dialog (which unmounts its content on close) so chat

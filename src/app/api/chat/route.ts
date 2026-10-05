@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     system: buildSystemPrompt(context),
     messages: await convertToModelMessages(messages, { tools }),
     tools,
-    // One step for the tool call, one for the short reply pointing at the navigation button.
+    // One step for the tool call, one for the short reply pointing at the button it renders.
     stopWhen: stepCountIs(2),
   });
 

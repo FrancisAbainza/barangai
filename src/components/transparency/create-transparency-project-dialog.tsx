@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
@@ -10,9 +9,10 @@ import TransparencyProjectForm from "./transparency-project-form";
 import { toast } from "sonner";
 import { uploadFile } from "@/lib/storage";
 import { createTransparencyProject } from "@/actions/transparency";
+import { useDialogParam } from "@/hooks/use-dialog-param";
 
 export default function CreateTransparencyProjectDialog() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useDialogParam("create-transparency-project");
 
   const queryClient = useQueryClient();
 

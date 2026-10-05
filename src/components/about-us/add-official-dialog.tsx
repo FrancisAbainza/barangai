@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -9,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import type { OfficialFormValues } from "@/schemas/about-us-schema";
 import type { MediaItem } from "@/components/file-uploader";
 import { uploadFile } from "@/lib/storage";
+import { useDialogParam } from "@/hooks/use-dialog-param";
 import { createOfficial, type OfficialSection } from "@/actions/officials";
 import OfficialForm from "./official-form";
 
@@ -22,7 +22,7 @@ interface AddOfficialDialogProps {
 }
 
 export default function AddOfficialDialog({ title, addLabel, section, hasLeader }: AddOfficialDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useDialogParam(section === "barangay" ? "add-barangay-official" : "add-sk-official");
   const queryClient = useQueryClient();
 
   const { mutateAsync: submitOfficial } = useMutation({

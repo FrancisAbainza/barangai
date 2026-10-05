@@ -38,6 +38,7 @@ import CourtReservationActionsMenu from "@/components/court-reservation/court-re
 import CourtReservationDialog from "@/components/court-reservation/dialogs/court-reservation-dialog";
 import TimeSlotsDialog from "@/components/court-reservation/dialogs/time-slots-dialog";
 import AdminCourtSettingsDialog from "@/components/court-reservation/dialogs/admin-court-settings-dialog";
+import { useDialogParam } from "@/hooks/use-dialog-param";
 import { getCourtReservations, getCourtReservationStats } from "@/actions/court-reservations";
 import {
   COURT_TIME_SLOTS,
@@ -102,8 +103,8 @@ export default function AdminCourtReservation() {
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [timeSlotsOpen, setTimeSlotsOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [reserveOpen, setReserveOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useDialogParam("court-reservation-settings");
+  const [reserveOpen, setReserveOpen] = useDialogParam("court-reservation");
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const activeFilterCount = [date !== "", timeSlot !== "all"].filter(Boolean).length;

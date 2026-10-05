@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
-import { ArrowRightIcon, BotIcon } from "lucide-react";
+import { ArrowRightIcon, BotIcon, SquarePenIcon } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -24,6 +24,7 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { SpeechInput } from "@/components/ai-elements/speech-input";
 import { Button } from "@/components/ui/button";
+import { getPortalDialogHref, PORTAL_DIALOG_TARGETS, type PortalDialogTargetId } from "@/lib/portal-dialogs";
 import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/portal-navigation";
 
 function getMessageText(message: UIMessage): string {
@@ -33,13 +34,28 @@ function getMessageText(message: UIMessage): string {
     .join("");
 }
 
+// Forms the assistant offered to open (openFormDialog tool results), deduplicated.
+function getDialogTargets(message: UIMessage): PortalDialogTargetId[] {
+  const dialogs = new Set<PortalDialogTargetId>();
+  for (const part of message.parts) {
+    if (part.type === "tool-openFormDialog" && part.state === "output-available") {
+      const { dialog } = part.input as { dialog: PortalDialogTargetId };
+      if (dialog in PORTAL_DIALOG_TARGETS) dialogs.add(dialog);
+    }
+  }
+  return [...dialogs];
+}
+
 // Pages the assistant offered to take the user to (navigateToPage tool results), deduplicated.
-function getNavigationTargets(message: UIMessage): PortalNavigationTargetId[] {
+// Pages already reached by one of the message's form buttons are skipped, so the model
+// calling both tools for one intent doesn't show two buttons to the same place.
+function getNavigationTargets(message: UIMessage, dialogs: PortalDialogTargetId[]): PortalNavigationTargetId[] {
+  const dialogPages = new Set<PortalNavigationTargetId>(dialogs.map((dialog) => PORTAL_DIALOG_TARGETS[dialog].page));
   const pages = new Set<PortalNavigationTargetId>();
   for (const part of message.parts) {
     if (part.type === "tool-navigateToPage" && part.state === "output-available") {
       const { page } = part.input as { page: PortalNavigationTargetId };
-      if (page in PORTAL_NAVIGATION_TARGETS) pages.add(page);
+      if (page in PORTAL_NAVIGATION_TARGETS && !dialogPages.has(page)) pages.add(page);
     }
   }
   return [...pages];
@@ -58,7 +74,7 @@ function PromptInputMic() {
 }
 
 type ChatPanelProps = Pick<UseChatHelpers<UIMessage>, "messages" | "sendMessage" | "status" | "stop"> & {
-  // Called when a navigation button is clicked, so the chat widget can get out of the way.
+  // Called when a navigation or form button is clicked, so the chat widget can get out of the way.
   onNavigate: () => void;
 };
 
@@ -81,16 +97,25 @@ export function ChatPanel({ messages, sendMessage, status, stop, onNavigate }: C
             />
           ) : (
             messages.map((message, index) => {
-              // Hold navigation buttons back until the whole reply has finished streaming.
+              // Hold action buttons back until the whole reply has finished streaming.
               const isStreaming = isResponding && index === messages.length - 1;
-              const navigationTargets = isStreaming ? [] : getNavigationTargets(message);
+              const dialogTargets = isStreaming ? [] : getDialogTargets(message);
+              const navigationTargets = isStreaming ? [] : getNavigationTargets(message, dialogTargets);
 
               return (
                 <Message from={message.role} key={message.id}>
                   <MessageContent>
                     <MessageResponse>{getMessageText(message)}</MessageResponse>
-                    {navigationTargets.length > 0 && (
+                    {(dialogTargets.length > 0 || navigationTargets.length > 0) && (
                       <div className="flex flex-wrap gap-2">
+                        {dialogTargets.map((dialog) => (
+                          <Button asChild key={dialog} size="sm">
+                            <Link href={getPortalDialogHref(dialog)} onClick={onNavigate}>
+                              <SquarePenIcon />
+                              {PORTAL_DIALOG_TARGETS[dialog].label}
+                            </Link>
+                          </Button>
+                        ))}
                         {navigationTargets.map((page) => (
                           <Button asChild key={page} size="sm">
                             <Link href={PORTAL_NAVIGATION_TARGETS[page].href} onClick={onNavigate}>

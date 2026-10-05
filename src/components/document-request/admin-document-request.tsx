@@ -36,6 +36,7 @@ import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
 import DocumentRequestActionsMenu from "@/components/document-request/document-request-actions-menu";
 import AdminBarangaySettingsDialog from "@/components/document-request/dialogs/admin-barangay-settings-dialog";
+import { useDialogParam } from "@/hooks/use-dialog-param";
 import { getDocumentRequestStats, getDocumentRequests } from "@/actions/document-requests";
 import { statusBadgeVariant } from "@/lib/document-requests";
 import { documentRequestStatusEnum, documentRequestTypeEnum, type DocumentRequest } from "@/db/schema";
@@ -97,7 +98,7 @@ export default function AdminDocumentRequest() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useDialogParam("document-request-settings");
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const activeFilterCount = [

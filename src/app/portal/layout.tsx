@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { AiAssistantWidget } from "@/components/ai-assistant-widget";
 import PortalHeader from "@/components/portal-header";
 import PortalSidebar from "@/components/portal-sidebar";
@@ -14,7 +15,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       <SidebarInset className="flex flex-1 flex-col overflow-y-auto">
         <PortalHeader />
         <main className="px-6 py-20 md:py-6 md:pb-30">
-          {children}
+          {/* Form dialogs keep their open state in the URL (useDialogParam reads
+              useSearchParams), which statically prerendered pages need a Suspense boundary for. */}
+          <Suspense>{children}</Suspense>
         </main>
       </SidebarInset>
       <AiAssistantWidget />
