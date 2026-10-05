@@ -1,6 +1,6 @@
-// Shared between the AI assistant's navigateToPage tool (src/app/api/chat/route.ts,
-// which needs it for the tool's input schema/description) and the confirmation
-// dialog that renders when the tool is called (src/components/ai-assistant-widget.tsx).
+// Shared between the AI assistant's navigateToPage tool (src/lib/ai-assistant.ts,
+// which needs it for the tool's input schema/description) and the navigation
+// button the chat panel renders for its result (src/components/ai-assistant/chat-panel.tsx).
 export const PORTAL_NAVIGATION_TARGETS = {
   "document-request": {
     label: "Document Request",

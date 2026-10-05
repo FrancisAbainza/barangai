@@ -1,4 +1,4 @@
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
+import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { getAuthRole } from "@/lib/auth";
 import {
@@ -27,6 +27,8 @@ export async function POST(req: Request) {
     system: buildSystemPrompt(context),
     messages: await convertToModelMessages(messages, { tools }),
     tools,
+    // One step for the tool call, one for the short reply pointing at the navigation button.
+    stopWhen: stepCountIs(2),
   });
 
   return result.toUIMessageStreamResponse();

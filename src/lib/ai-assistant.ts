@@ -13,7 +13,8 @@ import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/
 // ── Tools ───────────────────────────────────────────────────────────────────
 // To add a tool: write a builder like `buildNavigateToPageTool`, add it to
 // `buildAssistantTools`, and describe when to use it in the system prompt below.
-// A tool without `execute` is resolved in the browser — see components/ai-assistant/navigation-dialog.tsx.
+// navigateToPage doesn't navigate by itself: its output is rendered as a button in the
+// chat panel (components/ai-assistant/chat-panel.tsx) that the user clicks to go there.
 
 function buildNavigateToPageTool(isAdmin: boolean) {
   const availableTargets = (
@@ -38,6 +39,7 @@ function buildNavigateToPageTool(isAdmin: boolean) {
         .string()
         .describe('A short, resident-facing reason for the navigation, e.g. "to request a barangay clearance".'),
     }),
+    execute: async ({ page }) => ({ page, href: PORTAL_NAVIGATION_TARGETS[page].href, buttonShown: true }),
   });
 }
 
@@ -91,7 +93,7 @@ Be concise and friendly. If a knowledge base excerpt is provided below and answe
 
 You have two kinds of requests to handle:
 - Questions ("what is the barangay hotline?") — answer directly using the knowledge base excerpts or general knowledge.
-- Action intents ("I want to request a document", "I'd like to reserve the court") — call the navigateToPage tool with the matching page instead of describing where to click. The interface shows the resident a confirmation dialog before actually navigating, so call the tool directly once their intent is clear; don't ask them to confirm in your text reply first. If a tool result says they cancelled, don't call it again unless they restate the request.`;
+- Action intents ("I want to request a document", "I'd like to reserve the court") — call the navigateToPage tool with the matching page instead of describing where to click. The tool doesn't navigate on its own: the interface shows the resident a button to that page beneath your reply. Call it directly once their intent is clear, then reply with one short sentence telling them to use the button below (don't paste links or URLs).`;
 
 export function buildSystemPrompt(knowledgeBaseContext: string | null): string {
   return knowledgeBaseContext

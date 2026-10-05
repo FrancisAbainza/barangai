@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
-import { BotIcon } from "lucide-react";
+import { ArrowRightIcon, BotIcon } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -22,12 +23,26 @@ import {
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import { SpeechInput } from "@/components/ai-elements/speech-input";
+import { Button } from "@/components/ui/button";
+import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/portal-navigation";
 
 function getMessageText(message: UIMessage): string {
   return message.parts
     .filter((part) => part.type === "text")
     .map((part) => part.text)
     .join("");
+}
+
+// Pages the assistant offered to take the user to (navigateToPage tool results), deduplicated.
+function getNavigationTargets(message: UIMessage): PortalNavigationTargetId[] {
+  const pages = new Set<PortalNavigationTargetId>();
+  for (const part of message.parts) {
+    if (part.type === "tool-navigateToPage" && part.state === "output-available") {
+      const { page } = part.input as { page: PortalNavigationTargetId };
+      if (page in PORTAL_NAVIGATION_TARGETS) pages.add(page);
+    }
+  }
+  return [...pages];
 }
 
 function PromptInputMic() {
@@ -42,9 +57,13 @@ function PromptInputMic() {
   );
 }
 
-type ChatPanelProps = Pick<UseChatHelpers<UIMessage>, "messages" | "sendMessage" | "status" | "stop">;
+type ChatPanelProps = Pick<UseChatHelpers<UIMessage>, "messages" | "sendMessage" | "status" | "stop"> & {
+  // Called when a navigation button is clicked, so the chat widget can get out of the way.
+  onNavigate: () => void;
+};
 
-export function ChatPanel({ messages, sendMessage, status, stop }: ChatPanelProps) {
+export function ChatPanel({ messages, sendMessage, status, stop, onNavigate }: ChatPanelProps) {
+  const isResponding = status === "submitted" || status === "streaming";
   const handleSubmit = (message: PromptInputMessage) => {
     if (!message.text.trim()) return;
     sendMessage(message);
@@ -61,13 +80,31 @@ export function ChatPanel({ messages, sendMessage, status, stop }: ChatPanelProp
               title="How can I help you today?"
             />
           ) : (
-            messages.map((message) => (
-              <Message from={message.role} key={message.id}>
-                <MessageContent>
-                  <MessageResponse>{getMessageText(message)}</MessageResponse>
-                </MessageContent>
-              </Message>
-            ))
+            messages.map((message, index) => {
+              // Hold navigation buttons back until the whole reply has finished streaming.
+              const isStreaming = isResponding && index === messages.length - 1;
+              const navigationTargets = isStreaming ? [] : getNavigationTargets(message);
+
+              return (
+                <Message from={message.role} key={message.id}>
+                  <MessageContent>
+                    <MessageResponse>{getMessageText(message)}</MessageResponse>
+                    {navigationTargets.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {navigationTargets.map((page) => (
+                          <Button asChild key={page} size="sm">
+                            <Link href={PORTAL_NAVIGATION_TARGETS[page].href} onClick={onNavigate}>
+                              Go to {PORTAL_NAVIGATION_TARGETS[page].label}
+                              <ArrowRightIcon />
+                            </Link>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </MessageContent>
+                </Message>
+              );
+            })
           )}
         </ConversationContent>
         <ConversationScrollButton />
