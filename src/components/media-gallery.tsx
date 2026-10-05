@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Download, FileText, Play, Plus } from "lucide-react";
+import { Download, FileText, Play } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Carousel,
+  type CarouselApi,
   CarouselContent,
   CarouselItem,
   CarouselNext,
@@ -31,17 +32,17 @@ function MediaViewerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-6xl border-none bg-black p-0 text-white sm:max-w-[80vw] overflow-hidden **:data-[slot=dialog-close]:bg-black/50 **:data-[slot=dialog-close]:text-white **:data-[slot=dialog-close]:hover:bg-black/70"
+        className="inset-0 top-0 left-0 block h-dvh w-screen max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-none border-none bg-black p-0 text-white ring-0 sm:max-w-none **:data-[slot=dialog-close]:z-10 **:data-[slot=dialog-close]:bg-black/50 **:data-[slot=dialog-close]:text-white **:data-[slot=dialog-close]:hover:bg-black/70"
         showCloseButton
       >
         <DialogTitle className="sr-only">Media viewer</DialogTitle>
-        <Carousel opts={{ startIndex }} className="w-full">
+        <Carousel opts={{ startIndex }} className="h-full w-full">
           <CarouselContent className="ml-0">
             {media.map((item, index) => {
               const url = item.key ? fetchFile(item.key) : "";
               return (
-                <CarouselItem key={index} className="flex items-center justify-center pl-0">
-                  <div className="relative aspect-video w-full">
+                <CarouselItem key={index} className="pl-0">
+                  <div className="relative h-dvh w-full">
                     {item.type === "video" ? (
                       <video
                         src={url}
@@ -64,8 +65,8 @@ function MediaViewerDialog({
           </CarouselContent>
           {media.length > 1 && (
             <>
-              <CarouselPrevious className="left-4 text-foreground" />
-              <CarouselNext className="right-4 text-foreground" />
+              <CarouselPrevious className="left-4 border-none bg-black/60 text-white hover:bg-black/80 hover:text-white disabled:hidden" />
+              <CarouselNext className="right-4 border-none bg-black/60 text-white hover:bg-black/80 hover:text-white disabled:hidden" />
             </>
           )}
         </Carousel>
@@ -76,66 +77,94 @@ function MediaViewerDialog({
 
 export function MediaGrid({ media }: { media: GalleryItem[] }) {
   const [viewerOpen, setViewerOpen] = useState(false);
-  const [startIndex, setStartIndex] = useState(0);
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    if (!api) return;
+    const onSelect = () => setCurrent(api.selectedScrollSnap());
+    onSelect();
+    api.on("select", onSelect);
+    api.on("reInit", onSelect);
+    return () => {
+      api.off("select", onSelect);
+      api.off("reInit", onSelect);
+    };
+  }, [api]);
 
   if (!media.length) return null;
 
-  const items = media.slice(0, 2);
-  const remainingCount = media.length - items.length;
-
-  const openViewer = (index: number) => {
-    setStartIndex(index);
-    setViewerOpen(true);
-  };
+  const hasMultiple = media.length > 1;
 
   return (
     <>
-      <div
-        className={cn(
-          "grid gap-0.5 rounded-lg overflow-hidden",
-          items.length === 1 ? "grid-cols-1" : "grid-cols-2"
-        )}
-      >
-        {items.map((item, index) => {
-          const url = item.key ? fetchFile(item.key) : "";
-          const showMoreOverlay = index === items.length - 1 && remainingCount > 0;
+      <Carousel setApi={setApi} className="overflow-hidden rounded-lg bg-muted">
+        <CarouselContent className="ml-0">
+          {media.map((item, index) => {
+            const url = item.key ? fetchFile(item.key) : "";
 
-          return (
-            <button
-              key={index}
-              type="button"
-              onClick={() => openViewer(index)}
-              className="group relative aspect-video bg-muted block w-full p-0 border-0 cursor-pointer min-h-[250px] max-h-[600px] overflow-hidden"
-            >
-              {item.type === "video" ? (
-                <>
-                  <video src={url} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-white/80 rounded-full p-3">
-                      <Play className="size-5 fill-current" />
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <Image src={url} alt={item.name} fill className="object-cover" unoptimized />
-              )}
-              <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
-              {showMoreOverlay && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                  <span className="flex items-center gap-1 text-2xl font-semibold text-white">
-                    <Plus className="size-6" />
-                    {remainingCount}
-                  </span>
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
+            return (
+              <CarouselItem key={index} className="pl-0">
+                <button
+                  type="button"
+                  onClick={() => setViewerOpen(true)}
+                  className="group relative block h-[450px] w-full cursor-pointer overflow-hidden border-0 p-0 sm:h-[580px]"
+                >
+                  {item.type === "video" ? (
+                    <>
+                      <video src={url} className="relative h-full w-full bg-black object-contain" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="rounded-full bg-white/80 p-3">
+                          <Play className="size-5 fill-current" />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Blurred backdrop fills the letterbox around a contained image */}
+                      <Image
+                        src={url}
+                        alt=""
+                        aria-hidden
+                        fill
+                        className="scale-110 object-cover opacity-60 blur-2xl"
+                        unoptimized
+                      />
+                      <Image src={url} alt={item.name} fill className="object-contain" unoptimized />
+                    </>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/5" />
+                </button>
+              </CarouselItem>
+            );
+          })}
+        </CarouselContent>
+        {hasMultiple && (
+          <>
+            <CarouselPrevious className="left-3 border-none bg-black/60 text-white hover:bg-black/80 hover:text-white disabled:hidden" />
+            <CarouselNext className="right-3 border-none bg-black/60 text-white hover:bg-black/80 hover:text-white disabled:hidden" />
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/60 px-2 py-1.5">
+              {media.map((_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  aria-label={`Go to slide ${index + 1}`}
+                  onClick={() => api?.scrollTo(index)}
+                  className={cn(
+                    "size-1.5 rounded-full transition-colors",
+                    index === current ? "bg-white" : "bg-white/40"
+                  )}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </Carousel>
 
       <MediaViewerDialog
+        key={viewerOpen ? current : undefined}
         media={media}
-        startIndex={startIndex}
+        startIndex={current}
         open={viewerOpen}
         onOpenChange={setViewerOpen}
       />
