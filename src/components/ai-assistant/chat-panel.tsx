@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { ArrowRightIcon, BotIcon, SquarePenIcon } from "lucide-react";
+import { useRef } from "react";
 import {
   Conversation,
   ConversationContent,
@@ -61,13 +62,30 @@ function getNavigationTargets(message: UIMessage, dialogs: PortalDialogTargetId[
   return [...pages];
 }
 
+const joinText = (...parts: string[]) =>
+  parts
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(" ");
+
 function PromptInputMic() {
   const { textInput } = usePromptInputController();
+  // While not-yet-final speech is shown in the input, this holds the input text before it.
+  const committedRef = useRef<string | null>(null);
 
   return (
     <SpeechInput
       aria-label="Use microphone"
-      onTranscriptionChange={(text) => textInput.setInput(textInput.value ? `${textInput.value} ${text}` : text)}
+      onTranscriptionChange={(text) => {
+        committedRef.current = joinText(committedRef.current ?? textInput.value, text);
+        textInput.setInput(committedRef.current);
+      }}
+      // Always fires after onTranscriptionChange for the same result, so the final text above is kept.
+      onInterimTranscriptionChange={(interim) => {
+        const committed = committedRef.current ?? textInput.value;
+        textInput.setInput(joinText(committed, interim));
+        committedRef.current = interim ? committed : null;
+      }}
       size="icon-sm"
     />
   );

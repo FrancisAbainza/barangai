@@ -62,6 +62,12 @@ type SpeechInputMode = "speech-recognition" | "media-recorder" | "none";
 export type SpeechInputProps = ComponentProps<typeof Button> & {
   onTranscriptionChange?: (text: string) => void;
   /**
+   * Called after every recognition result with the speech heard so far that isn't final yet
+   * (an empty string once it has all been finalized or recording ends), so it can be shown live.
+   * Only fires in browsers with the Web Speech API.
+   */
+  onInterimTranscriptionChange?: (text: string) => void;
+  /**
    * Callback for when audio is recorded using MediaRecorder fallback.
    * This is called in browsers that don't support the Web Speech API (Firefox, Safari).
    * The callback receives an audio Blob that should be sent to a transcription service.
@@ -90,6 +96,7 @@ const detectSpeechInputMode = (): SpeechInputMode => {
 export const SpeechInput = ({
   className,
   onTranscriptionChange,
+  onInterimTranscriptionChange,
   onAudioRecorded,
   lang = "en-US",
   ...props
@@ -105,11 +112,15 @@ export const SpeechInput = ({
   const onTranscriptionChangeRef = useRef<
     SpeechInputProps["onTranscriptionChange"]
   >(onTranscriptionChange);
+  const onInterimTranscriptionChangeRef = useRef<
+    SpeechInputProps["onInterimTranscriptionChange"]
+  >(onInterimTranscriptionChange);
   const onAudioRecordedRef =
     useRef<SpeechInputProps["onAudioRecorded"]>(onAudioRecorded);
 
   // Keep refs in sync
   onTranscriptionChangeRef.current = onTranscriptionChange;
+  onInterimTranscriptionChangeRef.current = onInterimTranscriptionChange;
   onAudioRecordedRef.current = onAudioRecorded;
 
   // Initialize Speech Recognition when mode is speech-recognition
@@ -132,11 +143,13 @@ export const SpeechInput = ({
 
     const handleEnd = () => {
       setIsListening(false);
+      onInterimTranscriptionChangeRef.current?.("");
     };
 
     const handleResult = (event: Event) => {
       const speechEvent = event as SpeechRecognitionEvent;
       let finalTranscript = "";
+      let interimTranscript = "";
 
       for (
         let i = speechEvent.resultIndex;
@@ -146,12 +159,15 @@ export const SpeechInput = ({
         const result = speechEvent.results[i];
         if (result.isFinal) {
           finalTranscript += result[0]?.transcript ?? "";
+        } else {
+          interimTranscript += result[0]?.transcript ?? "";
         }
       }
 
       if (finalTranscript) {
         onTranscriptionChangeRef.current?.(finalTranscript);
       }
+      onInterimTranscriptionChangeRef.current?.(interimTranscript.trim());
     };
 
     const handleError = () => {
@@ -312,6 +328,7 @@ export const SpeechInput = ({
         )}
         disabled={isDisabled}
         onClick={toggleListening}
+        type="button"
         {...props}
       >
         {isProcessing && <Spinner />}
