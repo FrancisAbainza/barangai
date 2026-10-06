@@ -12,17 +12,15 @@ import { Input } from "@/components/ui/input";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Loader2, Save } from "lucide-react";
 
-interface BarangaySettingsFormProps {
+interface DocumentPricingFormProps {
   defaultValues: DocumentRequestSettingsFormValues;
   onSubmit: (data: DocumentRequestSettingsFormValues) => Promise<void>;
-  onCancel?: () => void;
 }
 
-export default function BarangaySettingsForm({
+export default function DocumentPricingForm({
   defaultValues,
   onSubmit,
-  onCancel,
-}: BarangaySettingsFormProps) {
+}: DocumentPricingFormProps) {
   const {
     register,
     control,
@@ -75,12 +73,7 @@ export default function BarangaySettingsForm({
           />
         ))}
 
-        <div className="flex justify-end gap-2">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          )}
+        <div className="flex justify-end">
           <Button type="submit" className="gap-2">
             {isSubmitting ? (
               <>
@@ -90,7 +83,7 @@ export default function BarangaySettingsForm({
             ) : (
               <>
                 <Save className="size-4" />
-                Save Settings
+                Save Document Pricing
               </>
             )}
           </Button>

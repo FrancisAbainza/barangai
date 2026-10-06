@@ -7,14 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { getOfficials, type OfficialSection } from "@/actions/officials";
 import OfficialCard from "./official-card";
-import AddOfficialDialog from "./add-official-dialog";
+import AddOfficialDialog from "@/components/barangay-settings/dialogs/add-official-dialog";
 
 interface OfficialsGridProps {
   title: string;
   icon: ReactNode;
   addLabel: string;
   section: OfficialSection;
-  isAdmin: boolean;
+  // Shows the add/edit/delete controls. Only the Barangay Settings page sets this.
+  isAdmin?: boolean;
 }
 
 function OfficialCardSkeleton({ featured }: { featured?: boolean }) {
@@ -27,7 +28,7 @@ function OfficialCardSkeleton({ featured }: { featured?: boolean }) {
   );
 }
 
-export default function OfficialsGrid({ title, icon, addLabel, section, isAdmin }: OfficialsGridProps) {
+export default function OfficialsGrid({ title, icon, addLabel, section, isAdmin = false }: OfficialsGridProps) {
   const { data: officials, isLoading } = useQuery({
     queryKey: ["officials", section],
     queryFn: () => getOfficials(section),

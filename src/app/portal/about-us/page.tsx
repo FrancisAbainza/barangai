@@ -5,11 +5,8 @@ import MissionVisionSection from "@/components/about-us/mission-vision-section";
 import OfficialsGrid from "@/components/about-us/officials-grid";
 import { Card } from "@/components/ui/card";
 import { barangayLogoSrc, barangayName } from "@/lib/data";
-import { getAuthRole } from "@/lib/auth";
 
-export default async function AboutUsPage() {
-  const { isAdmin } = await getAuthRole();
-
+export default function AboutUsPage() {
   return (
     <div className="container space-y-6 m-auto">
       <PageHeader
@@ -37,7 +34,6 @@ export default async function AboutUsPage() {
         icon={<Landmark />}
         addLabel="Add Official"
         section="barangay"
-        isAdmin={isAdmin}
       />
 
       <OfficialsGrid
@@ -45,7 +41,6 @@ export default async function AboutUsPage() {
         icon={<Users />}
         addLabel="Add SK"
         section="sk"
-        isAdmin={isAdmin}
       />
     </div>
   );

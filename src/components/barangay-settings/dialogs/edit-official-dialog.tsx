@@ -11,7 +11,7 @@ import type { MediaItem } from "@/components/file-uploader";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { updateOfficial } from "@/actions/officials";
 import type { Official } from "@/db/schema";
-import OfficialForm from "./official-form";
+import OfficialForm from "@/components/barangay-settings/forms/official-form";
 
 interface EditOfficialDialogProps {
   official: Official;

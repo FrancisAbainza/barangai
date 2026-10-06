@@ -10,7 +10,7 @@ import type { MediaItem } from "@/components/file-uploader";
 import { uploadFile } from "@/lib/storage";
 import { useDialogParam } from "@/hooks/use-dialog-param";
 import { createOfficial, type OfficialSection } from "@/actions/officials";
-import OfficialForm from "./official-form";
+import OfficialForm from "@/components/barangay-settings/forms/official-form";
 
 const EMPTY_VALUES: OfficialFormValues = { name: "", position: "", photo: [], isLeader: false };
 

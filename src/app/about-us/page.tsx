@@ -2,14 +2,11 @@ import MissionVisionSection from "@/components/about-us/mission-vision-section";
 import OfficialsGrid from "@/components/about-us/officials-grid";
 import PageHeader from "@/components/page-header";
 import { Card } from "@/components/ui/card";
-import { getAuthRole } from "@/lib/auth";
 import { barangayLogoSrc, barangayName } from "@/lib/data";
 import { Info, Landmark, Users } from "lucide-react";
 import Image from "next/image";
 
-export default async function AboutUsPage() {
-  const { isAdmin } = await getAuthRole();
-
+export default function AboutUsPage() {
   return (
     <div className="container space-y-6 m-auto px-6 py-20">
       <PageHeader
@@ -37,7 +34,6 @@ export default async function AboutUsPage() {
         icon={<Landmark />}
         addLabel="Add Official"
         section="barangay"
-        isAdmin={isAdmin}
       />
 
       <OfficialsGrid
@@ -45,7 +41,6 @@ export default async function AboutUsPage() {
         icon={<Users />}
         addLabel="Add SK"
         section="sk"
-        isAdmin={isAdmin}
       />
     </div>
   );

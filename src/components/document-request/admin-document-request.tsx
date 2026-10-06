@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Hourglass, ListFilter, Search, Settings } from "lucide-react";
+import { FileText, Hourglass, ListFilter, Search } from "lucide-react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,8 +35,6 @@ import {
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
 import DocumentRequestActionsMenu from "@/components/document-request/document-request-actions-menu";
-import AdminBarangaySettingsDialog from "@/components/document-request/dialogs/admin-barangay-settings-dialog";
-import { useDialogParam } from "@/hooks/use-dialog-param";
 import { getDocumentRequestStats, getDocumentRequests } from "@/actions/document-requests";
 import { statusBadgeVariant } from "@/lib/document-requests";
 import { documentRequestStatusEnum, documentRequestTypeEnum, type DocumentRequest } from "@/db/schema";
@@ -98,7 +96,6 @@ export default function AdminDocumentRequest() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useDialogParam("document-request-settings");
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const activeFilterCount = [
@@ -258,12 +255,6 @@ export default function AdminDocumentRequest() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        <Button variant="outline" className="shrink-0" onClick={() => setSettingsOpen(true)}>
-          <Settings />
-          Settings
-        </Button>
-        <AdminBarangaySettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
 
       <div className="rounded-lg border">

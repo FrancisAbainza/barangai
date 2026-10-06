@@ -6,6 +6,7 @@ import {
   FileText,
   Megaphone,
   MessageSquareWarning,
+  Settings,
   SportShoe,
   Store,
   Users,
@@ -55,6 +56,12 @@ const managementShortcuts: ManagementShortcut[] = [
     description: "Publish updates for residents.",
     href: "/portal/news",
     icon: Megaphone,
+  },
+  {
+    title: "Barangay Settings",
+    description: "Set fees, mission, vision, and officials.",
+    href: "/portal/barangay-settings",
+    icon: Settings,
   },
 ];
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { ArrowUpDown, CalendarCheck, Clock, Hourglass, ListFilter, Search, Settings } from "lucide-react";
+import { ArrowUpDown, CalendarCheck, Clock, Hourglass, ListFilter, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +37,6 @@ import StatCard from "@/components/stat-card";
 import CourtReservationActionsMenu from "@/components/court-reservation/court-reservation-actions-menu";
 import CourtReservationDialog from "@/components/court-reservation/dialogs/court-reservation-dialog";
 import TimeSlotsDialog from "@/components/court-reservation/dialogs/time-slots-dialog";
-import AdminCourtSettingsDialog from "@/components/court-reservation/dialogs/admin-court-settings-dialog";
 import { useDialogParam } from "@/hooks/use-dialog-param";
 import { getCourtReservations, getCourtReservationStats } from "@/actions/court-reservations";
 import {
@@ -103,7 +102,6 @@ export default function AdminCourtReservation() {
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [timeSlotsOpen, setTimeSlotsOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useDialogParam("court-reservation-settings");
   const [reserveOpen, setReserveOpen] = useDialogParam("court-reservation");
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -259,16 +257,10 @@ export default function AdminCourtReservation() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-
-          <Button variant="outline" className="shrink-0" onClick={() => setSettingsOpen(true)}>
-            <Settings />
-            Settings
-          </Button>
         </div>
       </div>
 
       <TimeSlotsDialog open={timeSlotsOpen} onOpenChange={setTimeSlotsOpen} />
-      <AdminCourtSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       <CourtReservationDialog open={reserveOpen} onOpenChange={setReserveOpen} />
 
       <div className="rounded-lg border">

@@ -2,50 +2,33 @@
 
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { courtSettingsFormSchema, CourtSettingsFormValues } from "@/schemas/settings-schema";
+import { courtFeesFormSchema, CourtFeesFormValues } from "@/schemas/settings-schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Loader2, Save } from "lucide-react";
 
-interface CourtSettingsFormProps {
-  defaultValues: CourtSettingsFormValues;
-  onSubmit: (data: CourtSettingsFormValues) => Promise<void>;
-  onCancel?: () => void;
+interface CourtFeesFormProps {
+  defaultValues: CourtFeesFormValues;
+  onSubmit: (data: CourtFeesFormValues) => Promise<void>;
 }
 
-export default function CourtSettingsForm({
+export default function CourtFeesForm({
   defaultValues,
   onSubmit,
-  onCancel,
-}: CourtSettingsFormProps) {
+}: CourtFeesFormProps) {
   const {
-    register,
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<CourtSettingsFormValues>({
-    resolver: zodResolver(courtSettingsFormSchema),
+    formState: { isSubmitting },
+  } = useForm<CourtFeesFormValues>({
+    resolver: zodResolver(courtFeesFormSchema),
     defaultValues,
   });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <fieldset disabled={isSubmitting} className="space-y-4">
-        <Field data-invalid={!!errors.gcashNumber}>
-          <FieldLabel htmlFor="gcashNumber">GCash Number</FieldLabel>
-          <FieldDescription>
-            Shown to residents on payment-based document and court reservation requests.
-          </FieldDescription>
-          <Input
-            {...register("gcashNumber")}
-            id="gcashNumber"
-            placeholder="e.g. 0917-123-4567"
-            aria-invalid={!!errors.gcashNumber}
-          />
-          <FieldError errors={[errors.gcashNumber]} />
-        </Field>
-
         <Controller
           name="courtDayRate"
           control={control}
@@ -92,12 +75,7 @@ export default function CourtSettingsForm({
           )}
         />
 
-        <div className="flex justify-end gap-2">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          )}
+        <div className="flex justify-end">
           <Button type="submit" className="gap-2">
             {isSubmitting ? (
               <>
@@ -107,7 +85,7 @@ export default function CourtSettingsForm({
             ) : (
               <>
                 <Save className="size-4" />
-                Save Settings
+                Save Court Fees
               </>
             )}
           </Button>

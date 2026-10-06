@@ -50,6 +50,13 @@ export const PORTAL_NAVIGATION_TARGETS = {
     description: "Manage resident and admin accounts.",
     adminOnly: true,
   },
+  "barangay-settings": {
+    label: "Barangay Settings",
+    href: "/portal/barangay-settings",
+    description:
+      "Manage document request pricing (GCash number and clearance fees), court reservation fees, the barangay mission and vision, and the barangay and SK officials.",
+    adminOnly: true,
+  },
 } as const satisfies Record<
   string,
   { label: string; href: string; description: string; adminOnly: boolean }

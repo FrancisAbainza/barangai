@@ -1,8 +1,10 @@
 import { Eye, Target } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { barangayMission, barangayVision } from "@/lib/data";
+import { getBarangaySettings } from "@/actions/settings";
 
-export default function MissionVisionSection() {
+export default async function MissionVisionSection() {
+  const { mission, vision } = await getBarangaySettings();
+
   return (
     <div className="grid gap-6 sm:grid-cols-2">
       <Card>
@@ -13,7 +15,7 @@ export default function MissionVisionSection() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground leading-relaxed">{barangayMission}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">{mission}</p>
         </CardContent>
       </Card>
 
@@ -25,7 +27,7 @@ export default function MissionVisionSection() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground leading-relaxed">{barangayVision}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">{vision}</p>
         </CardContent>
       </Card>
     </div>

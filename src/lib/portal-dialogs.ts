@@ -80,26 +80,14 @@ export const PORTAL_DIALOG_TARGETS = {
   },
   "add-barangay-official": {
     label: "Add a Barangay Official",
-    page: "about-us",
+    page: "barangay-settings",
     description: "Add an official to the Barangay Officials list.",
     audience: "admin",
   },
   "add-sk-official": {
     label: "Add an SK Official",
-    page: "about-us",
+    page: "barangay-settings",
     description: "Add an official to the Sangguniang Kabataan list.",
-    audience: "admin",
-  },
-  "court-reservation-settings": {
-    label: "Open Court Reservation Settings",
-    page: "court-reservation",
-    description: "Update the GCash number and hourly rates shown on court reservation requests.",
-    audience: "admin",
-  },
-  "document-request-settings": {
-    label: "Open Document Request Settings",
-    page: "document-request",
-    description: "Update the GCash number and clearance fees shown on document request forms.",
     audience: "admin",
   },
 } as const satisfies Record<

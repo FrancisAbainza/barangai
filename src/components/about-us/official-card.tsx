@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { fetchFile } from "@/lib/storage";
 import type { Official } from "@/db/schema";
-import EditOfficialDialog from "./edit-official-dialog";
-import DeleteOfficialDialog from "./delete-official-dialog";
+import EditOfficialDialog from "@/components/barangay-settings/dialogs/edit-official-dialog";
+import DeleteOfficialDialog from "@/components/barangay-settings/dialogs/delete-official-dialog";
 
 interface OfficialCardProps {
   official: Official;

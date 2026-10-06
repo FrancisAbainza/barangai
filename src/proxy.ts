@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { isAdminRole } from '@/lib/roles'
 
 const isProtectedRoute = createRouteMatcher(['/portal(.*)'])
-const isAdminRoute = createRouteMatcher(["/portal/user-management(.*)"]);
+const isAdminRoute = createRouteMatcher(["/portal/user-management(.*)", "/portal/barangay-settings(.*)"]);
 const isPublicOnlyRoute = createRouteMatcher(['/'])
 
 export default clerkMiddleware(async (auth, req) => {

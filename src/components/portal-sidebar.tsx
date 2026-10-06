@@ -14,6 +14,7 @@ import {
   SportShoe,
   Shield,
   User,
+  Settings,
 } from "lucide-react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import {
@@ -45,6 +46,7 @@ const residentMenuItems = [
 const adminMenuItems = [
   ...residentMenuItems,
   { title: "User Management", href: "/portal/user-management", icon: Users },
+  { title: "Barangay Settings", href: "/portal/barangay-settings", icon: Settings },
 ];
 
 export default function PortalSidebar() {

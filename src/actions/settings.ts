@@ -1,10 +1,13 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/db/config";
 import { barangaySettingsTable } from "@/db/schema";
 import {
+  barangayMission,
+  barangayVision,
   DEFAULT_CLEARANCE_PURPOSE_FEES,
   DEFAULT_COURT_DAY_RATE,
   DEFAULT_COURT_NIGHT_RATE,
@@ -17,6 +20,8 @@ export type BarangaySettingsValues = {
   clearancePurposeFees: ClearancePurposeFees;
   courtDayRate: number;
   courtNightRate: number;
+  mission: string;
+  vision: string;
 };
 
 const DEFAULT_SETTINGS: BarangaySettingsValues = {
@@ -24,6 +29,8 @@ const DEFAULT_SETTINGS: BarangaySettingsValues = {
   clearancePurposeFees: DEFAULT_CLEARANCE_PURPOSE_FEES,
   courtDayRate: DEFAULT_COURT_DAY_RATE,
   courtNightRate: DEFAULT_COURT_NIGHT_RATE,
+  mission: barangayMission,
+  vision: barangayVision,
 };
 
 export async function getBarangaySettings(): Promise<BarangaySettingsValues> {
@@ -35,12 +42,13 @@ export async function getBarangaySettings(): Promise<BarangaySettingsValues> {
     clearancePurposeFees: settings.clearancePurposeFees,
     courtDayRate: settings.courtDayRate,
     courtNightRate: settings.courtNightRate,
+    mission: settings.mission,
+    vision: settings.vision,
   };
 }
 
-// Accepts a partial update so callers (the document request settings dialog, the court
-// reservation settings dialog) can each submit only the fields they own without clobbering
-// the rest of this single shared settings row.
+// Accepts a partial update so each Barangay Settings page section can submit only the
+// fields it owns without clobbering the rest of this single shared settings row.
 export async function updateBarangaySettings(data: Partial<BarangaySettingsValues>) {
   await requireAdmin();
 
@@ -54,4 +62,8 @@ export async function updateBarangaySettings(data: Partial<BarangaySettingsValue
       target: barangaySettingsTable.id,
       set: { ...merged, updatedAt: new Date() },
     });
+
+  // The About Us pages render the mission and vision on the server.
+  revalidatePath("/about-us");
+  revalidatePath("/portal/about-us");
 }
