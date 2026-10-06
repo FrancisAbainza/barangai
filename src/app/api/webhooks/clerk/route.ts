@@ -1,9 +1,9 @@
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import type { UserJSON } from "@clerk/backend";
 import type { NextRequest } from "next/server";
-import { eq } from "drizzle-orm";
+import { isNull } from "drizzle-orm";
 import { db } from "@/db/config";
-import { deletedUsersTable, userSnapshotsTable } from "@/db/schema";
+import { userSnapshotsTable } from "@/db/schema";
 
 function extractFullName(user: Pick<UserJSON, "first_name" | "last_name" | "username">) {
   return [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username || "Unknown";
@@ -45,23 +45,19 @@ export async function POST(req: NextRequest) {
   if (event.type === "user.deleted") {
     const userId = event.data.id;
     if (userId) {
-      const [snapshot] = await db
-        .select()
-        .from(userSnapshotsTable)
-        .where(eq(userSnapshotsTable.userId, userId));
+      const now = new Date();
 
+      // Placeholder values only apply to users with no snapshot (created before the
+      // webhook existed and never backfilled). `setWhere` keeps the original deletion
+      // time if Clerk redelivers the event.
       await db
-        .insert(deletedUsersTable)
-        .values({
-          userId,
-          fullName: snapshot?.fullName ?? "Unknown",
-          email: snapshot?.email ?? "—",
-          role: snapshot?.role ?? null,
-          joinedAt: snapshot?.joinedAt ?? new Date(),
-        })
-        .onConflictDoNothing({ target: deletedUsersTable.userId });
-
-      await db.delete(userSnapshotsTable).where(eq(userSnapshotsTable.userId, userId));
+        .insert(userSnapshotsTable)
+        .values({ userId, fullName: "Unknown", email: "—", role: null, joinedAt: now, deletedAt: now })
+        .onConflictDoUpdate({
+          target: userSnapshotsTable.userId,
+          set: { deletedAt: now, updatedAt: now },
+          setWhere: isNull(userSnapshotsTable.deletedAt),
+        });
     }
   }
 

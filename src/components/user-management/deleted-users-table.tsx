@@ -153,7 +153,7 @@ export default function DeletedUsersTable() {
             ) : (
               <>
                 {users.map((user) => (
-                  <TableRow key={user.id}>
+                  <TableRow key={user.userId}>
                     <TableCell>
                       <div className="min-w-0">
                         <p className="font-medium truncate">{user.fullName}</p>

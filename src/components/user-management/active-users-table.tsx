@@ -50,6 +50,25 @@ function roleBadgeVariant(role: string) {
   return "outline";
 }
 
+function formatLastSignIn(timestamp: number | null) {
+  if (!timestamp) return "Never";
+
+  const diffMs = Date.now() - timestamp;
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+
+  return new Date(timestamp).toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function UserRowSkeleton() {
   return (
     <TableRow>
@@ -67,6 +86,9 @@ function UserRowSkeleton() {
       </TableCell>
       <TableCell>
         <Skeleton className="h-5 w-14 rounded-full" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-4 w-20" />
       </TableCell>
       <TableCell>
         <Skeleton className="h-4 w-20" />
@@ -104,7 +126,7 @@ function LoadMoreTrigger({
 
   return (
     <TableRow ref={ref}>
-      <TableCell colSpan={5} className="h-1 p-0" />
+      <TableCell colSpan={6} className="h-1 p-0" />
     </TableRow>
   );
 }
@@ -159,6 +181,7 @@ export default function ActiveUsersTable() {
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
+              <TableHead>Last Sign In</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -171,7 +194,7 @@ export default function ActiveUsersTable() {
               </>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
                   No users found.
                 </TableCell>
               </TableRow>
@@ -219,6 +242,16 @@ export default function ActiveUsersTable() {
                         month: "short",
                         day: "numeric",
                       })}
+                    </TableCell>
+                    <TableCell
+                      className="text-muted-foreground"
+                      title={
+                        user.lastSignInAt
+                          ? new Date(user.lastSignInAt).toLocaleString("en-PH")
+                          : undefined
+                      }
+                    >
+                      {formatLastSignIn(user.lastSignInAt)}
                     </TableCell>
                     <TableCell className="text-right">
                       <UserActionsMenu

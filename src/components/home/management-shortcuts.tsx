@@ -57,12 +57,6 @@ const managementShortcuts: ManagementShortcut[] = [
     href: "/portal/news",
     icon: Megaphone,
   },
-  {
-    title: "Barangay Settings",
-    description: "Set fees, mission, vision, and officials.",
-    href: "/portal/barangay-settings",
-    icon: Settings,
-  },
 ];
 
 export default function ManagementShortcuts() {

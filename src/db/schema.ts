@@ -279,9 +279,10 @@ export const courtReservationsTable = pgTable("court_reservations", {
 
 export type CourtReservation = typeof courtReservationsTable.$inferSelect;
 
-// Mirror of live Clerk users, kept in sync via the `user.created`/`user.updated`
-// webhooks so a last-known snapshot is available when `user.deleted` fires
-// (Clerk's delete webhook payload only contains the user id, nothing else).
+// Mirror of Clerk users, kept in sync via the `user.created`/`user.updated` webhooks
+// so a last-known snapshot is available when `user.deleted` fires (Clerk's delete
+// webhook payload only contains the user id, nothing else). `deletedAt` is the
+// status: null for live users, set when the user is deleted from Clerk.
 export const userSnapshotsTable = pgTable("user_snapshots", {
   userId: varchar({ length: 255 }).primaryKey(),
   fullName: varchar({ length: 255 }).notNull(),
@@ -289,25 +290,10 @@ export const userSnapshotsTable = pgTable("user_snapshots", {
   role: varchar({ length: 32 }),
   joinedAt: timestamp().notNull(),
   updatedAt: timestamp().notNull().defaultNow(),
+  deletedAt: timestamp(),
 });
 
 export type UserSnapshot = typeof userSnapshotsTable.$inferSelect;
-
-export const deletedUsersTable = pgTable(
-  "deleted_users",
-  {
-    id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    userId: varchar({ length: 255 }).notNull(),
-    fullName: varchar({ length: 255 }).notNull(),
-    email: varchar({ length: 255 }).notNull(),
-    role: varchar({ length: 32 }),
-    joinedAt: timestamp().notNull(),
-    deletedAt: timestamp().notNull().defaultNow(),
-  },
-  (table) => [uniqueIndex("deleted_users_user_id_idx").on(table.userId)]
-);
-
-export type DeletedUser = typeof deletedUsersTable.$inferSelect;
 
 // The AI assistant's RAG knowledge base. Only one document is active at a time — admins
 // replace it wholesale rather than managing a library, so `replaceKnowledgeBaseDocument`

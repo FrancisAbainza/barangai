@@ -3,13 +3,12 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import type { User } from "@clerk/nextjs/server";
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
-import { desc, eq, ilike, or } from "drizzle-orm";
+import { and, desc, eq, ilike, isNotNull, or } from "drizzle-orm";
 import { db } from "@/db/config";
 import {
   businessesTable,
   complaintsTable,
   courtReservationsTable,
-  deletedUsersTable,
   documentRequestsTable,
   newsCommentsTable,
   newsReactionsTable,
@@ -37,6 +36,7 @@ export type ManagedUser = {
   role: string;
   banned: boolean;
   createdAt: number;
+  lastSignInAt: number | null;
 };
 
 export type UsersPage = {
@@ -60,6 +60,7 @@ function toManagedUser(user: User): ManagedUser {
     role: (user.publicMetadata?.role as string | undefined) ?? "resident",
     banned: user.banned,
     createdAt: user.createdAt,
+    lastSignInAt: user.lastSignInAt,
   };
 }
 
@@ -189,7 +190,6 @@ export async function deleteUser(userId: string) {
 const DELETED_USERS_PAGE_SIZE = 20;
 
 export type DeletedManagedUser = {
-  id: number;
   userId: string;
   fullName: string;
   email: string;
@@ -213,27 +213,29 @@ export async function getDeletedUsers({
   await requireAdmin();
 
   const query = search?.trim();
-  const whereClause = query
-    ? or(ilike(deletedUsersTable.fullName, `%${query}%`), ilike(deletedUsersTable.email, `%${query}%`))
-    : undefined;
+  const whereClause = and(
+    isNotNull(userSnapshotsTable.deletedAt),
+    query
+      ? or(ilike(userSnapshotsTable.fullName, `%${query}%`), ilike(userSnapshotsTable.email, `%${query}%`))
+      : undefined
+  );
 
   const rows = await db
     .select()
-    .from(deletedUsersTable)
+    .from(userSnapshotsTable)
     .where(whereClause)
-    .orderBy(desc(deletedUsersTable.deletedAt))
+    .orderBy(desc(userSnapshotsTable.deletedAt))
     .limit(DELETED_USERS_PAGE_SIZE + 1)
     .offset(offset);
 
   const hasMore = rows.length > DELETED_USERS_PAGE_SIZE;
   const items = rows.slice(0, DELETED_USERS_PAGE_SIZE).map((row) => ({
-    id: row.id,
     userId: row.userId,
     fullName: row.fullName,
     email: row.email,
     role: row.role,
     joinedAt: row.joinedAt.getTime(),
-    deletedAt: row.deletedAt.getTime(),
+    deletedAt: row.deletedAt!.getTime(),
   }));
 
   return { items, nextOffset: hasMore ? offset + DELETED_USERS_PAGE_SIZE : null };
@@ -330,7 +332,6 @@ export async function deleteAllUserData(userId: string) {
     db.delete(businessesTable).where(eq(businessesTable.ownerId, userId)),
     db.delete(courtReservationsTable).where(eq(courtReservationsTable.requesterId, userId)),
     db.delete(userSnapshotsTable).where(eq(userSnapshotsTable.userId, userId)),
-    db.delete(deletedUsersTable).where(eq(deletedUsersTable.userId, userId)),
   ]);
 
   // R2 has no cascading delete, so orphaned objects are cleaned up last, after the
