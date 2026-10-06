@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import BusinessCard from "@/components/community-hub/business-card";
 import type { BusinessWithOwner } from "@/actions/business";
 
-interface VerifiedBusinessGridProps {
+interface BusinessGridProps {
   businesses: BusinessWithOwner[];
   isLoading: boolean;
   hasNextPage: boolean;
@@ -14,13 +14,13 @@ interface VerifiedBusinessGridProps {
   isFetchingNextPage: boolean;
 }
 
-export default function VerifiedBusinessGrid({
+export default function BusinessGrid({
   businesses,
   isLoading,
   hasNextPage,
   fetchNextPage,
   isFetchingNextPage,
-}: VerifiedBusinessGridProps) {
+}: BusinessGridProps) {
   if (isLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -10,6 +10,7 @@ import BusinessActionsMenu from "@/components/community-hub/business-actions-men
 import ViewBusinessDialog from "@/components/community-hub/dialogs/view-business-dialog";
 import { fetchFile } from "@/lib/storage";
 import { formatOperatingHours, statusBadgeVariant } from "@/lib/business";
+import { isAdminRole } from "@/lib/roles";
 import type { BusinessWithOwner } from "@/actions/business";
 import type { MediaItem } from "@/components/file-uploader";
 
@@ -17,6 +18,7 @@ export default function BusinessCard({ business }: { business: BusinessWithOwner
   const [viewOpen, setViewOpen] = useState(false);
   const { user } = useUser();
   const isOwnBusiness = business.ownerId === user?.id;
+  const showStatus = (isOwnBusiness || isAdminRole(user?.publicMetadata?.role as string | undefined)) && business.status !== "Verified";
 
   const photos = business.photos as MediaItem[];
   const cover = photos.find((item) => item.type === "image" && item.key);
@@ -56,7 +58,7 @@ export default function BusinessCard({ business }: { business: BusinessWithOwner
               <p className="truncate font-semibold leading-tight">{business.name}</p>
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 <Badge variant="outline">{business.category}</Badge>
-                {isOwnBusiness && business.status !== "Verified" && (
+                {showStatus && (
                   <Badge variant={statusBadgeVariant(business.status)}>{business.status}</Badge>
                 )}
               </div>

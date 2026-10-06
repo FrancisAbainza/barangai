@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { and, count, desc, eq, gte, ilike, lte, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, lte, ne } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
@@ -46,12 +46,16 @@ export type BusinessesPage = {
   nextOffset: number | null;
 };
 
-async function fetchBusinessesPage(conditions: Parameters<typeof and>, offset: number): Promise<BusinessesPage> {
+async function fetchBusinessesPage(
+  conditions: Parameters<typeof and>,
+  offset: number,
+  orderFn: typeof asc | typeof desc = desc
+): Promise<BusinessesPage> {
   const businesses = await db
     .select()
     .from(businessesTable)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(businessesTable.createdAt), desc(businessesTable.id))
+    .orderBy(orderFn(businessesTable.createdAt), orderFn(businessesTable.id))
     .limit(BUSINESSES_PAGE_SIZE)
     .offset(offset);
 
@@ -86,6 +90,7 @@ export async function getBusinesses({
   status,
   dateFrom,
   dateTo,
+  sortOrder = "newest",
 }: {
   offset?: number;
   search?: string;
@@ -93,6 +98,7 @@ export async function getBusinesses({
   status?: Business["status"] | "unverified" | "all";
   dateFrom?: string;
   dateTo?: string;
+  sortOrder?: "newest" | "oldest";
 } = {}): Promise<BusinessesPage> {
   await requireAdmin();
 
@@ -120,7 +126,9 @@ export async function getBusinesses({
     conditions.push(ilike(businessesTable.name, `%${trimmedSearch}%`));
   }
 
-  return fetchBusinessesPage(conditions, offset);
+  const orderFn = sortOrder === "oldest" ? asc : desc;
+
+  return fetchBusinessesPage(conditions, offset, orderFn);
 }
 
 export async function getBusinessesByUser(
@@ -138,21 +146,15 @@ export async function getVerifiedBusinesses({
   offset = 0,
   search,
   category,
-  mine,
 }: {
   offset?: number;
   search?: string;
   category?: Business["category"] | "all";
-  mine?: boolean;
 } = {}): Promise<BusinessesPage> {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  // "My Business" should surface every status so the owner can track pending/rejected
-  // submissions too; everyone else only ever sees Verified listings.
-  const conditions = mine
-    ? [eq(businessesTable.ownerId, userId)]
-    : [eq(businessesTable.status, "Verified")];
+  const conditions = [eq(businessesTable.status, "Verified")];
 
   if (category && category !== "all") {
     conditions.push(eq(businessesTable.category, category));

@@ -5,7 +5,7 @@ import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { documentRequestsTable, type DocumentRequest } from "@/db/schema";
-import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import type { MediaItem } from "@/components/file-uploader";
 
 export type CreateDocumentRequestInput = {
@@ -57,13 +57,14 @@ export type DocumentRequestsPage = {
 async function fetchDocumentRequestsPage(
   conditions: Parameters<typeof and>,
   offset: number,
-  pageSize: number
+  pageSize: number,
+  orderFn: typeof asc | typeof desc = desc
 ): Promise<DocumentRequestsPage> {
   const requests = await db
     .select()
     .from(documentRequestsTable)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(documentRequestsTable.createdAt), desc(documentRequestsTable.id))
+    .orderBy(orderFn(documentRequestsTable.createdAt), orderFn(documentRequestsTable.id))
     .limit(pageSize)
     .offset(offset);
 
@@ -127,6 +128,7 @@ export async function getDocumentRequests({
   status,
   dateFrom,
   dateTo,
+  sortOrder = "newest",
 }: {
   offset?: number;
   search?: string;
@@ -134,6 +136,7 @@ export async function getDocumentRequests({
   status?: DocumentRequest["status"] | "all";
   dateFrom?: string;
   dateTo?: string;
+  sortOrder?: "newest" | "oldest";
 } = {}): Promise<DocumentRequestsPage> {
   await requireAdmin();
 
@@ -170,7 +173,9 @@ export async function getDocumentRequests({
     );
   }
 
-  return fetchDocumentRequestsPage(conditions, offset, DOCUMENT_REQUESTS_PAGE_SIZE);
+  const orderFn = sortOrder === "oldest" ? asc : desc;
+
+  return fetchDocumentRequestsPage(conditions, offset, DOCUMENT_REQUESTS_PAGE_SIZE, orderFn);
 }
 
 export type DocumentRequestStats = {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Hourglass, ListFilter, Map, MapPinOff, Search, Table as TableIcon } from "lucide-react";
+import { ArrowUpDown, FileText, Hourglass, ListFilter, Map, MapPinOff, Search, Table as TableIcon } from "lucide-react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,11 @@ const STATUS_FILTERS = [
   ...complaintStatusEnum.enumValues.map((status) => ({ value: status, label: status })),
 ];
 
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+] as const;
+
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [debounced, setDebounced] = useState(value);
 
@@ -103,6 +108,7 @@ export default function AdminComplaint() {
   const [status, setStatus] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -131,7 +137,7 @@ export default function AdminComplaint() {
     queryKey: [
       "complaints",
       "admin",
-      { search: debouncedSearch, category, priority, status, dateFrom, dateTo },
+      { search: debouncedSearch, category, priority, status, dateFrom, dateTo, sortOrder },
     ],
     queryFn: ({ pageParam }) =>
       getComplaints({
@@ -142,6 +148,7 @@ export default function AdminComplaint() {
         status: status as Complaint["status"] | "all",
         dateFrom,
         dateTo,
+        sortOrder,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset,
@@ -177,121 +184,6 @@ export default function AdminComplaint() {
         />
       </div>
 
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by subject or complainant…"
-            className="pl-8"
-          />
-        </div>
-
-        <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="shrink-0">
-              <ListFilter />
-              Filters
-              {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="rounded-full px-1.5">
-                  {activeFilterCount}
-                </Badge>
-              )}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Filter Complaints</DialogTitle>
-              <DialogDescription>
-                Narrow down complaints by category, priority, status, or date range.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORY_FILTERS.map((filter) => (
-                      <SelectItem key={filter.value} value={filter.value}>
-                        {filter.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Priority</Label>
-                <Select value={priority} onValueChange={setPriority}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRIORITY_FILTERS.map((filter) => (
-                      <SelectItem key={filter.value} value={filter.value}>
-                        {filter.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Status</Label>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_FILTERS.map((filter) => (
-                      <SelectItem key={filter.value} value={filter.value}>
-                        {filter.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="date-from">From</Label>
-                <Input
-                  id="date-from"
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="date-to">To</Label>
-                <Input
-                  id="date-to"
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={clearFilters}
-                disabled={activeFilterCount === 0}
-              >
-                Clear filters
-              </Button>
-              <Button onClick={() => setFiltersOpen(false)}>Done</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-
       <Tabs value={view} onValueChange={(value) => setView(value as "table" | "map")}>
         <TabsList>
           <TabsTrigger value="table">
@@ -303,6 +195,139 @@ export default function AdminComplaint() {
             Map
           </TabsTrigger>
         </TabsList>
+
+        <div className="flex flex-col gap-2 pt-2 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by subject or complainant…"
+              className="pl-8"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {view !== "map" && (
+              <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as "newest" | "oldest")}>
+                <SelectTrigger className="w-40 shrink-0">
+                  <ArrowUpDown className="size-4" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="shrink-0">
+                  <ListFilter />
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <Badge variant="secondary" className="rounded-full px-1.5">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Filter Complaints</DialogTitle>
+                  <DialogDescription>
+                    Narrow down complaints by category, priority, status, or date range.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>Category</Label>
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORY_FILTERS.map((filter) => (
+                          <SelectItem key={filter.value} value={filter.value}>
+                            {filter.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label>Priority</Label>
+                    <Select value={priority} onValueChange={setPriority}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRIORITY_FILTERS.map((filter) => (
+                          <SelectItem key={filter.value} value={filter.value}>
+                            {filter.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label>Status</Label>
+                    <Select value={status} onValueChange={setStatus}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_FILTERS.map((filter) => (
+                          <SelectItem key={filter.value} value={filter.value}>
+                            {filter.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="date-from">From</Label>
+                    <Input
+                      id="date-from"
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="date-to">To</Label>
+                    <Input
+                      id="date-to"
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={clearFilters}
+                    disabled={activeFilterCount === 0}
+                  >
+                    Clear filters
+                  </Button>
+                  <Button onClick={() => setFiltersOpen(false)}>Done</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
 
         <TabsContent value="table" className="pt-2">
           <div className="rounded-lg border">
@@ -376,7 +401,7 @@ export default function AdminComplaint() {
               <MapPinOff className="size-8 text-muted-foreground" />
               <p className="text-sm font-medium">No complaints to display</p>
               <p className="text-sm text-muted-foreground">
-                Complaints will appear here once residents file them.
+                Complaints that match your search and filters will appear here.
               </p>
             </div>
           ) : (

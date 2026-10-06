@@ -94,6 +94,15 @@ export default function BusinessesMapView({ businesses }: { businesses: LocatedB
     (item) => item.type === "image" && item.key
   );
 
+  // The map's fullscreen mode only renders the map container, so the dialog (portaled to <body>)
+  // would open invisibly behind it. Leave fullscreen first.
+  async function openViewDialog() {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => {});
+    }
+    setViewOpen(true);
+  }
+
   return (
     <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
       <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
@@ -186,7 +195,7 @@ export default function BusinessesMapView({ businesses }: { businesses: LocatedB
                   </p>
                 </div>
 
-                <Button size="sm" className="w-full" onClick={() => setViewOpen(true)}>
+                <Button size="sm" className="w-full" onClick={openViewDialog}>
                   View Details
                 </Button>
               </div>

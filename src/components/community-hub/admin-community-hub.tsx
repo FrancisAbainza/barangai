@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { BadgeCheck, Hourglass, Inbox, ListFilter, Map, MapPinOff, Search, Store } from "lucide-react";
+import { ArrowUpDown, Hourglass, LayoutGrid, ListFilter, Map, MapPinOff, Search, Store, Table } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatCard from "@/components/stat-card";
 import BusinessSubmissionsTable from "@/components/community-hub/business-submissions-table";
-import VerifiedBusinessGrid from "@/components/community-hub/verified-business-grid";
+import BusinessGrid from "@/components/community-hub/business-grid";
 import BusinessesMapView from "@/components/community-hub/businesses-map-view";
 import { getBusinesses, getBusinessStats } from "@/actions/business";
 import { BUSINESS_CATEGORIES, BUSINESS_STATUSES } from "@/schemas/business-schema";
@@ -44,6 +44,11 @@ const STATUS_FILTERS = [
   ...BUSINESS_STATUSES.map((status) => ({ value: status, label: status })),
 ];
 
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+] as const;
+
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [debounced, setDebounced] = useState(value);
 
@@ -56,30 +61,29 @@ function useDebouncedValue<T>(value: T, delayMs: number) {
 }
 
 export default function AdminCommunityHub() {
-  const [tab, setTab] = useState<"submissions" | "verified" | "map">("submissions");
-  const [submissionSearch, setSubmissionSearch] = useState("");
-  const [verifiedSearch, setVerifiedSearch] = useState("");
-  const debouncedSubmissionSearch = useDebouncedValue(submissionSearch, 300);
-  const debouncedVerifiedSearch = useDebouncedValue(verifiedSearch, 300);
+  const [tab, setTab] = useState<"table" | "grid" | "map">("table");
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
 
-  const [submissionCategory, setSubmissionCategory] = useState("all");
-  const [submissionStatus, setSubmissionStatus] = useState("all");
-  const [submissionDateFrom, setSubmissionDateFrom] = useState("");
-  const [submissionDateTo, setSubmissionDateTo] = useState("");
-  const [submissionFiltersOpen, setSubmissionFiltersOpen] = useState(false);
+  const [category, setCategory] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const submissionActiveFilterCount = [
-    submissionCategory !== "all",
-    submissionStatus !== "all",
-    submissionDateFrom !== "",
-    submissionDateTo !== "",
+  const activeFilterCount = [
+    category !== "all",
+    status !== "all",
+    dateFrom !== "",
+    dateTo !== "",
   ].filter(Boolean).length;
 
-  function clearSubmissionFilters() {
-    setSubmissionCategory("all");
-    setSubmissionStatus("all");
-    setSubmissionDateFrom("");
-    setSubmissionDateTo("");
+  function clearFilters() {
+    setCategory("all");
+    setStatus("all");
+    setDateFrom("");
+    setDateTo("");
   }
 
   const { data: stats, isLoading: isStatsLoading } = useQuery({
@@ -87,67 +91,42 @@ export default function AdminCommunityHub() {
     queryFn: () => getBusinessStats(),
   });
 
-  const {
-    data: submissionsData,
-    isLoading: isSubmissionsLoading,
-    fetchNextPage: fetchNextSubmissionsPage,
-    hasNextPage: hasNextSubmissionsPage,
-    isFetchingNextPage: isFetchingNextSubmissionsPage,
-  } = useInfiniteQuery({
+  // The table, grid and map are different views of the same filtered list, so they share
+  // one query (and its cache) as the admin switches between tabs.
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: [
       "businesses",
       "admin",
-      "submissions",
-      {
-        search: debouncedSubmissionSearch,
-        category: submissionCategory,
-        status: submissionStatus,
-        dateFrom: submissionDateFrom,
-        dateTo: submissionDateTo,
-      },
+      { search: debouncedSearch, category, status, dateFrom, dateTo, sortOrder },
     ],
     queryFn: ({ pageParam }) =>
       getBusinesses({
         offset: pageParam,
-        search: debouncedSubmissionSearch,
-        category: submissionCategory as Business["category"] | "all",
-        status: submissionStatus as Business["status"] | "all",
-        dateFrom: submissionDateFrom,
-        dateTo: submissionDateTo,
+        search: debouncedSearch,
+        category: category as Business["category"] | "all",
+        status: status as Business["status"] | "all",
+        dateFrom,
+        dateTo,
+        sortOrder,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset,
   });
 
-  const {
-    data: verifiedData,
-    isLoading: isVerifiedLoading,
-    fetchNextPage: fetchNextVerifiedPage,
-    hasNextPage: hasNextVerifiedPage,
-    isFetchingNextPage: isFetchingNextVerifiedPage,
-  } = useInfiniteQuery({
-    queryKey: ["businesses", "admin", "verified", { search: debouncedVerifiedSearch }],
-    queryFn: ({ pageParam }) =>
-      getBusinesses({ offset: pageParam, search: debouncedVerifiedSearch, status: "Verified" }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) => lastPage.nextOffset,
-  });
-
-  const submissions = submissionsData?.pages.flatMap((page) => page.items) ?? [];
-  const verifiedBusinesses = verifiedData?.pages.flatMap((page) => page.items) ?? [];
-  const businessesWithLocation = verifiedBusinesses.filter(
+  const businesses = data?.pages.flatMap((page) => page.items) ?? [];
+  const businessesWithLocation = businesses.filter(
     (business): business is typeof business & { location: LocationValue } => !!business.location
   );
 
-  // The map should plot every verified business, not just the first page, so keep paging
+  // The map should plot every matching business, not just the first page, so keep paging
   // through the same infinite query once the admin switches to the map tab.
   useEffect(() => {
-    if (tab === "map" && hasNextVerifiedPage && !isFetchingNextVerifiedPage) {
-      fetchNextVerifiedPage();
+    if (tab === "map" && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [tab, hasNextVerifiedPage, isFetchingNextVerifiedPage, fetchNextVerifiedPage]);
+  }, [tab, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const isMapLoading = isVerifiedLoading || (isFetchingNextVerifiedPage && hasNextVerifiedPage);
+  const isMapLoading = isLoading || (isFetchingNextPage && hasNextPage);
 
   return (
     <div className="space-y-4">
@@ -171,13 +150,13 @@ export default function AdminCommunityHub() {
 
       <Tabs value={tab} onValueChange={(value) => setTab(value as typeof tab)}>
         <TabsList>
-          <TabsTrigger value="submissions">
-            <Inbox />
-            Submissions
+          <TabsTrigger value="table">
+            <Table />
+            Table
           </TabsTrigger>
-          <TabsTrigger value="verified">
-            <BadgeCheck />
-            Verified
+          <TabsTrigger value="grid">
+            <LayoutGrid />
+            Grid
           </TabsTrigger>
           <TabsTrigger value="map">
             <Map />
@@ -185,42 +164,58 @@ export default function AdminCommunityHub() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="submissions" className="space-y-4 pt-2">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={submissionSearch}
-                onChange={(e) => setSubmissionSearch(e.target.value)}
-                placeholder="Search by business name…"
-                className="pl-8"
-              />
-            </div>
+        <div className="flex flex-col gap-2 pt-2 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by business name…"
+              className="pl-8"
+            />
+          </div>
 
-            <Dialog open={submissionFiltersOpen} onOpenChange={setSubmissionFiltersOpen}>
+          <div className="flex flex-wrap gap-2">
+            {tab !== "map" && (
+              <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as "newest" | "oldest")}>
+                <SelectTrigger className="w-40 shrink-0">
+                  <ArrowUpDown className="size-4" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="shrink-0">
                   <ListFilter />
                   Filters
-                  {submissionActiveFilterCount > 0 && (
+                  {activeFilterCount > 0 && (
                     <Badge variant="secondary" className="rounded-full px-1.5">
-                      {submissionActiveFilterCount}
+                      {activeFilterCount}
                     </Badge>
                   )}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Filter Submissions</DialogTitle>
+                  <DialogTitle>Filter Businesses</DialogTitle>
                   <DialogDescription>
-                    Narrow down business submissions by category, status, or date range.
+                    Narrow down businesses by category, status, or date range.
                   </DialogDescription>
                 </DialogHeader>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label>Category</Label>
-                    <Select value={submissionCategory} onValueChange={setSubmissionCategory}>
+                    <Select value={category} onValueChange={setCategory}>
                       <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
@@ -236,7 +231,7 @@ export default function AdminCommunityHub() {
 
                   <div className="space-y-1.5">
                     <Label>Status</Label>
-                    <Select value={submissionStatus} onValueChange={setSubmissionStatus}>
+                    <Select value={status} onValueChange={setStatus}>
                       <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
@@ -251,66 +246,54 @@ export default function AdminCommunityHub() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="submission-date-from">From</Label>
+                    <Label htmlFor="business-date-from">From</Label>
                     <Input
-                      id="submission-date-from"
+                      id="business-date-from"
                       type="date"
-                      value={submissionDateFrom}
-                      onChange={(e) => setSubmissionDateFrom(e.target.value)}
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="submission-date-to">To</Label>
+                    <Label htmlFor="business-date-to">To</Label>
                     <Input
-                      id="submission-date-to"
+                      id="business-date-to"
                       type="date"
-                      value={submissionDateTo}
-                      onChange={(e) => setSubmissionDateTo(e.target.value)}
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
                     />
                   </div>
                 </div>
 
                 <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={clearSubmissionFilters}
-                    disabled={submissionActiveFilterCount === 0}
-                  >
+                  <Button variant="outline" onClick={clearFilters} disabled={activeFilterCount === 0}>
                     Clear filters
                   </Button>
-                  <Button onClick={() => setSubmissionFiltersOpen(false)}>Done</Button>
+                  <Button onClick={() => setFiltersOpen(false)}>Done</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
+        </div>
 
+        <TabsContent value="table" className="pt-2">
           <BusinessSubmissionsTable
-            businesses={submissions}
-            isLoading={isSubmissionsLoading}
-            hasNextPage={!!hasNextSubmissionsPage}
-            fetchNextPage={fetchNextSubmissionsPage}
-            isFetchingNextPage={isFetchingNextSubmissionsPage}
+            businesses={businesses}
+            isLoading={isLoading}
+            hasNextPage={!!hasNextPage}
+            fetchNextPage={fetchNextPage}
+            isFetchingNextPage={isFetchingNextPage}
           />
         </TabsContent>
 
-        <TabsContent value="verified" className="space-y-4 pt-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={verifiedSearch}
-              onChange={(e) => setVerifiedSearch(e.target.value)}
-              placeholder="Search by business name…"
-              className="pl-8"
-            />
-          </div>
-
-          <VerifiedBusinessGrid
-            businesses={verifiedBusinesses}
-            isLoading={isVerifiedLoading}
-            hasNextPage={!!hasNextVerifiedPage}
-            fetchNextPage={fetchNextVerifiedPage}
-            isFetchingNextPage={isFetchingNextVerifiedPage}
+        <TabsContent value="grid" className="pt-2">
+          <BusinessGrid
+            businesses={businesses}
+            isLoading={isLoading}
+            hasNextPage={!!hasNextPage}
+            fetchNextPage={fetchNextPage}
+            isFetchingNextPage={isFetchingNextPage}
           />
         </TabsContent>
 
@@ -320,9 +303,9 @@ export default function AdminCommunityHub() {
           ) : businessesWithLocation.length === 0 ? (
             <div className="flex h-128 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-center">
               <MapPinOff className="size-8 text-muted-foreground" />
-              <p className="text-sm font-medium">No verified businesses to display</p>
+              <p className="text-sm font-medium">No businesses to display</p>
               <p className="text-sm text-muted-foreground">
-                Businesses with a saved location will appear here once verified.
+                Businesses with a saved location that match your search and filters will appear here.
               </p>
             </div>
           ) : (

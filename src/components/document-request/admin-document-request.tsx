@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Hourglass, ListFilter, Search } from "lucide-react";
+import { ArrowUpDown, FileText, Hourglass, ListFilter, Search } from "lucide-react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,11 @@ const STATUS_FILTERS = [
   ...documentRequestStatusEnum.enumValues.map((status) => ({ value: status, label: status })),
 ];
 
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+] as const;
+
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [debounced, setDebounced] = useState(value);
 
@@ -95,6 +100,7 @@ export default function AdminDocumentRequest() {
   const [status, setStatus] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -121,7 +127,7 @@ export default function AdminDocumentRequest() {
     queryKey: [
       "document-requests",
       "admin",
-      { search: debouncedSearch, documentType, status, dateFrom, dateTo },
+      { search: debouncedSearch, documentType, status, dateFrom, dateTo, sortOrder },
     ],
     queryFn: ({ pageParam }) =>
       getDocumentRequests({
@@ -131,6 +137,7 @@ export default function AdminDocumentRequest() {
         status: status as DocumentRequest["status"] | "all",
         dateFrom,
         dateTo,
+        sortOrder,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset,
@@ -158,7 +165,7 @@ export default function AdminDocumentRequest() {
         />
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -169,92 +176,108 @@ export default function AdminDocumentRequest() {
           />
         </div>
 
-        <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="shrink-0">
-              <ListFilter />
-              Filters
-              {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="rounded-full px-1.5">
-                  {activeFilterCount}
-                </Badge>
-              )}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Filter Requests</DialogTitle>
-              <DialogDescription>
-                Narrow down document requests by type, status, or date range.
-              </DialogDescription>
-            </DialogHeader>
+        <div className="flex flex-wrap gap-2">
+          <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as "newest" | "oldest")}>
+            <SelectTrigger className="w-40 shrink-0">
+              <ArrowUpDown className="size-4" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Document Type</Label>
-                <Select value={documentType} onValueChange={setDocumentType}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DOCUMENT_TYPE_FILTERS.map((filter) => (
-                      <SelectItem key={filter.value} value={filter.value}>
-                        {filter.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Status</Label>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_FILTERS.map((filter) => (
-                      <SelectItem key={filter.value} value={filter.value}>
-                        {filter.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="date-from">From</Label>
-                <Input
-                  id="date-from"
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="date-to">To</Label>
-                <Input
-                  id="date-to"
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={clearFilters}
-                disabled={activeFilterCount === 0}
-              >
-                Clear filters
+          <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="shrink-0">
+                <ListFilter />
+                Filters
+                {activeFilterCount > 0 && (
+                  <Badge variant="secondary" className="rounded-full px-1.5">
+                    {activeFilterCount}
+                  </Badge>
+                )}
               </Button>
-              <Button onClick={() => setFiltersOpen(false)}>Done</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Filter Requests</DialogTitle>
+                <DialogDescription>
+                  Narrow down document requests by type, status, or date range.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Document Type</Label>
+                  <Select value={documentType} onValueChange={setDocumentType}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DOCUMENT_TYPE_FILTERS.map((filter) => (
+                        <SelectItem key={filter.value} value={filter.value}>
+                          {filter.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Status</Label>
+                  <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_FILTERS.map((filter) => (
+                        <SelectItem key={filter.value} value={filter.value}>
+                          {filter.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="date-from">From</Label>
+                  <Input
+                    id="date-from"
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="date-to">To</Label>
+                  <Input
+                    id="date-to"
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={clearFilters}
+                  disabled={activeFilterCount === 0}
+                >
+                  Clear filters
+                </Button>
+                <Button onClick={() => setFiltersOpen(false)}>Done</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="rounded-lg border">

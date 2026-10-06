@@ -3,7 +3,7 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { and, count, desc, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
@@ -120,13 +120,14 @@ export type ComplaintsPage = {
 async function fetchComplaintsPage(
   conditions: Parameters<typeof and>,
   offset: number,
-  pageSize: number
+  pageSize: number,
+  orderFn: typeof asc | typeof desc = desc
 ): Promise<ComplaintsPage> {
   const complaints = await db
     .select()
     .from(complaintsTable)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(complaintsTable.createdAt), desc(complaintsTable.id))
+    .orderBy(orderFn(complaintsTable.createdAt), orderFn(complaintsTable.id))
     .limit(pageSize)
     .offset(offset);
 
@@ -183,6 +184,7 @@ export async function getComplaints({
   status,
   dateFrom,
   dateTo,
+  sortOrder = "newest",
 }: {
   offset?: number;
   search?: string;
@@ -191,6 +193,7 @@ export async function getComplaints({
   status?: Complaint["status"] | "all";
   dateFrom?: string;
   dateTo?: string;
+  sortOrder?: "newest" | "oldest";
 } = {}): Promise<ComplaintsPage> {
   await requireAdmin();
 
@@ -229,7 +232,9 @@ export async function getComplaints({
     );
   }
 
-  return fetchComplaintsPage(conditions, offset, COMPLAINTS_PAGE_SIZE);
+  const orderFn = sortOrder === "oldest" ? asc : desc;
+
+  return fetchComplaintsPage(conditions, offset, COMPLAINTS_PAGE_SIZE, orderFn);
 }
 
 export type ComplaintStats = {
