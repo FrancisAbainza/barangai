@@ -18,6 +18,17 @@ import type { MediaItem } from "@/components/file-uploader";
 
 type GalleryItem = Omit<MediaItem, "file">;
 
+// The frame takes the first item's aspect ratio, clamped so very tall or very
+// wide media don't produce an extreme frame (the blurred backdrop fills the rest).
+const MIN_ASPECT_RATIO = 4 / 5;
+const MAX_ASPECT_RATIO = 2;
+const DEFAULT_ASPECT_RATIO = 4 / 3;
+
+function clampAspectRatio(width: number, height: number) {
+  if (!width || !height) return DEFAULT_ASPECT_RATIO;
+  return Math.min(MAX_ASPECT_RATIO, Math.max(MIN_ASPECT_RATIO, width / height));
+}
+
 function MediaViewerDialog({
   media,
   startIndex,
@@ -79,6 +90,7 @@ export function MediaGrid({ media }: { media: GalleryItem[] }) {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
+  const [aspectRatio, setAspectRatio] = useState(DEFAULT_ASPECT_RATIO);
 
   useEffect(() => {
     if (!api) return;
@@ -102,17 +114,31 @@ export function MediaGrid({ media }: { media: GalleryItem[] }) {
         <CarouselContent className="ml-0">
           {media.map((item, index) => {
             const url = item.key ? fetchFile(item.key) : "";
+            const isFirst = index === 0;
 
             return (
               <CarouselItem key={index} className="pl-0">
                 <button
                   type="button"
                   onClick={() => setViewerOpen(true)}
-                  className="group relative block h-[450px] w-full cursor-pointer overflow-hidden border-0 p-0 sm:h-[580px]"
+                  style={{ aspectRatio }}
+                  className="group relative block max-h-145 w-full cursor-pointer overflow-hidden border-0 p-0"
                 >
                   {item.type === "video" ? (
                     <>
-                      <video src={url} className="relative h-full w-full bg-black object-contain" />
+                      <video
+                        src={url}
+                        preload="metadata"
+                        onLoadedMetadata={
+                          isFirst
+                            ? (e) =>
+                                setAspectRatio(
+                                  clampAspectRatio(e.currentTarget.videoWidth, e.currentTarget.videoHeight)
+                                )
+                            : undefined
+                        }
+                        className="relative h-full w-full bg-black object-contain"
+                      />
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="rounded-full bg-white/80 p-3">
                           <Play className="size-5 fill-current" />
@@ -130,7 +156,21 @@ export function MediaGrid({ media }: { media: GalleryItem[] }) {
                         className="scale-110 object-cover opacity-60 blur-2xl"
                         unoptimized
                       />
-                      <Image src={url} alt={item.name} fill className="object-contain" unoptimized />
+                      <Image
+                        src={url}
+                        alt={item.name}
+                        fill
+                        className="object-contain"
+                        unoptimized
+                        onLoad={
+                          isFirst
+                            ? (e) =>
+                                setAspectRatio(
+                                  clampAspectRatio(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)
+                                )
+                            : undefined
+                        }
+                      />
                     </>
                   )}
                   <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/5" />
