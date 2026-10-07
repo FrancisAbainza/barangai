@@ -218,7 +218,9 @@ export default function NewsCard({ news }: { news: NewsWithAuthor }) {
   const [commentsOpen, setCommentsOpen] = useState(false);
 
   return (
-    <Card>
+    // On mobile, bleed past the parent's px-6 gutter and drop the card chrome (feed-style),
+    // leaving only a bottom divider between posts.
+    <Card className="-mx-6 rounded-none border-x-0 border-t-0 shadow-none md:mx-0 md:rounded-xl md:border md:shadow-sm">
       <CardHeader className="p-4 pb-3 flex-row items-start justify-between gap-2 space-y-0">
         <div className="flex items-center gap-3">
           <div className="relative size-10 rounded-full overflow-hidden bg-muted shrink-0">

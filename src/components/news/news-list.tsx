@@ -34,7 +34,7 @@ function useDebouncedValue<T>(value: T, delayMs: number) {
 
 function NewsCardSkeleton() {
   return (
-    <div className="border rounded-xl p-4 space-y-3">
+    <div className="-mx-6 border-b p-4 space-y-3 md:mx-0 md:border md:rounded-xl">
       <div className="flex items-center gap-3">
         <Skeleton className="size-10 rounded-full shrink-0" />
         <div className="space-y-1.5">

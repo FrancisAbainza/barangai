@@ -3,7 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
-import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
+import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfo, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import {
   transparencyProjectCommentsTable,
@@ -192,6 +192,57 @@ export async function getTransparencyProjects({
       };
     }),
     nextPage: projects.length < TRANSPARENCY_PAGE_SIZE ? null : page + 1,
+  };
+}
+
+export async function getTransparencyProjectById(id: number): Promise<TransparencyProjectWithAuthor | null> {
+  const [item] = await db.select().from(transparencyProjectsTable).where(eq(transparencyProjectsTable.id, id));
+  if (!item) return null;
+
+  const author = await getUserDisplayInfo(item.authorId);
+
+  const reactionCounts = await db
+    .select({ type: transparencyProjectReactionsTable.type, count: sql<number>`count(*)`.mapWith(Number) })
+    .from(transparencyProjectReactionsTable)
+    .where(eq(transparencyProjectReactionsTable.projectId, id))
+    .groupBy(transparencyProjectReactionsTable.type);
+
+  let likeCount = 0;
+  let dislikeCount = 0;
+  for (const row of reactionCounts) {
+    if (row.type === "like") likeCount = row.count;
+    else dislikeCount = row.count;
+  }
+
+  const [commentRow] = await db
+    .select({ count: sql<number>`count(*)`.mapWith(Number) })
+    .from(transparencyProjectCommentsTable)
+    .where(eq(transparencyProjectCommentsTable.projectId, id));
+
+  const { userId } = await auth();
+  let userReaction: "like" | "dislike" | null = null;
+  if (userId) {
+    const [reaction] = await db
+      .select({ type: transparencyProjectReactionsTable.type })
+      .from(transparencyProjectReactionsTable)
+      .where(
+        and(
+          eq(transparencyProjectReactionsTable.projectId, id),
+          eq(transparencyProjectReactionsTable.userId, userId)
+        )
+      );
+    userReaction = reaction?.type ?? null;
+  }
+
+  return {
+    ...item,
+    authorName: author.fullName,
+    authorImageUrl: author.imageUrl,
+    authorRole: author.role,
+    likeCount,
+    dislikeCount,
+    userReaction,
+    commentCount: commentRow?.count ?? 0,
   };
 }
 

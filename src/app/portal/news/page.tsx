@@ -9,7 +9,7 @@ export default async function NewsPage() {
   const { isAdmin } = await getAuthRole();
 
   return (
-    <div className="container space-y-6 m-auto">
+    <div className="md:container space-y-6 m-auto">
       <PageHeader
         icon={Megaphone}
         title="News & Announcements"

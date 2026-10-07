@@ -16,6 +16,7 @@ import {
   MessageSquare,
   MoreHorizontal,
   Pencil,
+  Share2,
   ShieldCheck,
   Tag,
   ThumbsDown,
@@ -212,6 +213,26 @@ function ReactionButtons({ project }: { project: TransparencyProjectWithAuthor }
   );
 }
 
+function ShareButton({ project }: { project: TransparencyProjectWithAuthor }) {
+  const handleShare = () => {
+    const postUrl = `${window.location.origin}/transparency/${project.id}`;
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`;
+    window.open(shareUrl, "_blank", "noopener,noreferrer,width=600,height=400");
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="flex-1 gap-2 text-muted-foreground"
+      onClick={handleShare}
+    >
+      <Share2 className="size-4" />
+      <span className="hidden md:inline">Share</span>
+    </Button>
+  );
+}
+
 function CommentButton({ onClick }: { onClick: () => void }) {
   return (
     <Button
@@ -267,7 +288,9 @@ export default function TransparencyProjectCard({ project }: { project: Transpar
   const [commentsOpen, setCommentsOpen] = useState(false);
 
   return (
-    <Card>
+    // On mobile, bleed past the parent's px-6 gutter and drop the card chrome (feed-style),
+    // leaving only a bottom divider between posts.
+    <Card className="-mx-6 rounded-none border-x-0 border-t-0 shadow-none md:mx-0 md:rounded-xl md:border md:shadow-sm">
       <CardHeader className="p-4 pb-3 flex-row items-start justify-between gap-2 space-y-0">
         <div className="flex items-center gap-3">
           <div className="relative size-10 rounded-full overflow-hidden bg-muted shrink-0">
@@ -323,6 +346,7 @@ export default function TransparencyProjectCard({ project }: { project: Transpar
       <CardFooter className="px-1 pb-1 pt-1 border-t gap-0">
         <ReactionButtons project={project} />
         <CommentButton onClick={() => setCommentsOpen(true)} />
+        <ShareButton project={project} />
       </CardFooter>
 
       <TransparencyCommentsDialog project={project} open={commentsOpen} onOpenChange={setCommentsOpen} />

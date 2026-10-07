@@ -8,7 +8,7 @@ export default async function TrnasparencyPage() {
   const { isAdmin } = await getAuthRole();
 
   return (
-    <div className="container space-y-6 m-auto">
+    <div className="md:container space-y-6 m-auto">
       <PageHeader
         icon={Eye}
         title="Governance Transparency"

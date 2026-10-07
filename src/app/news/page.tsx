@@ -5,7 +5,7 @@ import { Megaphone } from "lucide-react";
 
 export default function NewsPage() {
   return (
-    <div className="container space-y-6 m-auto px-6 py-20">
+    <div className="w-full md:container space-y-6 m-auto px-6 py-20">
       <PageHeader
         icon={Megaphone}
         title="News & Announcements"
