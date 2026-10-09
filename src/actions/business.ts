@@ -91,6 +91,8 @@ export async function getBusinesses({
   dateFrom,
   dateTo,
   sortOrder = "newest",
+  handledByMe = false,
+  ownedByMe = false,
 }: {
   offset?: number;
   search?: string;
@@ -99,10 +101,19 @@ export async function getBusinesses({
   dateFrom?: string;
   dateTo?: string;
   sortOrder?: "newest" | "oldest";
+  handledByMe?: boolean;
+  ownedByMe?: boolean;
 } = {}): Promise<BusinessesPage> {
-  await requireAdmin();
+  const adminId = await requireAdmin();
 
   const conditions = [];
+
+  if (handledByMe) {
+    conditions.push(eq(businessesTable.handlerId, adminId));
+  }
+  if (ownedByMe) {
+    conditions.push(eq(businessesTable.ownerId, adminId));
+  }
 
   if (category && category !== "all") {
     conditions.push(eq(businessesTable.category, category));
@@ -142,19 +153,33 @@ export async function getBusinessesByUser(
   return fetchBusinessesPage([eq(businessesTable.ownerId, userId)], offset);
 }
 
+// Backs the admin page's `?view=<id>` deep link (e.g. from the home page's Needs Attention queue).
+export async function getBusinessById(id: number): Promise<BusinessWithOwner | null> {
+  await requireAdmin();
+
+  const { items } = await fetchBusinessesPage([eq(businessesTable.id, id)], 0);
+  return items[0] ?? null;
+}
+
 export async function getVerifiedBusinesses({
   offset = 0,
   search,
   category,
+  ownedByMe = false,
 }: {
   offset?: number;
   search?: string;
   category?: Business["category"] | "all";
+  ownedByMe?: boolean;
 } = {}): Promise<BusinessesPage> {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  const conditions = [eq(businessesTable.status, "Verified")];
+  // Residents can see their own businesses in any status (the card badges unverified ones);
+  // everyone else's are only listed once verified.
+  const conditions = [
+    ownedByMe ? eq(businessesTable.ownerId, userId) : eq(businessesTable.status, "Verified"),
+  ];
 
   if (category && category !== "all") {
     conditions.push(eq(businessesTable.category, category));

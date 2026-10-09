@@ -176,6 +176,14 @@ export async function getComplaintsByUser(
   return fetchComplaintsPage([eq(complaintsTable.complainantId, userId)], offset, MY_COMPLAINTS_PAGE_SIZE);
 }
 
+// Backs the admin page's `?view=<id>` deep link (e.g. from the home page's Needs Attention queue).
+export async function getComplaintById(id: number): Promise<ComplaintWithComplainant | null> {
+  await requireAdmin();
+
+  const { items } = await fetchComplaintsPage([eq(complaintsTable.id, id)], 0, 1);
+  return items[0] ?? null;
+}
+
 export async function getComplaints({
   offset = 0,
   search,
@@ -185,6 +193,7 @@ export async function getComplaints({
   dateFrom,
   dateTo,
   sortOrder = "newest",
+  handledByMe = false,
 }: {
   offset?: number;
   search?: string;
@@ -194,11 +203,16 @@ export async function getComplaints({
   dateFrom?: string;
   dateTo?: string;
   sortOrder?: "newest" | "oldest";
+  handledByMe?: boolean;
 } = {}): Promise<ComplaintsPage> {
-  await requireAdmin();
+  const adminId = await requireAdmin();
 
   const client = await clerkClient();
   const conditions = [];
+
+  if (handledByMe) {
+    conditions.push(eq(complaintsTable.handlerId, adminId));
+  }
 
   if (category && category !== "all") {
     conditions.push(eq(complaintsTable.category, category));

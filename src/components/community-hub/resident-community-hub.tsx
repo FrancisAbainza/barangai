@@ -5,6 +5,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { LayoutGrid, ListFilter, Map, MapPinOff, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -43,18 +44,25 @@ export default function ResidentCommunityHub() {
   const [tab, setTab] = useState<"grid" | "map">("grid");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
+  const [ownedByMe, setOwnedByMe] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
 
-  const activeFilterCount = category !== "all" ? 1 : 0;
+  const activeFilterCount = [category !== "all", ownedByMe].filter(Boolean).length;
+
+  function clearFilters() {
+    setCategory("all");
+    setOwnedByMe(false);
+  }
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["businesses", "verified", { search: debouncedSearch, category }],
+    queryKey: ["businesses", "verified", { search: debouncedSearch, category, ownedByMe }],
     queryFn: ({ pageParam }) =>
       getVerifiedBusinesses({
         offset: pageParam,
         search: debouncedSearch,
         category: category as Business["category"] | "all",
+        ownedByMe,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset,
@@ -115,27 +123,40 @@ export default function ResidentCommunityHub() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Filter Businesses</DialogTitle>
-                <DialogDescription>Narrow down businesses by category.</DialogDescription>
+                <DialogDescription>Narrow down businesses by category or ownership.</DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-1.5">
-                <Label>Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORY_FILTERS.map((filter) => (
-                      <SelectItem key={filter.value} value={filter.value}>
-                        {filter.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Category</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORY_FILTERS.map((filter) => (
+                        <SelectItem key={filter.value} value={filter.value}>
+                          {filter.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="owned-by-me-businesses"
+                    checked={ownedByMe}
+                    onCheckedChange={(checked) => setOwnedByMe(checked === true)}
+                  />
+                  <Label htmlFor="owned-by-me-businesses" className="font-normal">
+                    Only show my businesses
+                  </Label>
+                </div>
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setCategory("all")} disabled={activeFilterCount === 0}>
+                <Button variant="outline" onClick={clearFilters} disabled={activeFilterCount === 0}>
                   Clear filters
                 </Button>
                 <Button onClick={() => setFiltersOpen(false)}>Done</Button>

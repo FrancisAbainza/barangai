@@ -5,6 +5,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { ArrowUpDown, Hourglass, LayoutGrid, ListFilter, Map, MapPinOff, Search, Store, Table } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,9 @@ import StatCard from "@/components/stat-card";
 import BusinessSubmissionsTable from "@/components/community-hub/business-submissions-table";
 import BusinessGrid from "@/components/community-hub/business-grid";
 import BusinessesMapView from "@/components/community-hub/businesses-map-view";
-import { getBusinesses, getBusinessStats } from "@/actions/business";
+import ViewSubmissionDialog from "@/components/community-hub/dialogs/view-submission-dialog";
+import { useViewParam } from "@/hooks/use-view-param";
+import { getBusinessById, getBusinesses, getBusinessStats } from "@/actions/business";
 import { BUSINESS_CATEGORIES, BUSINESS_STATUSES } from "@/schemas/business-schema";
 import type { Business } from "@/db/schema";
 import type { LocationValue } from "@/components/map-picker";
@@ -70,6 +73,8 @@ export default function AdminCommunityHub() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [handledByMe, setHandledByMe] = useState(false);
+  const [ownedByMe, setOwnedByMe] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const activeFilterCount = [
@@ -77,6 +82,8 @@ export default function AdminCommunityHub() {
     status !== "all",
     dateFrom !== "",
     dateTo !== "",
+    handledByMe,
+    ownedByMe,
   ].filter(Boolean).length;
 
   function clearFilters() {
@@ -84,7 +91,18 @@ export default function AdminCommunityHub() {
     setStatus("all");
     setDateFrom("");
     setDateTo("");
+    setHandledByMe(false);
+    setOwnedByMe(false);
   }
+
+  // `?view=<id>` (e.g. from the home page's Needs Attention queue) opens that record's
+  // Submission Info dialog. It's fetched by id since it may not be in the loaded/filtered list.
+  const [viewId, setViewId] = useViewParam();
+  const { data: viewedBusiness } = useQuery({
+    queryKey: ["businesses", "admin", "view", viewId],
+    queryFn: () => getBusinessById(viewId!),
+    enabled: viewId !== null,
+  });
 
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ["businesses", "admin", "stats"],
@@ -97,7 +115,7 @@ export default function AdminCommunityHub() {
     queryKey: [
       "businesses",
       "admin",
-      { search: debouncedSearch, category, status, dateFrom, dateTo, sortOrder },
+      { search: debouncedSearch, category, status, dateFrom, dateTo, sortOrder, handledByMe, ownedByMe },
     ],
     queryFn: ({ pageParam }) =>
       getBusinesses({
@@ -108,6 +126,8 @@ export default function AdminCommunityHub() {
         dateFrom,
         dateTo,
         sortOrder,
+        handledByMe,
+        ownedByMe,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset,
@@ -264,6 +284,28 @@ export default function AdminCommunityHub() {
                       onChange={(e) => setDateTo(e.target.value)}
                     />
                   </div>
+
+                  <div className="flex items-center gap-2 sm:col-span-2">
+                    <Checkbox
+                      id="handled-by-me-businesses"
+                      checked={handledByMe}
+                      onCheckedChange={(checked) => setHandledByMe(checked === true)}
+                    />
+                    <Label htmlFor="handled-by-me-businesses" className="font-normal">
+                      Only show businesses I&apos;m handling
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center gap-2 sm:col-span-2">
+                    <Checkbox
+                      id="owned-by-me-businesses"
+                      checked={ownedByMe}
+                      onCheckedChange={(checked) => setOwnedByMe(checked === true)}
+                    />
+                    <Label htmlFor="owned-by-me-businesses" className="font-normal">
+                      Only show my businesses
+                    </Label>
+                  </div>
                 </div>
 
                 <DialogFooter>
@@ -313,6 +355,10 @@ export default function AdminCommunityHub() {
           )}
         </TabsContent>
       </Tabs>
+
+      {viewedBusiness && viewId !== null && (
+        <ViewSubmissionDialog business={viewedBusiness} open onOpenChange={(open) => !open && setViewId(null)} />
+      )}
     </div>
   );
 }

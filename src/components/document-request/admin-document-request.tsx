@@ -5,6 +5,7 @@ import { ArrowUpDown, FileText, Hourglass, ListFilter, Search } from "lucide-rea
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +36,9 @@ import {
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
 import DocumentRequestActionsMenu from "@/components/document-request/document-request-actions-menu";
-import { getDocumentRequestStats, getDocumentRequests } from "@/actions/document-requests";
+import ViewDocumentRequestDialog from "@/components/document-request/dialogs/view-document-request-dialog";
+import { useViewParam } from "@/hooks/use-view-param";
+import { getDocumentRequestById, getDocumentRequestStats, getDocumentRequests } from "@/actions/document-requests";
 import { statusBadgeVariant } from "@/lib/document-requests";
 import { documentRequestStatusEnum, documentRequestTypeEnum, type DocumentRequest } from "@/db/schema";
 
@@ -101,6 +104,7 @@ export default function AdminDocumentRequest() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [handledByMe, setHandledByMe] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -109,6 +113,7 @@ export default function AdminDocumentRequest() {
     status !== "all",
     dateFrom !== "",
     dateTo !== "",
+    handledByMe,
   ].filter(Boolean).length;
 
   function clearFilters() {
@@ -116,7 +121,17 @@ export default function AdminDocumentRequest() {
     setStatus("all");
     setDateFrom("");
     setDateTo("");
+    setHandledByMe(false);
   }
+
+  // `?view=<id>` (e.g. from the home page's Needs Attention queue) opens that record's
+  // Submission Info dialog. It's fetched by id since it may not be in the loaded/filtered list.
+  const [viewId, setViewId] = useViewParam();
+  const { data: viewedRequest } = useQuery({
+    queryKey: ["document-requests", "admin", "view", viewId],
+    queryFn: () => getDocumentRequestById(viewId!),
+    enabled: viewId !== null,
+  });
 
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ["document-requests", "admin", "stats"],
@@ -127,7 +142,7 @@ export default function AdminDocumentRequest() {
     queryKey: [
       "document-requests",
       "admin",
-      { search: debouncedSearch, documentType, status, dateFrom, dateTo, sortOrder },
+      { search: debouncedSearch, documentType, status, dateFrom, dateTo, sortOrder, handledByMe },
     ],
     queryFn: ({ pageParam }) =>
       getDocumentRequests({
@@ -138,6 +153,7 @@ export default function AdminDocumentRequest() {
         dateFrom,
         dateTo,
         sortOrder,
+        handledByMe,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset,
@@ -263,6 +279,17 @@ export default function AdminDocumentRequest() {
                     onChange={(e) => setDateTo(e.target.value)}
                   />
                 </div>
+
+                <div className="flex items-center gap-2 sm:col-span-2">
+                  <Checkbox
+                    id="handled-by-me-requests"
+                    checked={handledByMe}
+                    onCheckedChange={(checked) => setHandledByMe(checked === true)}
+                  />
+                  <Label htmlFor="handled-by-me-requests" className="font-normal">
+                    Only show requests I&apos;m handling
+                  </Label>
+                </div>
               </div>
 
               <DialogFooter>
@@ -333,6 +360,10 @@ export default function AdminDocumentRequest() {
           </TableBody>
         </Table>
       </div>
+
+      {viewedRequest && viewId !== null && (
+        <ViewDocumentRequestDialog request={viewedRequest} open onOpenChange={(open) => !open && setViewId(null)} />
+      )}
     </div>
   );
 }

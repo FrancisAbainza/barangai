@@ -121,6 +121,14 @@ export async function getDocumentRequestsByUser(
   );
 }
 
+// Backs the admin page's `?view=<id>` deep link (e.g. from the home page's Needs Attention queue).
+export async function getDocumentRequestById(id: number): Promise<DocumentRequestWithRequester | null> {
+  await requireAdmin();
+
+  const { items } = await fetchDocumentRequestsPage([eq(documentRequestsTable.id, id)], 0, 1);
+  return items[0] ?? null;
+}
+
 export async function getDocumentRequests({
   offset = 0,
   search,
@@ -129,6 +137,7 @@ export async function getDocumentRequests({
   dateFrom,
   dateTo,
   sortOrder = "newest",
+  handledByMe = false,
 }: {
   offset?: number;
   search?: string;
@@ -137,11 +146,16 @@ export async function getDocumentRequests({
   dateFrom?: string;
   dateTo?: string;
   sortOrder?: "newest" | "oldest";
+  handledByMe?: boolean;
 } = {}): Promise<DocumentRequestsPage> {
-  await requireAdmin();
+  const adminId = await requireAdmin();
 
   const client = await clerkClient();
   const conditions = [];
+
+  if (handledByMe) {
+    conditions.push(eq(documentRequestsTable.handlerId, adminId));
+  }
 
   if (documentType && documentType !== "all") {
     conditions.push(eq(documentRequestsTable.documentType, documentType as DocumentRequest["documentType"]));

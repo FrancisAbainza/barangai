@@ -145,23 +145,39 @@ export async function getCourtReservationsByUser(
   );
 }
 
+// Backs the admin page's `?view=<id>` deep link (e.g. from the home page's Needs Attention queue).
+export async function getCourtReservationById(id: number): Promise<CourtReservationWithRequester | null> {
+  await requireAdmin();
+
+  const { items } = await fetchCourtReservationsPage([eq(courtReservationsTable.id, id)], 0, 1);
+  return items[0] ?? null;
+}
+
 export async function getCourtReservations({
   offset = 0,
   search,
   date,
   timeSlot,
+  status,
   sortOrder = "newest",
+  handledByMe = false,
 }: {
   offset?: number;
   search?: string;
   date?: string;
   timeSlot?: number | "all";
+  status?: CourtReservation["status"] | "all";
   sortOrder?: "newest" | "oldest";
+  handledByMe?: boolean;
 } = {}): Promise<CourtReservationsPage> {
-  await requireAdmin();
+  const adminId = await requireAdmin();
 
   const client = await clerkClient();
   const conditions = [];
+
+  if (handledByMe) {
+    conditions.push(eq(courtReservationsTable.handlerId, adminId));
+  }
 
   if (date) {
     conditions.push(eq(courtReservationsTable.date, date));
@@ -170,6 +186,9 @@ export async function getCourtReservations({
     conditions.push(
       sql`${courtReservationsTable.timeSlots}::jsonb @> ${JSON.stringify([timeSlot])}::jsonb`
     );
+  }
+  if (status && status !== "all") {
+    conditions.push(eq(courtReservationsTable.status, status));
   }
 
   const trimmedSearch = search?.trim();

@@ -5,6 +5,7 @@ import { ArrowUpDown, FileText, Hourglass, ListFilter, Map, MapPinOff, Search, T
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -37,7 +38,9 @@ import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
 import ComplaintActionsMenu from "@/components/complaint/complaint-actions-menu";
 import ComplaintsMapView from "@/components/complaint/complaints-map-view";
-import { getComplaintStats, getComplaints } from "@/actions/complaints";
+import ViewComplaintDialog from "@/components/complaint/dialogs/view-complaint-dialog";
+import { useViewParam } from "@/hooks/use-view-param";
+import { getComplaintById, getComplaintStats, getComplaints } from "@/actions/complaints";
 import { statusBadgeVariant, priorityBadgeVariant, formatDate } from "@/lib/complaints";
 import { complaintCategoryEnum, complaintPriorityEnum, complaintStatusEnum, type Complaint } from "@/db/schema";
 
@@ -109,6 +112,7 @@ export default function AdminComplaint() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [handledByMe, setHandledByMe] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -118,6 +122,7 @@ export default function AdminComplaint() {
     status !== "all",
     dateFrom !== "",
     dateTo !== "",
+    handledByMe,
   ].filter(Boolean).length;
 
   function clearFilters() {
@@ -126,7 +131,17 @@ export default function AdminComplaint() {
     setStatus("all");
     setDateFrom("");
     setDateTo("");
+    setHandledByMe(false);
   }
+
+  // `?view=<id>` (e.g. from the home page's Needs Attention queue) opens that record's
+  // Submission Info dialog. It's fetched by id since it may not be in the loaded/filtered list.
+  const [viewId, setViewId] = useViewParam();
+  const { data: viewedComplaint } = useQuery({
+    queryKey: ["complaints", "admin", "view", viewId],
+    queryFn: () => getComplaintById(viewId!),
+    enabled: viewId !== null,
+  });
 
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ["complaints", "admin", "stats"],
@@ -137,7 +152,7 @@ export default function AdminComplaint() {
     queryKey: [
       "complaints",
       "admin",
-      { search: debouncedSearch, category, priority, status, dateFrom, dateTo, sortOrder },
+      { search: debouncedSearch, category, priority, status, dateFrom, dateTo, sortOrder, handledByMe },
     ],
     queryFn: ({ pageParam }) =>
       getComplaints({
@@ -149,6 +164,7 @@ export default function AdminComplaint() {
         dateFrom,
         dateTo,
         sortOrder,
+        handledByMe,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset,
@@ -312,6 +328,17 @@ export default function AdminComplaint() {
                       onChange={(e) => setDateTo(e.target.value)}
                     />
                   </div>
+
+                  <div className="flex items-center gap-2 sm:col-span-2">
+                    <Checkbox
+                      id="handled-by-me-complaints"
+                      checked={handledByMe}
+                      onCheckedChange={(checked) => setHandledByMe(checked === true)}
+                    />
+                    <Label htmlFor="handled-by-me-complaints" className="font-normal">
+                      Only show complaints I&apos;m handling
+                    </Label>
+                  </div>
                 </div>
 
                 <DialogFooter>
@@ -409,6 +436,10 @@ export default function AdminComplaint() {
           )}
         </TabsContent>
       </Tabs>
+
+      {viewedComplaint && viewId !== null && (
+        <ViewComplaintDialog complaint={viewedComplaint} open onOpenChange={(open) => !open && setViewId(null)} />
+      )}
     </div>
   );
 }

@@ -130,7 +130,7 @@ export async function getNeedsAttentionQueue(): Promise<NeedsAttentionItem[]> {
       subtitle: `Requested by ${nameMap.get(r.requesterId) ?? "Unknown"}`,
       badge: r.status,
       createdAt: r.createdAt,
-      href: "/portal/document-request",
+      href: `/portal/document-request?view=${r.id}`,
       rank: 1,
     })),
     ...complaints.map((c) => ({
@@ -140,7 +140,7 @@ export async function getNeedsAttentionQueue(): Promise<NeedsAttentionItem[]> {
       subtitle: `Filed by ${nameMap.get(c.complainantId) ?? "Unknown"}`,
       badge: c.priority,
       createdAt: c.createdAt,
-      href: "/portal/complaint",
+      href: `/portal/complaint?view=${c.id}`,
       rank: c.priority === "Urgent" ? 0 : 1,
     })),
     ...courtReservations.map((r) => ({
@@ -150,7 +150,7 @@ export async function getNeedsAttentionQueue(): Promise<NeedsAttentionItem[]> {
       subtitle: `Requested by ${nameMap.get(r.requesterId) ?? "Unknown"}`,
       badge: r.status,
       createdAt: r.createdAt,
-      href: "/portal/court-reservation",
+      href: `/portal/court-reservation?view=${r.id}`,
       rank: 1,
     })),
     ...businesses.map((b) => ({
@@ -160,7 +160,7 @@ export async function getNeedsAttentionQueue(): Promise<NeedsAttentionItem[]> {
       subtitle: `Submitted by ${nameMap.get(b.ownerId) ?? "Unknown"}`,
       badge: b.status,
       createdAt: b.createdAt,
-      href: "/portal/community-hub",
+      href: `/portal/community-hub?view=${b.id}`,
       rank: 1,
     })),
   ];

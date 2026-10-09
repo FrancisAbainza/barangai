@@ -5,6 +5,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { ArrowUpDown, CalendarCheck, Clock, Hourglass, ListFilter, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -38,17 +39,25 @@ import CourtReservationActionsMenu from "@/components/court-reservation/court-re
 import CourtReservationDialog from "@/components/court-reservation/dialogs/court-reservation-dialog";
 import TimeSlotsDialog from "@/components/court-reservation/dialogs/time-slots-dialog";
 import { useDialogParam } from "@/hooks/use-dialog-param";
-import { getCourtReservations, getCourtReservationStats } from "@/actions/court-reservations";
+import ViewCourtReservationDialog from "@/components/court-reservation/dialogs/view-court-reservation-dialog";
+import { useViewParam } from "@/hooks/use-view-param";
+import { getCourtReservationById, getCourtReservations, getCourtReservationStats } from "@/actions/court-reservations";
 import {
   COURT_TIME_SLOTS,
   statusBadgeVariant,
   formatTimeSlots,
   formatReservationDate,
 } from "@/lib/court-reservations";
+import { courtReservationStatusEnum, type CourtReservation } from "@/db/schema";
 
 const TIME_SLOT_FILTERS = [
   { value: "all", label: "All Time Slots" },
   ...COURT_TIME_SLOTS.map((slot) => ({ value: String(slot.hour), label: slot.label })),
+];
+
+const STATUS_FILTERS = [
+  { value: "all", label: "All Statuses" },
+  ...courtReservationStatusEnum.enumValues.map((status) => ({ value: status, label: status })),
 ];
 
 const SORT_OPTIONS = [
@@ -99,18 +108,31 @@ export default function AdminCourtReservation() {
   const [search, setSearch] = useState("");
   const [date, setDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("all");
+  const [status, setStatus] = useState("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [handledByMe, setHandledByMe] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [timeSlotsOpen, setTimeSlotsOpen] = useState(false);
   const [reserveOpen, setReserveOpen] = useDialogParam("court-reservation");
   const debouncedSearch = useDebouncedValue(search, 300);
 
-  const activeFilterCount = [date !== "", timeSlot !== "all"].filter(Boolean).length;
+  const activeFilterCount = [date !== "", timeSlot !== "all", status !== "all", handledByMe].filter(Boolean).length;
 
   function clearFilters() {
     setDate("");
     setTimeSlot("all");
+    setStatus("all");
+    setHandledByMe(false);
   }
+
+  // `?view=<id>` (e.g. from the home page's Needs Attention queue) opens that record's
+  // Submission Info dialog. It's fetched by id since it may not be in the loaded/filtered list.
+  const [viewId, setViewId] = useViewParam();
+  const { data: viewedReservation } = useQuery({
+    queryKey: ["court-reservations", "admin", "view", viewId],
+    queryFn: () => getCourtReservationById(viewId!),
+    enabled: viewId !== null,
+  });
 
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ["court-reservations", "admin", "stats"],
@@ -118,14 +140,20 @@ export default function AdminCourtReservation() {
   });
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["court-reservations", "admin", { search: debouncedSearch, date, timeSlot, sortOrder }],
+    queryKey: [
+      "court-reservations",
+      "admin",
+      { search: debouncedSearch, date, timeSlot, status, sortOrder, handledByMe },
+    ],
     queryFn: ({ pageParam }) =>
       getCourtReservations({
         offset: pageParam,
         search: debouncedSearch,
         date,
         timeSlot: timeSlot === "all" ? "all" : Number(timeSlot),
+        status: status as CourtReservation["status"] | "all",
         sortOrder,
+        handledByMe,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset,
@@ -217,7 +245,7 @@ export default function AdminCourtReservation() {
               <DialogHeader>
                 <DialogTitle>Filter Reservations</DialogTitle>
                 <DialogDescription>
-                  Narrow down court reservations by reservation date or time slot.
+                  Narrow down court reservations by reservation date, time slot, or status.
                 </DialogDescription>
               </DialogHeader>
 
@@ -246,6 +274,33 @@ export default function AdminCourtReservation() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Status</Label>
+                  <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_FILTERS.map((filter) => (
+                        <SelectItem key={filter.value} value={filter.value}>
+                          {filter.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2 sm:col-span-2">
+                  <Checkbox
+                    id="handled-by-me-reservations"
+                    checked={handledByMe}
+                    onCheckedChange={(checked) => setHandledByMe(checked === true)}
+                  />
+                  <Label htmlFor="handled-by-me-reservations" className="font-normal">
+                    Only show reservations I&apos;m handling
+                  </Label>
                 </div>
               </div>
 
@@ -319,6 +374,10 @@ export default function AdminCourtReservation() {
           </TableBody>
         </Table>
       </div>
+
+      {viewedReservation && viewId !== null && (
+        <ViewCourtReservationDialog reservation={viewedReservation} open onOpenChange={(open) => !open && setViewId(null)} />
+      )}
     </div>
   );
 }
