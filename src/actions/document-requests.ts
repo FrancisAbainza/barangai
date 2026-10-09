@@ -6,6 +6,7 @@ import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-us
 import { db } from "@/db/config";
 import { documentRequestsTable, type DocumentRequest } from "@/db/schema";
 import { and, asc, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
 import type { MediaItem } from "@/components/file-uploader";
 
 export type CreateDocumentRequestInput = {
@@ -121,11 +122,16 @@ export async function getDocumentRequestsByUser(
   );
 }
 
-// Backs the admin page's `?view=<id>` deep link (e.g. from the home page's Needs Attention queue).
+// Backs the `?view=<id>` deep link: the admin page's (e.g. from the home page's Needs Attention
+// queue) and the resident page's (from a notification), so residents only get their own.
 export async function getDocumentRequestById(id: number): Promise<DocumentRequestWithRequester | null> {
-  await requireAdmin();
+  const { userId, isAdmin } = await getAuthRole();
+  if (!userId) throw new Error("Unauthorized");
 
-  const { items } = await fetchDocumentRequestsPage([eq(documentRequestsTable.id, id)], 0, 1);
+  const conditions = [eq(documentRequestsTable.id, id)];
+  if (!isAdmin) conditions.push(eq(documentRequestsTable.requesterId, userId));
+
+  const { items } = await fetchDocumentRequestsPage(conditions, 0, 1);
   return items[0] ?? null;
 }
 
@@ -226,6 +232,7 @@ export async function deleteDocumentRequest(id: number) {
   if (existing.requesterId !== userId && !isAdmin) throw new Error("Forbidden");
 
   await db.delete(documentRequestsTable).where(eq(documentRequestsTable.id, id));
+  await deleteNotificationsFor("document-request", id);
 }
 
 export type DocumentRequestStatusDetails = {
@@ -239,6 +246,12 @@ export async function setDocumentRequestStatus(
   details?: DocumentRequestStatusDetails
 ) {
   const handlerId = await requireAdmin();
+
+  const [existing] = await db
+    .select()
+    .from(documentRequestsTable)
+    .where(eq(documentRequestsTable.id, id));
+  if (!existing) throw new Error("Document request not found");
 
   await db
     .update(documentRequestsTable)
@@ -258,4 +271,14 @@ export async function setDocumentRequestStatus(
         : { rejectionReason: null, rejectionAttachments: [] }),
     })
     .where(eq(documentRequestsTable.id, id));
+
+  await notifyStatusChange({
+    userId: existing.requesterId,
+    actorId: handlerId,
+    type: "document-request",
+    referenceId: id,
+    subject: `${existing.documentType} request`,
+    previousStatus: existing.status,
+    status,
+  });
 }

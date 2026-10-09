@@ -21,9 +21,11 @@ import NoObjectionDocumentRequestDialog from "@/components/document-request/dial
 import IndigencyDocumentRequestDialog from "@/components/document-request/dialogs/indigency-document-request-dialog";
 import SoloParentDocumentRequestDialog from "@/components/document-request/dialogs/solo-parent-document-request-dialog";
 import MedicalAssistanceDocumentRequestDialog from "@/components/document-request/dialogs/medical-assistance-document-request-dialog";
-import { getMyDocumentRequests } from "@/actions/document-requests";
+import ViewDocumentRequestDialog from "@/components/document-request/dialogs/view-document-request-dialog";
+import { getDocumentRequestById, getMyDocumentRequests } from "@/actions/document-requests";
 import { getResidentProfile } from "@/actions/resident-profile";
 import { useDialogParam } from "@/hooks/use-dialog-param";
+import { useViewParam } from "@/hooks/use-view-param";
 import { statusBadgeVariant } from "@/lib/document-requests";
 import {
   ChevronRight,
@@ -97,6 +99,15 @@ export default function ResidentDocumentRequest() {
   const [isSoloParentDialogOpen, setIsSoloParentDialogOpen] = useDialogParam("solo-parent-request");
   const [isMedicalAssistanceDialogOpen, setIsMedicalAssistanceDialogOpen] =
     useDialogParam("medical-assistance-request");
+
+  // `?view=<id>` (e.g. from a notification) opens that submission's Submission Info dialog.
+  // It's fetched by id since it may not be in the loaded list.
+  const [viewId, setViewId] = useViewParam();
+  const { data: viewedRequest } = useQuery({
+    queryKey: ["document-requests", "view", viewId],
+    queryFn: () => getDocumentRequestById(viewId!),
+    enabled: viewId !== null,
+  });
 
   const {
     data,
@@ -251,6 +262,10 @@ export default function ResidentDocumentRequest() {
         open={isMedicalAssistanceDialogOpen && hasResidentProfile}
         onOpenChange={setIsMedicalAssistanceDialogOpen}
       />
+
+      {viewedRequest && viewId !== null && (
+        <ViewDocumentRequestDialog request={viewedRequest} open onOpenChange={(open) => !open && setViewId(null)} />
+      )}
     </>
   );
 }

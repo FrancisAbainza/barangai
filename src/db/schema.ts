@@ -2,6 +2,7 @@ import {
   type AnyPgColumn,
   boolean,
   date,
+  index,
   integer,
   json,
   numeric,
@@ -278,6 +279,35 @@ export const courtReservationsTable = pgTable("court_reservations", {
 });
 
 export type CourtReservation = typeof courtReservationsTable.$inferSelect;
+
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "document-request",
+  "community-hub",
+  "court-reservation",
+  "complaint",
+]);
+
+// Sent to a resident when an admin changes the status of one of their submissions
+// (see notifyStatusChange in src/lib/notify.ts). `referenceId` is the id of the row in
+// the table matching `type`; it has no FK since it points at one of several tables, so
+// the domain delete actions clean up their notifications themselves. `message` and
+// `status` are snapshots taken when the notification was sent.
+export const notificationsTable = pgTable(
+  "notifications",
+  {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    userId: varchar({ length: 255 }).notNull(),
+    type: notificationTypeEnum().notNull(),
+    referenceId: integer().notNull(),
+    status: varchar({ length: 64 }).notNull(),
+    message: text().notNull(),
+    readAt: timestamp(),
+    createdAt: timestamp().notNull().defaultNow(),
+  },
+  (table) => [index("notifications_user_id_created_at_idx").on(table.userId, table.createdAt)]
+);
+
+export type Notification = typeof notificationsTable.$inferSelect;
 
 // Mirror of Clerk users, kept in sync via the `user.created`/`user.updated` webhooks
 // so a last-known snapshot is available when `user.deleted` fires (Clerk's delete

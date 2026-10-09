@@ -6,13 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReportComplaintDialog from "@/components/complaint/dialogs/report-complaint-dialog";
 import MyComplaintsTable from "@/components/complaint/my-complaints-table";
+import ViewComplaintDialog from "@/components/complaint/dialogs/view-complaint-dialog";
 import ResidentCredentialsBanner from "@/components/resident-credentials-banner";
 import { getResidentProfile } from "@/actions/resident-profile";
+import { getComplaintById } from "@/actions/complaints";
 import { useDialogParam } from "@/hooks/use-dialog-param";
+import { useViewParam } from "@/hooks/use-view-param";
 import { MessageSquareWarning, Plus } from "lucide-react";
 
 export default function ResidentComplaint() {
   const [isReportDialogOpen, setIsReportDialogOpen] = useDialogParam("report-complaint");
+
+  // `?view=<id>` (e.g. from a notification) opens that submission's Submission Info dialog.
+  // It's fetched by id since it may not be in the loaded list.
+  const [viewId, setViewId] = useViewParam();
+  const { data: viewedComplaint } = useQuery({
+    queryKey: ["complaints", "view", viewId],
+    queryFn: () => getComplaintById(viewId!),
+    enabled: viewId !== null,
+  });
 
   const { user } = useUser();
   const { data: residentProfile, isLoading: isResidentProfileLoading } = useQuery({
@@ -56,6 +68,10 @@ export default function ResidentComplaint() {
       <MyComplaintsTable />
 
       <ReportComplaintDialog open={isReportDialogOpen && hasResidentProfile} onOpenChange={setIsReportDialogOpen} />
+
+      {viewedComplaint && viewId !== null && (
+        <ViewComplaintDialog complaint={viewedComplaint} open onOpenChange={(open) => !open && setViewId(null)} />
+      )}
     </>
   );
 }

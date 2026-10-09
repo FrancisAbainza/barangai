@@ -12,7 +12,11 @@ import {
   PORTAL_DIALOG_TARGETS,
   type PortalDialogTargetId,
 } from "@/lib/portal-dialogs";
-import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/portal-navigation";
+import {
+  isPortalNavigationTargetAvailable,
+  PORTAL_NAVIGATION_TARGETS,
+  type PortalNavigationTargetId,
+} from "@/lib/portal-navigation";
 
 // Server-only: everything the /api/chat route needs. Sections: tools, knowledge base, system prompt.
 
@@ -29,7 +33,7 @@ function buildNavigateToPageTool(isAdmin: boolean) {
       PortalNavigationTargetId,
       (typeof PORTAL_NAVIGATION_TARGETS)[PortalNavigationTargetId],
     ][]
-  ).filter(([, target]) => isAdmin || !target.adminOnly);
+  ).filter(([id]) => isPortalNavigationTargetAvailable(id, isAdmin));
 
   const pageIds = availableTargets.map(([id]) => id) as [
     PortalNavigationTargetId,

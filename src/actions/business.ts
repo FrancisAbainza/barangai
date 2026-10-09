@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { and, asc, count, desc, eq, gte, ilike, lte, ne } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
+import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { businessesTable, type Business } from "@/db/schema";
@@ -153,11 +154,16 @@ export async function getBusinessesByUser(
   return fetchBusinessesPage([eq(businessesTable.ownerId, userId)], offset);
 }
 
-// Backs the admin page's `?view=<id>` deep link (e.g. from the home page's Needs Attention queue).
+// Backs the `?view=<id>` deep link: the admin page's (e.g. from the home page's Needs Attention
+// queue) and the resident page's (from a notification), so residents only get their own.
 export async function getBusinessById(id: number): Promise<BusinessWithOwner | null> {
-  await requireAdmin();
+  const { userId, isAdmin } = await getAuthRole();
+  if (!userId) throw new Error("Unauthorized");
 
-  const { items } = await fetchBusinessesPage([eq(businessesTable.id, id)], 0);
+  const conditions = [eq(businessesTable.id, id)];
+  if (!isAdmin) conditions.push(eq(businessesTable.ownerId, userId));
+
+  const { items } = await fetchBusinessesPage(conditions, 0);
   return items[0] ?? null;
 }
 
@@ -224,6 +230,9 @@ export async function setBusinessStatus(
 ) {
   const handlerId = await requireAdmin();
 
+  const [existing] = await db.select().from(businessesTable).where(eq(businessesTable.id, id));
+  if (!existing) throw new Error("Business not found");
+
   await db
     .update(businessesTable)
     .set({
@@ -237,6 +246,16 @@ export async function setBusinessStatus(
       updatedAt: new Date(),
     })
     .where(eq(businessesTable.id, id));
+
+  await notifyStatusChange({
+    userId: existing.ownerId,
+    actorId: handlerId,
+    type: "community-hub",
+    referenceId: id,
+    subject: `business "${existing.name}"`,
+    previousStatus: existing.status,
+    status,
+  });
 }
 
 async function requireBusinessOwnerOrAdmin(id: number) {
@@ -276,4 +295,5 @@ export async function deleteBusiness(id: number) {
   await requireBusinessOwnerOrAdmin(id);
 
   await db.delete(businessesTable).where(eq(businessesTable.id, id));
+  await deleteNotificationsFor("community-hub", id);
 }

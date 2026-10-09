@@ -2,6 +2,7 @@
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
+import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { courtReservationsTable, type CourtReservation } from "@/db/schema";
@@ -145,11 +146,16 @@ export async function getCourtReservationsByUser(
   );
 }
 
-// Backs the admin page's `?view=<id>` deep link (e.g. from the home page's Needs Attention queue).
+// Backs the `?view=<id>` deep link: the admin page's (e.g. from the home page's Needs Attention
+// queue) and the resident page's (from a notification), so residents only get their own.
 export async function getCourtReservationById(id: number): Promise<CourtReservationWithRequester | null> {
-  await requireAdmin();
+  const { userId, isAdmin } = await getAuthRole();
+  if (!userId) throw new Error("Unauthorized");
 
-  const { items } = await fetchCourtReservationsPage([eq(courtReservationsTable.id, id)], 0, 1);
+  const conditions = [eq(courtReservationsTable.id, id)];
+  if (!isAdmin) conditions.push(eq(courtReservationsTable.requesterId, userId));
+
+  const { items } = await fetchCourtReservationsPage(conditions, 0, 1);
   return items[0] ?? null;
 }
 
@@ -245,13 +251,13 @@ export async function setCourtReservationStatus(
 ) {
   const handlerId = await requireAdmin();
 
-  if (status === "Approved") {
-    const [reservation] = await db
-      .select()
-      .from(courtReservationsTable)
-      .where(eq(courtReservationsTable.id, id));
-    if (!reservation) throw new Error("Court reservation not found");
+  const [reservation] = await db
+    .select()
+    .from(courtReservationsTable)
+    .where(eq(courtReservationsTable.id, id));
+  if (!reservation) throw new Error("Court reservation not found");
 
+  if (status === "Approved") {
     const takenSlots = await getTakenTimeSlots(reservation.date, id);
     if (reservation.timeSlots.some((hour) => takenSlots.includes(hour))) {
       throw new Error(
@@ -273,6 +279,21 @@ export async function setCourtReservationStatus(
       updatedAt: new Date(),
     })
     .where(eq(courtReservationsTable.id, id));
+
+  const reservationDate = new Date(`${reservation.date}T00:00:00`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  await notifyStatusChange({
+    userId: reservation.requesterId,
+    actorId: handlerId,
+    type: "court-reservation",
+    referenceId: id,
+    subject: `court reservation for ${reservationDate}`,
+    previousStatus: reservation.status,
+    status,
+  });
 }
 
 export async function deleteCourtReservation(id: number) {
@@ -287,4 +308,5 @@ export async function deleteCourtReservation(id: number) {
   if (existing.requesterId !== userId && !isAdmin) throw new Error("Forbidden");
 
   await db.delete(courtReservationsTable).where(eq(courtReservationsTable.id, id));
+  await deleteNotificationsFor("court-reservation", id);
 }

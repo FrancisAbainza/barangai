@@ -4,6 +4,7 @@ import { isAdminRole } from '@/lib/roles'
 
 const isProtectedRoute = createRouteMatcher(['/portal(.*)'])
 const isAdminRoute = createRouteMatcher(["/portal/user-management(.*)", "/portal/barangay-settings(.*)"]);
+const isResidentOnlyRoute = createRouteMatcher(["/portal/notifications(.*)"]);
 const isPublicOnlyRoute = createRouteMatcher(['/'])
 
 export default clerkMiddleware(async (auth, req) => {
@@ -13,6 +14,10 @@ export default clerkMiddleware(async (auth, req) => {
   if (isAdminRoute(req) && !isAdmin) {
     const url = new URL("/", req.url);
     return NextResponse.redirect(url);
+  }
+
+  if (isResidentOnlyRoute(req) && isAdmin) {
+    return NextResponse.redirect(new URL("/portal", req.url));
   }
 
   if (isProtectedRoute(req)) {

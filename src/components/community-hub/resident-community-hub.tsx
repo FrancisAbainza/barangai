@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { LayoutGrid, ListFilter, Map, MapPinOff, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BusinessGrid from "@/components/community-hub/business-grid";
 import BusinessesMapView from "@/components/community-hub/businesses-map-view";
-import { getVerifiedBusinesses } from "@/actions/business";
+import ViewSubmissionDialog from "@/components/community-hub/dialogs/view-submission-dialog";
+import { useViewParam } from "@/hooks/use-view-param";
+import { getBusinessById, getVerifiedBusinesses } from "@/actions/business";
 import { BUSINESS_CATEGORIES } from "@/schemas/business-schema";
 import type { Business } from "@/db/schema";
 import type { LocationValue } from "@/components/map-picker";
@@ -47,6 +49,15 @@ export default function ResidentCommunityHub() {
   const [ownedByMe, setOwnedByMe] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
+
+  // `?view=<id>` (e.g. from a notification) opens that submission's Submission Info dialog.
+  // It's fetched by id since it may not be in the loaded list.
+  const [viewId, setViewId] = useViewParam();
+  const { data: viewedBusiness } = useQuery({
+    queryKey: ["businesses", "view", viewId],
+    queryFn: () => getBusinessById(viewId!),
+    enabled: viewId !== null,
+  });
 
   const activeFilterCount = [category !== "all", ownedByMe].filter(Boolean).length;
 
@@ -191,6 +202,10 @@ export default function ResidentCommunityHub() {
           )}
         </TabsContent>
       </Tabs>
+
+      {viewedBusiness && viewId !== null && (
+        <ViewSubmissionDialog business={viewedBusiness} open onOpenChange={(open) => !open && setViewId(null)} />
+      )}
     </div>
   );
 }

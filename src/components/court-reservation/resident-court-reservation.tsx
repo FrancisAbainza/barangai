@@ -19,9 +19,11 @@ import ResidentCredentialsBanner from "@/components/resident-credentials-banner"
 import CourtReservationActionsMenu from "@/components/court-reservation/court-reservation-actions-menu";
 import CourtReservationDialog from "@/components/court-reservation/dialogs/court-reservation-dialog";
 import TimeSlotsDialog from "@/components/court-reservation/dialogs/time-slots-dialog";
+import ViewCourtReservationDialog from "@/components/court-reservation/dialogs/view-court-reservation-dialog";
 import { getResidentProfile } from "@/actions/resident-profile";
 import { useDialogParam } from "@/hooks/use-dialog-param";
-import { getMyCourtReservations } from "@/actions/court-reservations";
+import { useViewParam } from "@/hooks/use-view-param";
+import { getCourtReservationById, getMyCourtReservations } from "@/actions/court-reservations";
 import { statusBadgeVariant, formatTimeSlots, formatFee } from "@/lib/court-reservations";
 import { CalendarCheck, Clock } from "lucide-react";
 
@@ -36,6 +38,15 @@ function formatReservationDate(date: string) {
 export default function ResidentCourtReservation() {
   const [isReserveDialogOpen, setIsReserveDialogOpen] = useDialogParam("court-reservation");
   const [isTimeSlotsDialogOpen, setIsTimeSlotsDialogOpen] = useState(false);
+
+  // `?view=<id>` (e.g. from a notification) opens that submission's Submission Info dialog.
+  // It's fetched by id since it may not be in the loaded list.
+  const [viewId, setViewId] = useViewParam();
+  const { data: viewedReservation } = useQuery({
+    queryKey: ["court-reservations", "view", viewId],
+    queryFn: () => getCourtReservationById(viewId!),
+    enabled: viewId !== null,
+  });
 
   const { user } = useUser();
   const { data: residentProfile, isLoading: isResidentProfileLoading } = useQuery({
@@ -168,6 +179,10 @@ export default function ResidentCourtReservation() {
 
       <CourtReservationDialog open={isReserveDialogOpen && hasResidentProfile} onOpenChange={setIsReserveDialogOpen} />
       <TimeSlotsDialog open={isTimeSlotsDialogOpen} onOpenChange={setIsTimeSlotsDialogOpen} />
+
+      {viewedReservation && viewId !== null && (
+        <ViewCourtReservationDialog reservation={viewedReservation} open onOpenChange={(open) => !open && setViewId(null)} />
+      )}
     </>
   );
 }

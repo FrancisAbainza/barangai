@@ -5,6 +5,7 @@ import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { and, asc, count, desc, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
+import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { complaintsTable, type Complaint } from "@/db/schema";
@@ -176,11 +177,16 @@ export async function getComplaintsByUser(
   return fetchComplaintsPage([eq(complaintsTable.complainantId, userId)], offset, MY_COMPLAINTS_PAGE_SIZE);
 }
 
-// Backs the admin page's `?view=<id>` deep link (e.g. from the home page's Needs Attention queue).
+// Backs the `?view=<id>` deep link: the admin page's (e.g. from the home page's Needs Attention
+// queue) and the resident page's (from a notification), so residents only get their own.
 export async function getComplaintById(id: number): Promise<ComplaintWithComplainant | null> {
-  await requireAdmin();
+  const { userId, isAdmin } = await getAuthRole();
+  if (!userId) throw new Error("Unauthorized");
 
-  const { items } = await fetchComplaintsPage([eq(complaintsTable.id, id)], 0, 1);
+  const conditions = [eq(complaintsTable.id, id)];
+  if (!isAdmin) conditions.push(eq(complaintsTable.complainantId, userId));
+
+  const { items } = await fetchComplaintsPage(conditions, 0, 1);
   return items[0] ?? null;
 }
 
@@ -282,6 +288,9 @@ export async function setComplaintStatus(
 ) {
   const handlerId = await requireAdmin();
 
+  const [existing] = await db.select().from(complaintsTable).where(eq(complaintsTable.id, id));
+  if (!existing) throw new Error("Complaint not found");
+
   await db
     .update(complaintsTable)
     .set({
@@ -300,6 +309,16 @@ export async function setComplaintStatus(
         : { dismissalReason: null, dismissalAttachments: [] }),
     })
     .where(eq(complaintsTable.id, id));
+
+  await notifyStatusChange({
+    userId: existing.complainantId,
+    actorId: handlerId,
+    type: "complaint",
+    referenceId: id,
+    subject: `complaint "${existing.subject}"`,
+    previousStatus: existing.status,
+    status,
+  });
 }
 
 export async function deleteComplaint(id: number) {
@@ -311,4 +330,5 @@ export async function deleteComplaint(id: number) {
   if (existing.complainantId !== userId && !isAdmin) throw new Error("Forbidden");
 
   await db.delete(complaintsTable).where(eq(complaintsTable.id, id));
+  await deleteNotificationsFor("complaint", id);
 }
