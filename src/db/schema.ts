@@ -266,7 +266,10 @@ export const courtReservationsTable = pgTable("court_reservations", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   requesterId: varchar({ length: 255 }).notNull(),
   date: date().notNull(),
-  timeSlots: json().$type<number[]>().notNull(),
+  // Minutes after midnight (0-1439); the reservation runs for `durationHours` whole hours
+  // from there and must end by midnight (see src/lib/court-reservations.ts).
+  startTime: integer().notNull(),
+  durationHours: integer().notNull(),
   purpose: varchar({ length: 255 }).notNull(),
   totalAmount: numeric({ precision: 10, scale: 2 }).notNull(),
   gcashPayment: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),

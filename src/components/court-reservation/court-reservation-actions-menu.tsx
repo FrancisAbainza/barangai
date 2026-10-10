@@ -50,6 +50,7 @@ export default function CourtReservationActionsMenu({
     },
     onSuccess: (_data, status) => {
       queryClient.invalidateQueries({ queryKey: ["court-reservations"] });
+      queryClient.invalidateQueries({ queryKey: ["court-reservation-taken-ranges"] });
       toast.success(`Reservation marked as ${status}.`);
     },
     onError: (error) => {

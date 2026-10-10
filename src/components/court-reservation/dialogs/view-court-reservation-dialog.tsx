@@ -17,7 +17,7 @@ import type { MediaItem } from "@/components/file-uploader";
 import {
   statusBadgeVariant,
   handlerLabel,
-  formatTimeSlots,
+  formatReservationTime,
   formatFee,
   formatReservationDate,
   formatSubmissionDate,
@@ -102,8 +102,8 @@ export default function ViewCourtReservationDialog({
             </Field>
 
             <Field>
-              <FieldLabel>Time Slots</FieldLabel>
-              <p className="text-sm">{formatTimeSlots(reservation.timeSlots)}</p>
+              <FieldLabel>Time</FieldLabel>
+              <p className="text-sm">{formatReservationTime(reservation)}</p>
             </Field>
 
             <Field>

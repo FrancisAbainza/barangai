@@ -18,13 +18,13 @@ import LoadMoreTrigger from "@/components/load-more-trigger";
 import ResidentCredentialsBanner from "@/components/resident-credentials-banner";
 import CourtReservationActionsMenu from "@/components/court-reservation/court-reservation-actions-menu";
 import CourtReservationDialog from "@/components/court-reservation/dialogs/court-reservation-dialog";
-import TimeSlotsDialog from "@/components/court-reservation/dialogs/time-slots-dialog";
+import CourtAvailabilityDialog from "@/components/court-reservation/dialogs/court-availability-dialog";
 import ViewCourtReservationDialog from "@/components/court-reservation/dialogs/view-court-reservation-dialog";
 import { getResidentProfile } from "@/actions/resident-profile";
 import { useDialogParam } from "@/hooks/use-dialog-param";
 import { useViewParam } from "@/hooks/use-view-param";
 import { getCourtReservationById, getMyCourtReservations } from "@/actions/court-reservations";
-import { statusBadgeVariant, formatTimeSlots, formatFee } from "@/lib/court-reservations";
+import { statusBadgeVariant, formatReservationTime, formatFee } from "@/lib/court-reservations";
 import { CalendarCheck, Clock } from "lucide-react";
 
 function formatReservationDate(date: string) {
@@ -37,7 +37,7 @@ function formatReservationDate(date: string) {
 
 export default function ResidentCourtReservation() {
   const [isReserveDialogOpen, setIsReserveDialogOpen] = useDialogParam("court-reservation");
-  const [isTimeSlotsDialogOpen, setIsTimeSlotsDialogOpen] = useState(false);
+  const [isAvailabilityDialogOpen, setIsAvailabilityDialogOpen] = useState(false);
 
   // `?view=<id>` (e.g. from a notification) opens that submission's Submission Info dialog.
   // It's fetched by id since it may not be in the loaded list.
@@ -93,9 +93,9 @@ export default function ResidentCourtReservation() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="flex-1 gap-2" onClick={() => setIsTimeSlotsDialogOpen(true)}>
+            <Button variant="outline" className="flex-1 gap-2" onClick={() => setIsAvailabilityDialogOpen(true)}>
               <Clock className="size-4" />
-              Time Slots
+              Availability
             </Button>
             <Button className="flex-1 gap-2" onClick={() => setIsReserveDialogOpen(true)}>
               <CalendarCheck className="size-4" />
@@ -112,7 +112,7 @@ export default function ResidentCourtReservation() {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>Time Slots</TableHead>
+                <TableHead>Time</TableHead>
                 <TableHead>Purpose</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Status</TableHead>
@@ -140,7 +140,7 @@ export default function ResidentCourtReservation() {
                         {formatReservationDate(reservation.date)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {formatTimeSlots(reservation.timeSlots)}
+                        {formatReservationTime(reservation)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{reservation.purpose}</TableCell>
                       <TableCell className="text-muted-foreground">
@@ -178,7 +178,7 @@ export default function ResidentCourtReservation() {
       </div>
 
       <CourtReservationDialog open={isReserveDialogOpen && hasResidentProfile} onOpenChange={setIsReserveDialogOpen} />
-      <TimeSlotsDialog open={isTimeSlotsDialogOpen} onOpenChange={setIsTimeSlotsDialogOpen} />
+      <CourtAvailabilityDialog open={isAvailabilityDialogOpen} onOpenChange={setIsAvailabilityDialogOpen} />
 
       {viewedReservation && viewId !== null && (
         <ViewCourtReservationDialog reservation={viewedReservation} open onOpenChange={(open) => !open && setViewId(null)} />

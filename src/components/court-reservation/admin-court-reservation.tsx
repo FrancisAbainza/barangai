@@ -37,22 +37,22 @@ import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
 import CourtReservationActionsMenu from "@/components/court-reservation/court-reservation-actions-menu";
 import CourtReservationDialog from "@/components/court-reservation/dialogs/court-reservation-dialog";
-import TimeSlotsDialog from "@/components/court-reservation/dialogs/time-slots-dialog";
+import CourtAvailabilityDialog from "@/components/court-reservation/dialogs/court-availability-dialog";
 import { useDialogParam } from "@/hooks/use-dialog-param";
 import ViewCourtReservationDialog from "@/components/court-reservation/dialogs/view-court-reservation-dialog";
 import { useViewParam } from "@/hooks/use-view-param";
 import { getCourtReservationById, getCourtReservations, getCourtReservationStats } from "@/actions/court-reservations";
 import {
-  COURT_TIME_SLOTS,
+  COURT_HOUR_WINDOWS,
   statusBadgeVariant,
-  formatTimeSlots,
+  formatReservationTime,
   formatReservationDate,
 } from "@/lib/court-reservations";
 import { courtReservationStatusEnum, type CourtReservation } from "@/db/schema";
 
-const TIME_SLOT_FILTERS = [
-  { value: "all", label: "All Time Slots" },
-  ...COURT_TIME_SLOTS.map((slot) => ({ value: String(slot.hour), label: slot.label })),
+const HOUR_FILTERS = [
+  { value: "all", label: "All Times" },
+  ...COURT_HOUR_WINDOWS.map((window) => ({ value: String(window.hour), label: window.label })),
 ];
 
 const STATUS_FILTERS = [
@@ -107,20 +107,20 @@ function ReservationRowSkeleton() {
 export default function AdminCourtReservation() {
   const [search, setSearch] = useState("");
   const [date, setDate] = useState("");
-  const [timeSlot, setTimeSlot] = useState("all");
+  const [hour, setHour] = useState("all");
   const [status, setStatus] = useState("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [handledByMe, setHandledByMe] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [timeSlotsOpen, setTimeSlotsOpen] = useState(false);
+  const [availabilityOpen, setAvailabilityOpen] = useState(false);
   const [reserveOpen, setReserveOpen] = useDialogParam("court-reservation");
   const debouncedSearch = useDebouncedValue(search, 300);
 
-  const activeFilterCount = [date !== "", timeSlot !== "all", status !== "all", handledByMe].filter(Boolean).length;
+  const activeFilterCount = [date !== "", hour !== "all", status !== "all", handledByMe].filter(Boolean).length;
 
   function clearFilters() {
     setDate("");
-    setTimeSlot("all");
+    setHour("all");
     setStatus("all");
     setHandledByMe(false);
   }
@@ -143,14 +143,14 @@ export default function AdminCourtReservation() {
     queryKey: [
       "court-reservations",
       "admin",
-      { search: debouncedSearch, date, timeSlot, status, sortOrder, handledByMe },
+      { search: debouncedSearch, date, hour, status, sortOrder, handledByMe },
     ],
     queryFn: ({ pageParam }) =>
       getCourtReservations({
         offset: pageParam,
         search: debouncedSearch,
         date,
-        timeSlot: timeSlot === "all" ? "all" : Number(timeSlot),
+        hour: hour === "all" ? "all" : Number(hour),
         status: status as CourtReservation["status"] | "all",
         sortOrder,
         handledByMe,
@@ -192,9 +192,9 @@ export default function AdminCourtReservation() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="flex-1 gap-2" onClick={() => setTimeSlotsOpen(true)}>
+          <Button variant="outline" className="flex-1 gap-2" onClick={() => setAvailabilityOpen(true)}>
             <Clock className="size-4" />
-            Time Slots
+            Availability
           </Button>
           <Button className="flex-1 gap-2" onClick={() => setReserveOpen(true)}>
             <CalendarCheck className="size-4" />
@@ -245,7 +245,7 @@ export default function AdminCourtReservation() {
               <DialogHeader>
                 <DialogTitle>Filter Reservations</DialogTitle>
                 <DialogDescription>
-                  Narrow down court reservations by reservation date, time slot, or status.
+                  Narrow down court reservations by reservation date, time, or status.
                 </DialogDescription>
               </DialogHeader>
 
@@ -261,13 +261,13 @@ export default function AdminCourtReservation() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label>Time Slot</Label>
-                  <Select value={timeSlot} onValueChange={setTimeSlot}>
+                  <Label>Time</Label>
+                  <Select value={hour} onValueChange={setHour}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {TIME_SLOT_FILTERS.map((filter) => (
+                      {HOUR_FILTERS.map((filter) => (
                         <SelectItem key={filter.value} value={filter.value}>
                           {filter.label}
                         </SelectItem>
@@ -315,7 +315,7 @@ export default function AdminCourtReservation() {
         </div>
       </div>
 
-      <TimeSlotsDialog open={timeSlotsOpen} onOpenChange={setTimeSlotsOpen} />
+      <CourtAvailabilityDialog open={availabilityOpen} onOpenChange={setAvailabilityOpen} />
       <CourtReservationDialog open={reserveOpen} onOpenChange={setReserveOpen} />
 
       <div className="rounded-lg border">
@@ -323,7 +323,7 @@ export default function AdminCourtReservation() {
           <TableHeader>
             <TableRow>
               <TableHead>Requester</TableHead>
-              <TableHead>Time Slot</TableHead>
+              <TableHead>Schedule</TableHead>
               <TableHead>Purpose</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
@@ -353,7 +353,7 @@ export default function AdminCourtReservation() {
                     <TableCell>
                       <p className="truncate">{formatReservationDate(reservation.date)}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {formatTimeSlots(reservation.timeSlots)}
+                        {formatReservationTime(reservation)}
                       </p>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{reservation.purpose}</TableCell>

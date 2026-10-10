@@ -12,25 +12,113 @@ export function handlerLabel(status: CourtReservation["status"]) {
   return "Being processed by";
 }
 
-const courtHourFormat = new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: true });
+// Reservation times are stored as minutes after midnight. A reservation lasts a whole
+// number of hours but can start at any minute, and must end by midnight of its date.
+export const MINUTES_PER_DAY = 24 * 60;
+export const COURT_DAY_START = 6 * 60;
+export const COURT_DAY_END = 18 * 60;
+export const COURT_DAY_HOURS = "6:00 AM - 6:00 PM";
+export const COURT_NIGHT_HOURS = "6:00 PM - 6:00 AM";
 
-// hour is the slot's starting hour (0-23); Date handles the day rollover for the label.
-export function formatCourtHour(hour: number): string {
-  return courtHourFormat.format(new Date(2000, 0, 1, hour));
+// An hour that spans day and night is billed at the day rate when at least this many of its
+// minutes fall within the day hours (e.g. 5:30 - 6:30 PM is day, 5:31 - 6:31 PM is night).
+const MIN_DAY_MINUTES_FOR_DAY_RATE = 30;
+
+export type CourtTimeRange = { start: number; end: number };
+
+export function getReservationRange(reservation: {
+  startTime: number;
+  durationHours: number;
+}): CourtTimeRange {
+  return { start: reservation.startTime, end: reservation.startTime + reservation.durationHours * 60 };
 }
 
-export function formatTimeSlots(hours: number[]): string {
-  return [...hours]
-    .sort((a, b) => a - b)
-    .map((hour) => `${formatCourtHour(hour)} - ${formatCourtHour(hour + 1)}`)
-    .join(", ");
+export function rangesOverlap(a: CourtTimeRange, b: CourtTimeRange): boolean {
+  return a.start < b.end && b.start < a.end;
 }
 
-// Shared rendering data (hour + label) for every 1-hour slot in a day; reused by the
-// reservation picker form and the admin time slot filter.
-export const COURT_TIME_SLOTS = Array.from({ length: 24 }, (_, hour) => ({
+export function maxDurationHours(startTime: number): number {
+  return Math.floor((MINUTES_PER_DAY - startTime) / 60);
+}
+
+export type CourtHourCharge = CourtTimeRange & { isDayRate: boolean; rate: number };
+
+// Bills each hour of the reservation separately, so a 12:10 PM - 3:10 PM booking is three
+// day-rate hours while 5:00 PM - 7:00 PM is one day hour plus one night hour.
+export function getCourtHourCharges(
+  startTime: number,
+  durationHours: number,
+  dayRate: number,
+  nightRate: number
+): CourtHourCharge[] {
+  return Array.from({ length: durationHours }, (_, i) => {
+    const start = startTime + i * 60;
+    const end = start + 60;
+    const dayMinutes = Math.max(0, Math.min(end, COURT_DAY_END) - Math.max(start, COURT_DAY_START));
+    const isDayRate = dayMinutes >= MIN_DAY_MINUTES_FOR_DAY_RATE;
+    return { start, end, isDayRate, rate: isDayRate ? dayRate : nightRate };
+  });
+}
+
+export function calculateCourtFee(
+  startTime: number,
+  durationHours: number,
+  dayRate: number,
+  nightRate: number
+): number {
+  return getCourtHourCharges(startTime, durationHours, dayRate, nightRate).reduce(
+    (sum, charge) => sum + charge.rate,
+    0
+  );
+}
+
+// Formats minutes after midnight as e.g. "4:27 PM"; 1440 (end of day) reads as "12:00 AM".
+export function formatCourtTime(minutes: number): string {
+  const normalized = ((minutes % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  const hour = Math.floor(normalized / 60);
+  const minute = normalized % 60;
+  return `${hour % 12 === 0 ? 12 : hour % 12}:${String(minute).padStart(2, "0")} ${hour < 12 ? "AM" : "PM"}`;
+}
+
+export function formatTimeRange(range: CourtTimeRange): string {
+  return `${formatCourtTime(range.start)} - ${formatCourtTime(range.end)}`;
+}
+
+export function formatReservationTime(reservation: { startTime: number; durationHours: number }): string {
+  const hours = reservation.durationHours;
+  return `${formatTimeRange(getReservationRange(reservation))} (${hours} ${hours === 1 ? "hr" : "hrs"})`;
+}
+
+// "HH:MM" (an <input type="time"> value) <-> minutes after midnight.
+export function parseTimeInput(value: string): number | null {
+  const match = /^(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour > 23 || minute > 59) return null;
+  return hour * 60 + minute;
+}
+
+export function toTimeInput(minutes: number): string {
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+}
+
+// The open stretches of a day around the given (approved) reservation ranges.
+export function getFreeRanges(taken: CourtTimeRange[]): CourtTimeRange[] {
+  const free: CourtTimeRange[] = [];
+  let cursor = 0;
+  for (const range of [...taken].sort((a, b) => a.start - b.start)) {
+    if (range.start > cursor) free.push({ start: cursor, end: range.start });
+    cursor = Math.max(cursor, range.end);
+  }
+  if (cursor < MINUTES_PER_DAY) free.push({ start: cursor, end: MINUTES_PER_DAY });
+  return free;
+}
+
+// Hour-long windows used by the admin "Time" filter, which matches reservations overlapping it.
+export const COURT_HOUR_WINDOWS = Array.from({ length: 24 }, (_, hour) => ({
   hour,
-  label: `${formatCourtHour(hour)} - ${formatCourtHour(hour + 1)}`,
+  label: formatTimeRange({ start: hour * 60, end: (hour + 1) * 60 }),
 }));
 
 export function formatFee(amount: number): string {

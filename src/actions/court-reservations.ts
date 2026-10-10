@@ -8,27 +8,36 @@ import { db } from "@/db/config";
 import { courtReservationsTable, type CourtReservation } from "@/db/schema";
 import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { MediaItem } from "@/components/file-uploader";
-import { getCourtRateForHour } from "@/lib/data";
+import {
+  calculateCourtFee,
+  getReservationRange,
+  MINUTES_PER_DAY,
+  rangesOverlap,
+  type CourtTimeRange,
+} from "@/lib/court-reservations";
 import { getBarangaySettings } from "@/actions/settings";
 
-export async function getTakenTimeSlots(date: string, excludeReservationId?: number): Promise<number[]> {
+// Time ranges (minutes after midnight) already held by approved reservations on `date`.
+export async function getTakenTimeRanges(date: string, excludeReservationId?: number): Promise<CourtTimeRange[]> {
   const conditions = [eq(courtReservationsTable.date, date), eq(courtReservationsTable.status, "Approved")];
   if (excludeReservationId !== undefined) {
     conditions.push(ne(courtReservationsTable.id, excludeReservationId));
   }
 
   const reservations = await db
-    .select({ timeSlots: courtReservationsTable.timeSlots })
+    .select({ startTime: courtReservationsTable.startTime, durationHours: courtReservationsTable.durationHours })
     .from(courtReservationsTable)
-    .where(and(...conditions));
+    .where(and(...conditions))
+    .orderBy(asc(courtReservationsTable.startTime));
 
-  return [...new Set(reservations.flatMap((reservation) => reservation.timeSlots))];
+  return reservations.map(getReservationRange);
 }
 
 export type CreateCourtReservationInput = {
   date: string;
   purpose: string;
-  timeSlots: number[];
+  startTime: number;
+  durationHours: number;
   gcashPayment: Omit<MediaItem, "file">[];
 };
 
@@ -36,21 +45,35 @@ export async function createCourtReservation(data: CreateCourtReservationInput) 
   const { userId, isAdmin } = await getAuthRole();
   if (!userId) throw new Error("Unauthorized");
 
-  const takenSlots = await getTakenTimeSlots(data.date);
-  if (data.timeSlots.some((hour) => takenSlots.includes(hour))) {
-    throw new Error("One or more selected time slots are no longer available.");
+  if (
+    !Number.isInteger(data.startTime) ||
+    !Number.isInteger(data.durationHours) ||
+    data.startTime < 0 ||
+    data.durationHours < 1 ||
+    data.startTime + data.durationHours * 60 > MINUTES_PER_DAY
+  ) {
+    throw new Error("Invalid reservation time. Reservations must end by midnight.");
+  }
+
+  const range = getReservationRange(data);
+  const takenRanges = await getTakenTimeRanges(data.date);
+  if (takenRanges.some((taken) => rangesOverlap(range, taken))) {
+    throw new Error("The selected time overlaps an existing reservation.");
   }
 
   const settings = await getBarangaySettings();
-  const totalAmount = data.timeSlots.reduce(
-    (sum, hour) => sum + getCourtRateForHour(hour, settings.courtDayRate, settings.courtNightRate),
-    0
+  const totalAmount = calculateCourtFee(
+    data.startTime,
+    data.durationHours,
+    settings.courtDayRate,
+    settings.courtNightRate
   );
 
   await db.insert(courtReservationsTable).values({
     requesterId: userId,
     date: data.date,
-    timeSlots: data.timeSlots,
+    startTime: data.startTime,
+    durationHours: data.durationHours,
     purpose: data.purpose,
     totalAmount: totalAmount.toString(),
     gcashPayment: data.gcashPayment,
@@ -163,7 +186,7 @@ export async function getCourtReservations({
   offset = 0,
   search,
   date,
-  timeSlot,
+  hour,
   status,
   sortOrder = "newest",
   handledByMe = false,
@@ -171,7 +194,7 @@ export async function getCourtReservations({
   offset?: number;
   search?: string;
   date?: string;
-  timeSlot?: number | "all";
+  hour?: number | "all";
   status?: CourtReservation["status"] | "all";
   sortOrder?: "newest" | "oldest";
   handledByMe?: boolean;
@@ -188,9 +211,11 @@ export async function getCourtReservations({
   if (date) {
     conditions.push(eq(courtReservationsTable.date, date));
   }
-  if (timeSlot !== undefined && timeSlot !== "all") {
+  if (hour !== undefined && hour !== "all") {
+    // Any reservation overlapping the hour window [hour:00, hour+1:00).
     conditions.push(
-      sql`${courtReservationsTable.timeSlots}::jsonb @> ${JSON.stringify([timeSlot])}::jsonb`
+      sql`${courtReservationsTable.startTime} < ${(hour + 1) * 60}`,
+      sql`${courtReservationsTable.startTime} + ${courtReservationsTable.durationHours} * 60 > ${hour * 60}`
     );
   }
   if (status && status !== "all") {
@@ -258,11 +283,10 @@ export async function setCourtReservationStatus(
   if (!reservation) throw new Error("Court reservation not found");
 
   if (status === "Approved") {
-    const takenSlots = await getTakenTimeSlots(reservation.date, id);
-    if (reservation.timeSlots.some((hour) => takenSlots.includes(hour))) {
-      throw new Error(
-        "One or more of this reservation's time slots are already approved for another reservation."
-      );
+    const range = getReservationRange(reservation);
+    const takenRanges = await getTakenTimeRanges(reservation.date, id);
+    if (takenRanges.some((taken) => rangesOverlap(range, taken))) {
+      throw new Error("This reservation's time overlaps another approved reservation.");
     }
   }
 

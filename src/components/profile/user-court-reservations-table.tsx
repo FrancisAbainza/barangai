@@ -14,7 +14,7 @@ import {
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import CourtReservationActionsMenu from "@/components/court-reservation/court-reservation-actions-menu";
 import { getCourtReservationsByUser } from "@/actions/court-reservations";
-import { statusBadgeVariant, formatTimeSlots, formatFee, formatReservationDate } from "@/lib/court-reservations";
+import { statusBadgeVariant, formatReservationTime, formatFee, formatReservationDate } from "@/lib/court-reservations";
 
 export default function UserCourtReservationsTable({ userId }: { userId: string }) {
   const {
@@ -66,7 +66,7 @@ export default function UserCourtReservationsTable({ userId }: { userId: string 
                     {formatReservationDate(reservation.date)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatTimeSlots(reservation.timeSlots)}
+                    {formatReservationTime(reservation)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{reservation.purpose}</TableCell>
                   <TableCell className="text-muted-foreground">

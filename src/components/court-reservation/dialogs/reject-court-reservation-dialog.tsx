@@ -36,6 +36,7 @@ export default function RejectCourtReservationDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["court-reservations"] });
+      queryClient.invalidateQueries({ queryKey: ["court-reservation-taken-ranges"] });
       toast.success("Reservation rejected.");
       onOpenChange(false);
     },

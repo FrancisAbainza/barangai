@@ -21,7 +21,7 @@ export const PORTAL_DIALOG_TARGETS = {
   "court-reservation": {
     label: "Reserve the Court",
     page: "court-reservation",
-    description: "Book the barangay court for a date and time slot.",
+    description: "Book the barangay court for a date and time.",
     audience: "all",
   },
   "clearance-request": {

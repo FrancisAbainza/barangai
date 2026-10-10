@@ -35,7 +35,7 @@ export default function CourtFeesForm({
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel htmlFor="courtDayRate">Day Rate (6:00 AM - 6:00 PM)</FieldLabel>
-              <FieldDescription>Charged per 1-hour slot during the day.</FieldDescription>
+              <FieldDescription>Charged per hour during the day. An hour that crosses 6:00 AM or 6:00 PM uses this rate if at least 30 minutes of it falls in the day.</FieldDescription>
               <Input
                 id="courtDayRate"
                 type="number"
@@ -58,7 +58,7 @@ export default function CourtFeesForm({
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel htmlFor="courtNightRate">Night Rate (6:00 PM - 6:00 AM)</FieldLabel>
-              <FieldDescription>Charged per 1-hour slot during the night.</FieldDescription>
+              <FieldDescription>Charged per hour during the night, including hours with less than 30 minutes of daytime.</FieldDescription>
               <Input
                 id="courtNightRate"
                 type="number"

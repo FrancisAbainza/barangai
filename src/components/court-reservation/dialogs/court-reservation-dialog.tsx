@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import type { CourtReservationFormValues } from "@/schemas/court-reservation-schema";
 import { createCourtReservation } from "@/actions/court-reservations";
 import { uploadFile } from "@/lib/storage";
+import { parseTimeInput } from "@/lib/court-reservations";
 import CourtReservationForm from "../forms/court-reservation-form";
 
 interface CourtReservationDialogProps {
@@ -32,13 +33,15 @@ export default function CourtReservationDialog({
       await createCourtReservation({
         date: data.date,
         purpose: data.purpose,
-        timeSlots: data.timeSlots,
+        // The schema already validated the "HH:MM" format.
+        startTime: parseTimeInput(data.startTime)!,
+        durationHours: data.durationHours,
         gcashPayment,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["court-reservations"] });
-      queryClient.invalidateQueries({ queryKey: ["court-reservation-taken-slots"] });
+      queryClient.invalidateQueries({ queryKey: ["court-reservation-taken-ranges"] });
       toast.success("Reservation submitted successfully.");
       onOpenChange(false);
     },

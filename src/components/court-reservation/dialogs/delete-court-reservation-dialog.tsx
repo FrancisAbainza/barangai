@@ -42,6 +42,7 @@ export default function DeleteCourtReservationDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["court-reservations"] });
+      queryClient.invalidateQueries({ queryKey: ["court-reservation-taken-ranges"] });
       toast.success("Reservation deleted successfully.");
       onOpenChange(false);
     },
