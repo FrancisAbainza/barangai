@@ -35,6 +35,8 @@ import Image from "next/image";
 import { barangayLogoSrc, barangayName } from "@/lib/data";
 import { isAdminRole, isSuperAdminRole } from "@/lib/roles";
 import { getUnreadNotificationCount } from "@/actions/notifications";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { cn } from "@/lib/utils";
 
 const NOTIFICATIONS_HREF = "/portal/notifications";
 
@@ -136,7 +138,7 @@ export default function PortalSidebar() {
 
         {/* User Section */}
         <SidebarFooter className="border-t border-sidebar-border">
-          <div className="flex w-full items-center justify-center gap-3">
+          <div className={cn("flex w-full items-center justify-center gap-3 px-4", collapsed && "flex-col gap-2")}>
             <UserButton>
               <UserButton.MenuItems>
                 <UserButton.Link
@@ -147,13 +149,14 @@ export default function PortalSidebar() {
               </UserButton.MenuItems>
             </UserButton>
             {!collapsed && (
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold">{fullName}</p>
                 <p className="truncate text-xs text-sidebar-foreground/60">
                   {isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "Resident"}
                 </p>
               </div>
             )}
+            <ThemeToggle />
           </div>
         </SidebarFooter>
       </Sidebar>

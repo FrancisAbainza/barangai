@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AiAssistantWidget } from "@/components/ai-assistant-widget";
 import PortalHeader from "@/components/portal-header";
 import PortalSidebar from "@/components/portal-sidebar";
+import { ThemePreferenceSync } from "@/components/theme-preference-sync";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 // Raised for the AI assistant's knowledge base upload — parsing, chunking, and
@@ -21,6 +22,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         </main>
       </SidebarInset>
       <AiAssistantWidget />
+      <ThemePreferenceSync />
     </SidebarProvider>
   );
 }

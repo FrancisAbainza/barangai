@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/query-provider";
 import LandingPageHeader from "@/components/landing-page-header";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const roboto = Roboto({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -33,6 +34,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      // next-themes sets the theme class on <html> before hydration.
+      suppressHydrationWarning
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", roboto.variable)}
     >
       <body className="flex flex-col">
@@ -48,15 +51,17 @@ export default function RootLayout({
             },
           }}
         >
-          <TooltipProvider>
-            <QueryProvider>
-              <Show when="signed-out">
-                <LandingPageHeader />
-              </Show>
-              {children}
-              <Toaster />
-            </QueryProvider>
-          </TooltipProvider>
+          <ThemeProvider>
+            <TooltipProvider>
+              <QueryProvider>
+                <Show when="signed-out">
+                  <LandingPageHeader />
+                </Show>
+                {children}
+                <Toaster />
+              </QueryProvider>
+            </TooltipProvider>
+          </ThemeProvider>
         </ClerkProvider>
       </body>
     </html>

@@ -371,3 +371,16 @@ export const barangaySettingsTable = pgTable("barangay_settings", {
 });
 
 export type BarangaySettings = typeof barangaySettingsTable.$inferSelect;
+
+export const themePreferenceEnum = pgEnum("theme_preference", ["light", "dark"]);
+
+// Per-user portal settings keyed by Clerk userId. The theme is also kept in localStorage
+// by next-themes; this row lets it follow the user across devices (see ThemePreferenceSync).
+export const userPreferencesTable = pgTable("user_preferences", {
+  userId: varchar({ length: 255 }).primaryKey(),
+  theme: themePreferenceEnum().notNull().default("light"),
+  updatedAt: timestamp().notNull().defaultNow(),
+});
+
+export type UserPreferences = typeof userPreferencesTable.$inferSelect;
+export type ThemePreference = UserPreferences["theme"];
