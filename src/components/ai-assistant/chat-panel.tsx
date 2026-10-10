@@ -22,7 +22,7 @@ import {
   usePromptInputController,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
-import { SpeechInput } from "@/components/ai-elements/speech-input";
+import { VoiceInputButton } from "@/components/ai-assistant/voice-input-button";
 import { Button } from "@/components/ui/button";
 import { getPortalDialogHref, PORTAL_DIALOG_TARGETS, type PortalDialogTargetId } from "@/lib/portal-dialogs";
 import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/portal-navigation";
@@ -65,10 +65,8 @@ function PromptInputMic() {
   const { textInput } = usePromptInputController();
 
   return (
-    <SpeechInput
-      aria-label="Use microphone"
-      onTranscriptionChange={(text) => textInput.setInput(textInput.value ? `${textInput.value} ${text}` : text)}
-      size="icon-sm"
+    <VoiceInputButton
+      onTranscription={(text) => textInput.setInput(textInput.value ? `${textInput.value} ${text}` : text)}
     />
   );
 }
