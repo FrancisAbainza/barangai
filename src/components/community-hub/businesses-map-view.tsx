@@ -150,7 +150,7 @@ export default function BusinessesMapView({ businesses }: { businesses: LocatedB
               headerDisabled
               maxWidth={320}
             >
-              <div className="relative max-w-xs">
+              <div className="light relative max-w-xs text-foreground">
                 <button
                   onClick={() => setActiveBusinessId(null)}
                   className="absolute -top-2 -right-2 z-10 flex size-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
