@@ -14,13 +14,13 @@ export default function DeletedProfileView({
   residentProfile,
 }: DeletedProfileViewProps) {
   return (
-    <div className="container space-y-6 m-auto">
-      <div className="flex items-center gap-4">
-        <div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-muted">
+    <div className="mx-auto w-full max-w-7xl space-y-6">
+      <div className="flex items-center gap-4 border-b border-border pb-6">
+        <div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-muted ring-4 ring-border">
           <UserX className="size-8 text-muted-foreground" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-muted-foreground sm:text-3xl">
             Deleted User
           </h1>
           <p className="text-sm text-muted-foreground mt-1">

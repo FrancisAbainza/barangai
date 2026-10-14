@@ -190,8 +190,10 @@ export default function ResidentCommunityHub() {
           {isMapLoading ? (
             <Skeleton className="h-128 w-full rounded-lg" />
           ) : businessesWithLocation.length === 0 ? (
-            <div className="flex h-128 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-center">
-              <MapPinOff className="size-8 text-muted-foreground" />
+            <div className="flex h-128 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/20 text-center">
+              <div className="mb-1 rounded-full bg-muted p-3">
+                <MapPinOff className="size-6 text-muted-foreground" />
+              </div>
               <p className="text-sm font-medium">No businesses to display</p>
               <p className="text-sm text-muted-foreground">
                 Businesses with a saved location will appear here.

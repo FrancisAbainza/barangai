@@ -12,7 +12,7 @@ export default function ComplaintPage() {
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
 
   return (
-    <div className="container space-y-6 m-auto">
+    <div className="mx-auto w-full max-w-7xl space-y-6">
       <PageHeader
         icon={MessageSquareWarning}
         title="Complaint Reporting"

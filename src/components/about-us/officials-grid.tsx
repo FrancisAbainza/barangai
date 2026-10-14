@@ -41,7 +41,7 @@ export default function OfficialsGrid({ title, icon, addLabel, section, isAdmin 
   return (
     <Card>
       <CardHeader className="flex-row items-center gap-3 space-y-0">
-        <div className="rounded-md bg-accent p-2 text-primary [&_svg]:size-5">{icon}</div>
+        <div className="rounded-lg bg-primary/10 p-2 text-primary [&_svg]:size-5">{icon}</div>
         <div className="flex-1">
           <CardTitle className="text-lg">{title}</CardTitle>
           <CardDescription>
@@ -62,7 +62,7 @@ export default function OfficialsGrid({ title, icon, addLabel, section, isAdmin 
             </div>
           </div>
         ) : !officials?.length ? (
-          <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-10 text-center text-muted-foreground">
+          <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed bg-muted/20 py-10 text-center text-muted-foreground">
             <UserRoundX className="size-8" />
             <p className="text-sm">No officials added yet.</p>
           </div>

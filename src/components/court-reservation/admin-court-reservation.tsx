@@ -318,7 +318,7 @@ export default function AdminCourtReservation() {
       <CourtAvailabilityDialog open={availabilityOpen} onOpenChange={setAvailabilityOpen} />
       <CourtReservationDialog open={reserveOpen} onOpenChange={setReserveOpen} />
 
-      <div className="rounded-lg border">
+      <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
         <Table>
           <TableHeader>
             <TableRow>

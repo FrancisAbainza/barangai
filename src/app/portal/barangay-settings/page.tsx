@@ -4,7 +4,7 @@ import BarangaySettings from "@/components/barangay-settings/barangay-settings";
 
 export default function BarangaySettingsPage() {
   return (
-    <div className="container space-y-6 m-auto">
+    <div className="mx-auto w-full max-w-7xl space-y-6">
       <PageHeader
         icon={Settings}
         title="Barangay Settings"

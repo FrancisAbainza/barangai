@@ -46,8 +46,10 @@ export default function ResidentComplaint() {
         />
       ) : (
         <div className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-card p-6 shadow-sm sm:flex-row md:items-center">
-          <div className="flex items-center gap-3">
-            <MessageSquareWarning className="self-center size-8 shrink-0 text-muted-foreground" />
+          <div className="flex items-center gap-4">
+            <div className="flex size-12 shrink-0 items-center justify-center self-center rounded-xl bg-primary/10 text-primary">
+              <MessageSquareWarning className="size-6" />
+            </div>
             <div>
               <p className="font-semibold leading-tight">Have a concern to report?</p>
               <p className="text-sm text-muted-foreground">

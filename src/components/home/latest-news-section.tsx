@@ -36,7 +36,7 @@ export default function LatestNewsSection() {
           <Skeleton className="h-48 w-full rounded-xl" />
         </div>
       ) : latestNews.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed bg-muted/20 border-border py-10 text-center text-sm text-muted-foreground">
           No news posts yet.
         </p>
       ) : (

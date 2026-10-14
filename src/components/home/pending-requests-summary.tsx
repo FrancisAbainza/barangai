@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, MessageSquareWarning, SportShoe, Store } from "lucide-react";
-import StatCard from "@/components/stat-card";
+import StatCard, { statLinkClassName } from "@/components/stat-card";
 import { getAdminPendingCounts } from "@/actions/home";
 
 export default function PendingRequestsSummary() {
@@ -15,8 +15,8 @@ export default function PendingRequestsSummary() {
   return (
     <div className="space-y-3">
       <h2 className="text-lg font-semibold">Pending Requests</h2>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Link href="/portal/document-request">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Link href="/portal/document-request" className={statLinkClassName}>
           <StatCard
             label="Document Requests"
             value={data?.documentRequests ?? 0}
@@ -25,7 +25,7 @@ export default function PendingRequestsSummary() {
             isLoading={isLoading}
           />
         </Link>
-        <Link href="/portal/community-hub">
+        <Link href="/portal/community-hub" className={statLinkClassName}>
           <StatCard
             label="Community Hub"
             value={data?.communityHub ?? 0}
@@ -34,7 +34,7 @@ export default function PendingRequestsSummary() {
             isLoading={isLoading}
           />
         </Link>
-        <Link href="/portal/court-reservation">
+        <Link href="/portal/court-reservation" className={statLinkClassName}>
           <StatCard
             label="Court Reservations"
             value={data?.courtReservations ?? 0}
@@ -43,7 +43,7 @@ export default function PendingRequestsSummary() {
             isLoading={isLoading}
           />
         </Link>
-        <Link href="/portal/complaint">
+        <Link href="/portal/complaint" className={statLinkClassName}>
           <StatCard
             label="Complaints"
             value={data?.complaints ?? 0}

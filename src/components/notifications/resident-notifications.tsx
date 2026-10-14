@@ -71,8 +71,10 @@ export default function ResidentNotifications() {
           ))}
         </div>
       ) : notifications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-16 text-center">
-          <Bell className="size-8 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/20 py-16 text-center">
+          <div className="mb-1 rounded-full bg-muted p-3">
+            <Bell className="size-6 text-muted-foreground" />
+          </div>
           <p className="text-sm font-medium">No notifications yet</p>
           <p className="text-sm text-muted-foreground">
             You&apos;ll be notified here when the status of your requests changes.

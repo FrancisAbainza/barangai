@@ -7,10 +7,12 @@ export default async function MissionVisionSection() {
 
   return (
     <div className="grid gap-6 sm:grid-cols-2">
-      <Card>
+      <Card className="h-full">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Target className="size-4 text-primary" />
+          <CardTitle className="flex items-center gap-3 text-lg">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Target className="size-5" />
+            </span>
             Mission
           </CardTitle>
         </CardHeader>
@@ -19,10 +21,12 @@ export default async function MissionVisionSection() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="h-full">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Eye className="size-4 text-primary" />
+          <CardTitle className="flex items-center gap-3 text-lg">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Eye className="size-5" />
+            </span>
             Vision
           </CardTitle>
         </CardHeader>

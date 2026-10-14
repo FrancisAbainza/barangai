@@ -29,7 +29,7 @@ export default function ActivityListItem({ kind, title, subtitle, meta, href, ba
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-sm transition-colors hover:bg-muted/50"
+      className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-sm outline-none transition-colors hover:border-primary/40 hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
       <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
         <Icon className="size-4" />
@@ -47,7 +47,7 @@ export default function ActivityListItem({ kind, title, subtitle, meta, href, ba
           {label} &middot; {subtitle} &middot; {meta}
         </p>
       </div>
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
     </Link>
   );
 }

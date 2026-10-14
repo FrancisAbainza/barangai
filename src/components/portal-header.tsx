@@ -10,7 +10,7 @@ export default function PortalHeader() {
   const { toggleSidebar } = useSidebar();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card py-2 px-4 md:hidden">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card/90 py-2 px-4 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/75 md:hidden">
       <div className="container flex h-full m-auto items-center justify-between">
         <div className="flex items-center gap-3">
           <Image

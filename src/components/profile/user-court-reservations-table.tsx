@@ -33,7 +33,7 @@ export default function UserCourtReservationsTable({ userId }: { userId: string 
   const reservations = data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
-    <div className="rounded-lg border">
+    <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
       <Table>
         <TableHeader>
           <TableRow>

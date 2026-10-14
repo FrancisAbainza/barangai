@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { ShortcutTileContent, shortcutTileClassName } from "@/components/shortcut-tile";
 import {
-  ChevronRight,
   Eye,
   FileText,
   Megaphone,
@@ -63,18 +63,13 @@ export default function QuickActionTiles() {
     <div className="space-y-3">
       <h2 className="text-lg font-semibold">Quick Actions</h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        {quickActions.map(({ title, description, href, icon: Icon }) => (
+        {quickActions.map(({ title, description, href, icon }) => (
           <Link
             key={href}
             href={href}
-            className="flex flex-col items-start gap-2 rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-colors hover:bg-muted/50"
+            className={shortcutTileClassName}
           >
-            <div className="flex w-full items-start justify-between">
-              <Icon className="size-7 text-primary" />
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </div>
-            <p className="font-semibold leading-tight">{title}</p>
-            <p className="text-xs text-muted-foreground">{description}</p>
+            <ShortcutTileContent icon={icon} title={title} description={description} />
           </Link>
         ))}
       </div>

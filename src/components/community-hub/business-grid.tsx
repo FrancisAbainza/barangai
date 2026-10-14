@@ -33,8 +33,10 @@ export default function BusinessGrid({
 
   if (businesses.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-16 text-center">
-        <Store className="size-8 text-muted-foreground" />
+      <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/20 py-16 text-center">
+        <div className="mb-1 rounded-full bg-muted p-3">
+          <Store className="size-6 text-muted-foreground" />
+        </div>
         <p className="text-sm font-medium">No businesses found</p>
         <p className="text-sm text-muted-foreground">Try adjusting your search or filters.</p>
       </div>

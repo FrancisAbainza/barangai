@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, MessageSquareWarning, SportShoe } from "lucide-react";
-import StatCard from "@/components/stat-card";
+import StatCard, { statLinkClassName } from "@/components/stat-card";
 import { getMyActivitySummary } from "@/actions/home";
 
 function activityDescription(active: number): string {
@@ -20,7 +20,7 @@ export default function MyActivityStrip() {
     <div className="space-y-3">
       <h2 className="text-lg font-semibold">My Activity</h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Link href="/portal/document-request">
+        <Link href="/portal/document-request" className={statLinkClassName}>
           <StatCard
             label="Document Requests"
             value={data?.documentRequests.total ?? 0}
@@ -29,7 +29,7 @@ export default function MyActivityStrip() {
             isLoading={isLoading}
           />
         </Link>
-        <Link href="/portal/complaint">
+        <Link href="/portal/complaint" className={statLinkClassName}>
           <StatCard
             label="Complaints"
             value={data?.complaints.total ?? 0}
@@ -38,7 +38,7 @@ export default function MyActivityStrip() {
             isLoading={isLoading}
           />
         </Link>
-        <Link href="/portal/court-reservation">
+        <Link href="/portal/court-reservation" className={statLinkClassName}>
           <StatCard
             label="Court Reservations"
             value={data?.courtReservations.total ?? 0}

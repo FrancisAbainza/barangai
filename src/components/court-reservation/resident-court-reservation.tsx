@@ -83,8 +83,10 @@ export default function ResidentCourtReservation() {
         />
       ) : (
         <div className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-card p-6 shadow-sm sm:flex-row md:items-center">
-          <div className="flex items-center gap-3">
-            <CalendarCheck className="self-center size-8 shrink-0 text-muted-foreground" />
+          <div className="flex items-center gap-4">
+            <div className="flex size-12 shrink-0 items-center justify-center self-center rounded-xl bg-primary/10 text-primary">
+              <CalendarCheck className="size-6" />
+            </div>
             <div>
               <p className="font-semibold leading-tight">Want to use the barangay court?</p>
               <p className="text-sm text-muted-foreground">
@@ -107,7 +109,7 @@ export default function ResidentCourtReservation() {
 
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">My Reservations</h2>
-        <div className="rounded-lg border">
+        <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
           <Table>
             <TableHeader>
               <TableRow>

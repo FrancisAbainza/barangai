@@ -4,7 +4,7 @@ import UserManagementTable from "@/components/user-management/user-management-ta
 
 export default function UserManagementPage() {
   return (
-    <div className="container space-y-6 m-auto">
+    <div className="mx-auto w-full max-w-7xl space-y-6">
       <PageHeader
         icon={Users}
         title="User Management"

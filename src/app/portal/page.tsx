@@ -12,7 +12,7 @@ export default function HomePage() {
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
 
   return (
-    <div className="md:container space-y-6 m-auto">
+    <div className="mx-auto w-full max-w-7xl space-y-6">
       <PageHeader
         icon={Home}
         title="Home"

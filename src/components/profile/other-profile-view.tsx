@@ -12,7 +12,7 @@ interface OtherProfileViewProps {
 
 export default function OtherProfileView({ profileUser, residentProfile }: OtherProfileViewProps) {
   return (
-    <div className="container space-y-6 m-auto">
+    <div className="mx-auto w-full max-w-7xl space-y-6">
       <ProfileHeader profileUser={profileUser} />
 
       {residentProfile ? (

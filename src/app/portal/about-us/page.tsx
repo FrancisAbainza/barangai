@@ -8,7 +8,7 @@ import { barangayLogoSrc, barangayName } from "@/lib/data";
 
 export default function AboutUsPage() {
   return (
-    <div className="container space-y-6 m-auto">
+    <div className="mx-auto w-full max-w-7xl space-y-6">
       <PageHeader
         icon={Info}
         title="About Us"

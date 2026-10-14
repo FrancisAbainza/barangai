@@ -62,7 +62,7 @@ export default function MyComplaintsTable() {
         </TabsList>
 
         <TabsContent value="table" className="pt-2">
-          <div className="rounded-lg border">
+          <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -134,8 +134,10 @@ export default function MyComplaintsTable() {
           {isLoading || (isFetchingNextPage && hasNextPage) ? (
             <Skeleton className="h-128 w-full rounded-lg" />
           ) : myComplaints.length === 0 ? (
-            <div className="flex h-128 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-center">
-              <MapPinOff className="size-8 text-muted-foreground" />
+            <div className="flex h-128 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/20 text-center">
+              <div className="mb-1 rounded-full bg-muted p-3">
+                <MapPinOff className="size-6 text-muted-foreground" />
+              </div>
               <p className="text-sm font-medium">No complaints to display</p>
               <p className="text-sm text-muted-foreground">
                 File a complaint to see it plotted on the map.

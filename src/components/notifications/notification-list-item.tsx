@@ -49,7 +49,7 @@ export default function NotificationListItem({ notification }: { notification: N
       href={getNotificationHref(notification)}
       onClick={() => isUnread && markRead()}
       className={cn(
-        "flex items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-sm transition-colors hover:bg-muted/50",
+        "group flex items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-sm outline-none transition-colors hover:border-primary/40 hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50",
         isUnread && "border-primary/40 bg-primary/5"
       )}
     >
@@ -69,7 +69,7 @@ export default function NotificationListItem({ notification }: { notification: N
         <p className="text-xs text-muted-foreground">{formatRelativeTime(notification.createdAt)}</p>
       </div>
       {isUnread && <span className="size-2 shrink-0 rounded-full bg-primary" aria-label="Unread" />}
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
     </Link>
   );
 }

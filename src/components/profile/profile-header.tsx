@@ -12,16 +12,16 @@ export default function ProfileHeader({ profileUser }: { profileUser: User }) {
     (profileUser.publicMetadata?.role as string | undefined) ?? "resident";
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4 border-b border-border pb-6">
       <Image
         src={profileUser.imageUrl}
         alt={fullName}
         width={80}
         height={80}
-        className="size-20 shrink-0 rounded-full object-cover"
+        className="size-20 shrink-0 rounded-full object-cover ring-4 ring-primary/15"
       />
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{fullName}</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{fullName}</h1>
         <p className="text-sm text-muted-foreground mt-1">
           {profileUser.emailAddresses[0]?.emailAddress}
         </p>

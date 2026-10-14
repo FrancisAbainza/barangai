@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import ResidentCredentialsBanner from "@/components/resident-credentials-banner";
+import { ShortcutTileContent, shortcutTileClassName } from "@/components/shortcut-tile";
 import DocumentRequestActionsMenu from "@/components/document-request/document-request-actions-menu";
 import ClearanceDocumentRequestDialog from "@/components/document-request/dialogs/clearance-document-request-dialog";
 import ResidencyDocumentRequestDialog from "@/components/document-request/dialogs/residency-document-request-dialog";
@@ -28,7 +29,6 @@ import { useDialogParam } from "@/hooks/use-dialog-param";
 import { useViewParam } from "@/hooks/use-view-param";
 import { statusBadgeVariant } from "@/lib/document-requests";
 import {
-  ChevronRight,
   FileUser,
   HandHeart,
   HeartPulse,
@@ -144,7 +144,7 @@ export default function ResidentDocumentRequest() {
         />
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {documentTypes.map(({ name, description, icon: Icon }) => (
+          {documentTypes.map(({ name, description, icon }) => (
             <button
               key={name}
               type="button"
@@ -157,14 +157,9 @@ export default function ResidentDocumentRequest() {
                 else if (name === MEDICAL_ASSISTANCE_DOCUMENT_NAME)
                   setIsMedicalAssistanceDialogOpen(true);
               }}
-              className="flex flex-col items-start gap-2 rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-colors hover:bg-muted/50"
+              className={shortcutTileClassName}
             >
-              <div className="flex w-full items-start justify-between">
-                <Icon className="size-7" />
-                <ChevronRight className="size-4 text-muted-foreground" />
-              </div>
-              <p className="font-semibold leading-tight">{name}</p>
-              <p className="text-xs text-muted-foreground">{description}</p>
+              <ShortcutTileContent icon={icon} title={name} description={description} />
             </button>
           ))}
         </div>
@@ -172,7 +167,7 @@ export default function ResidentDocumentRequest() {
 
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">My Requests</h2>
-        <div className="rounded-lg border">
+        <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
           <Table>
             <TableHeader>
               <TableRow>

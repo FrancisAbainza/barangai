@@ -56,7 +56,7 @@ export default function BarangaySettings() {
     <div className="space-y-6">
       <Card>
         <CardHeader className="flex-row items-center gap-3 space-y-0">
-          <div className="rounded-md bg-accent p-2 text-primary [&_svg]:size-5">
+          <div className="rounded-lg bg-primary/10 p-2 text-primary [&_svg]:size-5">
             <ReceiptText />
           </div>
           <div>
@@ -84,7 +84,7 @@ export default function BarangaySettings() {
 
       <Card>
         <CardHeader className="flex-row items-center gap-3 space-y-0">
-          <div className="rounded-md bg-accent p-2 text-primary [&_svg]:size-5">
+          <div className="rounded-lg bg-primary/10 p-2 text-primary [&_svg]:size-5">
             <SportShoe />
           </div>
           <div>
@@ -109,7 +109,7 @@ export default function BarangaySettings() {
 
       <Card>
         <CardHeader className="flex-row items-center gap-3 space-y-0">
-          <div className="rounded-md bg-accent p-2 text-primary [&_svg]:size-5">
+          <div className="rounded-lg bg-primary/10 p-2 text-primary [&_svg]:size-5">
             <Target />
           </div>
           <div>

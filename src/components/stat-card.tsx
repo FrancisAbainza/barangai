@@ -21,10 +21,11 @@ export default function StatCard({
   iconClassName,
 }: StatCardProps) {
   return (
-    <Card>
+    // Lifts on hover when wrapped in a `group` link (see the home page summaries).
+    <Card className="h-full transition-all group-hover:-translate-y-0.5 group-hover:border-primary/40 group-hover:shadow-md">
       <CardContent className="pt-6">
         <div className="flex items-center gap-1 justify-between">
-          <p className="text-sm font-medium">{label}</p>
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
           <div
             className={cn(
               "flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary",
@@ -37,10 +38,13 @@ export default function StatCard({
         {isLoading ? (
           <Skeleton className="mt-4 h-8 w-12" />
         ) : (
-          <p className="mt-4 text-3xl font-bold">{value}</p>
+          <p className="mt-4 text-3xl font-bold tracking-tight tabular-nums">{value}</p>
         )}
         <p className="mt-1 text-xs text-muted-foreground">{description}</p>
       </CardContent>
     </Card>
   );
 }
+
+export const statLinkClassName =
+  "group rounded-xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50";

@@ -7,7 +7,7 @@ import { Bell } from "lucide-react";
 // Resident-only: admins are redirected away in src/proxy.ts (`isResidentOnlyRoute`).
 export default function NotificationsPage() {
   return (
-    <div className="container space-y-6 m-auto">
+    <div className="mx-auto w-full max-w-7xl space-y-6">
       <PageHeader
         icon={Bell}
         title="Notifications"

@@ -21,7 +21,7 @@ export default function OfficialCard({ official, isAdmin, hasLeader }: OfficialC
   return (
     <div
       className={cn(
-        "relative flex flex-col items-center gap-2 overflow-hidden rounded-lg border bg-card text-center",
+        "relative flex flex-col items-center gap-2 overflow-hidden rounded-xl border bg-card text-center shadow-sm transition-shadow hover:shadow-md",
         featured ? "p-6" : "p-4"
       )}
       style={
@@ -42,7 +42,7 @@ export default function OfficialCard({ official, isAdmin, hasLeader }: OfficialC
 
       <div
         className={cn(
-          "relative flex items-center justify-center overflow-hidden rounded-full bg-muted",
+          "relative flex items-center justify-center overflow-hidden rounded-full bg-muted ring-2 ring-background shadow-sm",
           featured ? "size-24" : "size-16"
         )}
       >

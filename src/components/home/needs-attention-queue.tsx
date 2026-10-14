@@ -33,8 +33,10 @@ export default function NeedsAttentionQueue() {
           <Skeleton className="h-16 w-full rounded-lg" />
         </div>
       ) : !data || data.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-10 text-center">
-          <CircleCheck className="size-8 text-muted-foreground" />
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed bg-muted/20 border-border py-10 text-center">
+          <div className="mb-1 rounded-full bg-muted p-3">
+            <CircleCheck className="size-6 text-muted-foreground" />
+          </div>
           <p className="text-sm font-medium">All caught up</p>
           <p className="text-sm text-muted-foreground">Nothing needs your attention right now.</p>
         </div>
