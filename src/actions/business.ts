@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { and, asc, count, desc, eq, gte, ilike, lte, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, lte, ne, or, type SQL } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
@@ -50,13 +50,19 @@ export type BusinessesPage = {
 async function fetchBusinessesPage(
   conditions: Parameters<typeof and>,
   offset: number,
-  orderFn: typeof asc | typeof desc = desc
+  orderFn: typeof asc | typeof desc = desc,
+  // Rows matching this condition sort ahead of the rest (e.g. the viewer's own businesses).
+  pinFirst?: SQL
 ): Promise<BusinessesPage> {
   const businesses = await db
     .select()
     .from(businessesTable)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(orderFn(businessesTable.createdAt), orderFn(businessesTable.id))
+    .orderBy(
+      ...(pinFirst ? [desc(pinFirst)] : []),
+      orderFn(businessesTable.createdAt),
+      orderFn(businessesTable.id)
+    )
     .limit(BUSINESSES_PAGE_SIZE)
     .offset(offset);
 
@@ -181,11 +187,10 @@ export async function getVerifiedBusinesses({
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  // Residents can see their own businesses in any status (the card badges unverified ones);
-  // everyone else's are only listed once verified.
-  const conditions = [
-    ownedByMe ? eq(businessesTable.ownerId, userId) : eq(businessesTable.status, "Verified"),
-  ];
+  // Residents can see their own businesses in any status (the card badges unverified ones),
+  // pinned to the top of the list; everyone else's are only listed once verified.
+  const isOwn = eq(businessesTable.ownerId, userId);
+  const conditions = [ownedByMe ? isOwn : or(isOwn, eq(businessesTable.status, "Verified"))];
 
   if (category && category !== "all") {
     conditions.push(eq(businessesTable.category, category));
@@ -196,7 +201,7 @@ export async function getVerifiedBusinesses({
     conditions.push(ilike(businessesTable.name, `%${trimmedSearch}%`));
   }
 
-  return fetchBusinessesPage(conditions, offset);
+  return fetchBusinessesPage(conditions, offset, desc, isOwn);
 }
 
 export type BusinessStats = {
