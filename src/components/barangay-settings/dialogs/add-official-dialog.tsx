@@ -12,16 +12,15 @@ import { useDialogParam } from "@/hooks/use-dialog-param";
 import { createOfficial, type OfficialSection } from "@/actions/officials";
 import OfficialForm from "@/components/barangay-settings/forms/official-form";
 
-const EMPTY_VALUES: OfficialFormValues = { name: "", position: "", photo: [], isLeader: false };
+const EMPTY_VALUES: OfficialFormValues = { name: "", position: "", photo: [] };
 
 interface AddOfficialDialogProps {
   title: string;
   addLabel: string;
   section: OfficialSection;
-  hasLeader: boolean;
 }
 
-export default function AddOfficialDialog({ title, addLabel, section, hasLeader }: AddOfficialDialogProps) {
+export default function AddOfficialDialog({ title, addLabel, section }: AddOfficialDialogProps) {
   const [open, setOpen] = useDialogParam(section === "barangay" ? "add-barangay-official" : "add-sk-official");
   const queryClient = useQueryClient();
 
@@ -63,7 +62,6 @@ export default function AddOfficialDialog({ title, addLabel, section, hasLeader 
 
         <OfficialForm
           defaultValues={EMPTY_VALUES}
-          leaderDisabled={hasLeader}
           submitLabel="Add Official"
           onSubmit={submitOfficial}
           onCancel={() => setOpen(false)}

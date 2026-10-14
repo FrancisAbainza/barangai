@@ -5,14 +5,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Save } from "lucide-react";
 import { officialFormSchema, OfficialFormValues } from "@/schemas/about-us-schema";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import FileUploader from "@/components/file-uploader";
 
 interface OfficialFormProps {
   defaultValues: OfficialFormValues;
-  leaderDisabled?: boolean;
   submitLabel?: string;
   onSubmit: (data: OfficialFormValues) => Promise<void>;
   onCancel?: () => void;
@@ -20,7 +18,6 @@ interface OfficialFormProps {
 
 export default function OfficialForm({
   defaultValues,
-  leaderDisabled,
   submitLabel = "Save Changes",
   onSubmit,
   onCancel,
@@ -76,29 +73,6 @@ export default function OfficialForm({
             </Field>
           )}
         />
-
-        <Controller
-          name="isLeader"
-          control={control}
-          render={({ field }) => (
-            <Field orientation="horizontal" data-disabled={leaderDisabled}>
-              <Checkbox
-                id="isLeader"
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                disabled={leaderDisabled}
-              />
-              <FieldLabel htmlFor="isLeader" className="cursor-pointer">
-                Set as leader
-              </FieldLabel>
-            </Field>
-          )}
-        />
-        {leaderDisabled && (
-          <FieldDescription className="-mt-3">
-            Another official is already set as leader. Remove them first to reassign this role.
-          </FieldDescription>
-        )}
 
         <div className="flex justify-end gap-2">
           {onCancel && (

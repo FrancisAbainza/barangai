@@ -13,12 +13,7 @@ import { updateOfficial } from "@/actions/officials";
 import type { Official } from "@/db/schema";
 import OfficialForm from "@/components/barangay-settings/forms/official-form";
 
-interface EditOfficialDialogProps {
-  official: Official;
-  hasLeader: boolean;
-}
-
-export default function EditOfficialDialog({ official, hasLeader }: EditOfficialDialogProps) {
+export default function EditOfficialDialog({ official }: { official: Official }) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -68,9 +63,7 @@ export default function EditOfficialDialog({ official, hasLeader }: EditOfficial
             name: official.name,
             position: official.position,
             photo: official.photo as MediaItem[],
-            isLeader: official.isLeader,
           }}
-          leaderDisabled={hasLeader && !official.isLeader}
           onSubmit={submitOfficial}
           onCancel={() => setOpen(false)}
         />

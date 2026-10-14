@@ -1,72 +1,55 @@
 import Image from "next/image";
 import { User } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { fetchFile } from "@/lib/storage";
 import type { Official } from "@/db/schema";
-import EditOfficialDialog from "@/components/barangay-settings/dialogs/edit-official-dialog";
-import DeleteOfficialDialog from "@/components/barangay-settings/dialogs/delete-official-dialog";
+import GoldTrim from "./gold-trim";
 
-interface OfficialCardProps {
-  official: Official;
-  isAdmin: boolean;
-  hasLeader: boolean;
-}
+// The card is its own size container so the nameplate text steps down on narrow cards.
+const cardClassName =
+  "@container relative flex h-full flex-col overflow-hidden rounded-xl shadow-sm outline -outline-offset-1 outline-black/10 dark:outline-white/10";
 
-export default function OfficialCard({ official, isAdmin, hasLeader }: OfficialCardProps) {
-  const featured = official.isLeader;
+export default function OfficialCard({ official }: { official: Official }) {
   const photoKey = official.photo[0]?.key;
   const src = photoKey ? fetchFile(photoKey) : null;
 
   return (
-    <div
-      className={cn(
-        "relative flex flex-col items-center gap-2 overflow-hidden rounded-xl border bg-card text-center shadow-sm transition-shadow hover:shadow-md",
-        featured ? "p-6" : "p-4"
-      )}
-      style={
-        featured
-          ? {
-              background:
-                "linear-gradient(135deg, rgba(0, 56, 168, 0.7) 0%, transparent 30%, transparent 70%, rgba(206, 17, 38, 0.7) 100%)",
-            }
-          : undefined
-      }
-    >
-      {isAdmin && (
-        <div className="absolute top-2 right-2 flex gap-1">
-          <EditOfficialDialog official={official} hasLeader={hasLeader} />
-          <DeleteOfficialDialog official={official} />
-        </div>
-      )}
-
-      <div
-        className={cn(
-          "relative flex items-center justify-center overflow-hidden rounded-full bg-muted ring-2 ring-background shadow-sm",
-          featured ? "size-24" : "size-16"
-        )}
-      >
+    <div className={cn("group transition-shadow hover:shadow-md", cardClassName)}>
+      <div className="relative aspect-square overflow-hidden bg-muted">
         {src ? (
           <Image
             src={src}
             alt={official.name}
             fill
-            sizes={featured ? "96px" : "64px"}
-            className="object-cover"
+            sizes="320px"
+            className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
             unoptimized
           />
         ) : (
-          <User className={cn("text-muted-foreground", featured ? "size-10" : "size-7")} />
+          <div className="flex size-full items-center justify-center">
+            <User className="size-16 text-muted-foreground" />
+          </div>
         )}
       </div>
 
-      <div className="space-y-1.5">
-        <p className={cn("font-medium", featured ? "text-base" : "text-sm")}>{official.name}</p>
-        {featured ? (
-          <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">{official.position}</Badge>
-        ) : (
-          <p className="text-xs text-muted-foreground">{official.position}</p>
-        )}
+      <GoldTrim />
+
+      <div className="flex flex-1 flex-col items-center justify-center gap-0.5 bg-nameplate px-3 py-3 text-center text-primary-foreground">
+        <h3 className="text-sm font-bold leading-snug text-balance @[13rem]:text-base">{official.name}</h3>
+        <p className="text-xs text-primary-foreground/80 @[13rem]:text-sm">{official.position}</p>
+      </div>
+    </div>
+  );
+}
+
+export function OfficialCardSkeleton() {
+  return (
+    <div className={cardClassName}>
+      <Skeleton className="aspect-square w-full rounded-none" />
+      <div className="flex flex-1 flex-col items-center gap-2 px-3 py-4">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
       </div>
     </div>
   );

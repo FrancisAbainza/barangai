@@ -1,45 +1,26 @@
-import Image from "next/image";
-import { Info, Landmark, Users } from "lucide-react";
-import PageHeader from "@/components/page-header";
+import AboutHero from "@/components/about-us/about-hero";
 import MissionVisionSection from "@/components/about-us/mission-vision-section";
-import OfficialsGrid from "@/components/about-us/officials-grid";
-import { Card } from "@/components/ui/card";
-import { barangayLogoSrc, barangayName } from "@/lib/data";
+import OfficialsCarousel from "@/components/about-us/officials-carousel";
+import { barangayName } from "@/lib/data";
 
 export default function AboutUsPage() {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
-      <PageHeader
-        icon={Info}
-        title="About Us"
-        description="Barangay Maduya officials and Sangguniang Kabataan"
-      />
-
-      <Card
-        className="flex flex-col items-center gap-3 py-10 text-center overflow-hidden"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(0, 56, 168, 0.7) 0%, transparent 30%, transparent 70%, rgba(206, 17, 38, 0.7) 100%)",
-        }}
-      >
-        <Image src={barangayLogoSrc} alt={`${barangayName} logo`} width={120} height={120} />
-        <h2 className="text-2xl font-bold tracking-tight">{barangayName}</h2>
-        <p className="text-sm text-muted-foreground">Carmona, Cavite</p>
-      </Card>
+      <AboutHero />
 
       <MissionVisionSection />
 
-      <OfficialsGrid
-        title="Barangay Officials"
-        icon={<Landmark />}
-        addLabel="Add Official"
+      <OfficialsCarousel
+        title="Barangay"
+        highlight="Officials"
+        description={`Meet the current leaders who serve and support the ${barangayName} community.`}
         section="barangay"
       />
 
-      <OfficialsGrid
-        title="Sangguniang Kabataan"
-        icon={<Users />}
-        addLabel="Add SK"
+      <OfficialsCarousel
+        title="Sangguniang"
+        highlight="Kabataan"
+        description={`Meet the youth leaders working for the young people of ${barangayName}.`}
         section="sk"
       />
     </div>

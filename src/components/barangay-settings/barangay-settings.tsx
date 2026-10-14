@@ -5,10 +5,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import OfficialsGrid from "@/components/about-us/officials-grid";
 import CourtFeesForm from "@/components/barangay-settings/forms/court-fees-form";
 import DocumentPricingForm from "@/components/barangay-settings/forms/document-pricing-form";
 import MissionVisionForm from "@/components/barangay-settings/forms/mission-vision-form";
+import OfficialsList from "@/components/barangay-settings/officials-list";
 import { getBarangaySettings, updateBarangaySettings, type BarangaySettingsValues } from "@/actions/settings";
 
 function FormSkeleton({ fields }: { fields: number }) {
@@ -132,21 +132,9 @@ export default function BarangaySettings() {
         </CardContent>
       </Card>
 
-      <OfficialsGrid
-        title="Barangay Officials"
-        icon={<Landmark />}
-        addLabel="Add Official"
-        section="barangay"
-        isAdmin
-      />
+      <OfficialsList title="Barangay Officials" icon={<Landmark />} addLabel="Add Official" section="barangay" />
 
-      <OfficialsGrid
-        title="Sangguniang Kabataan"
-        icon={<Users />}
-        addLabel="Add SK"
-        section="sk"
-        isAdmin
-      />
+      <OfficialsList title="Sangguniang Kabataan" icon={<Users />} addLabel="Add SK" section="sk" />
     </div>
   );
 }

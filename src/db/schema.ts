@@ -107,7 +107,8 @@ export const officialsTable = pgTable("officials", {
   name: varchar({ length: 255 }).notNull(),
   position: varchar({ length: 255 }).notNull(),
   photo: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
-  isLeader: boolean().notNull().default(false),
+  // Display order within the section, set by dragging in Barangay Settings.
+  sortOrder: integer().notNull().default(0),
   createdAt: timestamp().notNull().defaultNow(),
   updatedAt: timestamp().notNull().defaultNow(),
 });
