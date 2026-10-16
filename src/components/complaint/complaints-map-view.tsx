@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { Navigation } from "lucide-react";
 import { APIProvider, AdvancedMarker, InfoWindow, Map, Pin } from "@vis.gl/react-google-maps";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,8 @@ import { statusBadgeVariant, priorityBadgeVariant, formatDate } from "@/lib/comp
 import { fetchFile } from "@/lib/storage";
 import MaduyaBoundaryOverlay from "@/components/maduya-boundary-overlay";
 import CurrentLocationControl from "@/components/current-location-control";
+import RouteOverlay from "@/components/route-overlay";
+import { useDirections } from "@/hooks/use-directions";
 import type { ComplaintWithComplainant } from "@/actions/complaints";
 import type { Complaint } from "@/db/schema";
 import type { MediaItem } from "@/components/file-uploader";
@@ -30,6 +33,7 @@ const STATUS_PIN_COLORS: Record<
 export default function ComplaintsMapView({ complaints }: { complaints: ComplaintWithComplainant[] }) {
   const [activeComplaintId, setActiveComplaintId] = useState<number | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
+  const { directions, isRouting, showDirections, clearDirections } = useDirections();
   const activeComplaint = complaints.find((complaint) => complaint.id === activeComplaintId) ?? null;
   const activeComplaintImage = (activeComplaint?.evidence as MediaItem[] | undefined)?.find(
     (item) => item.type === "image" && item.key
@@ -42,6 +46,12 @@ export default function ComplaintsMapView({ complaints }: { complaints: Complain
       await document.exitFullscreen().catch(() => {});
     }
     setViewOpen(true);
+  }
+
+  async function showComplaintDirections(complaint: ComplaintWithComplainant) {
+    const shown = await showDirections(complaint.location.coordinates, complaint.subject);
+    // The info window would cover most of the route.
+    if (shown) setActiveComplaintId(null);
   }
 
   return (
@@ -138,11 +148,31 @@ export default function ComplaintsMapView({ complaints }: { complaints: Complain
                   </p>
                 </div>
 
-                <Button size="sm" className="w-full" onClick={openViewDialog}>
-                  View Details
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => showComplaintDirections(activeComplaint)}
+                    disabled={isRouting}
+                  >
+                    <Navigation className="size-4" />
+                    {isRouting ? "Routing..." : "Directions"}
+                  </Button>
+                  <Button size="sm" onClick={openViewDialog}>
+                    View Details
+                  </Button>
+                </div>
               </div>
             </InfoWindow>
+          )}
+
+          {directions && (
+            <RouteOverlay
+              directions={directions}
+              isRefreshing={isRouting}
+              onRefresh={() => showDirections(directions.destination, directions.destinationName)}
+              onClear={clearDirections}
+            />
           )}
         </Map>
       </div>

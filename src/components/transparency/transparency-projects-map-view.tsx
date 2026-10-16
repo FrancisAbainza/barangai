@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { Navigation } from "lucide-react";
 import { APIProvider, AdvancedMarker, InfoWindow, Map, Pin } from "@vis.gl/react-google-maps";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn, formatDateTime } from "@/lib/utils";
 import { fetchFile } from "@/lib/storage";
 import MaduyaBoundaryOverlay from "@/components/maduya-boundary-overlay";
 import CurrentLocationControl from "@/components/current-location-control";
+import RouteOverlay from "@/components/route-overlay";
+import { useDirections } from "@/hooks/use-directions";
 import type { TransparencyProjectWithAuthor } from "@/actions/transparency";
 import type { TransparencyProject } from "@/db/schema";
 import type { LocationValue } from "@/components/map-picker";
@@ -85,11 +89,18 @@ export default function TransparencyProjectsMapView({
   projects: TransparencyProjectWithAuthor[];
 }) {
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null);
+  const { directions, isRouting, showDirections, clearDirections } = useDirections();
   const projectsWithLocation = projects.filter((project): project is ProjectWithLocation => !!project.location);
   const activeProject = projectsWithLocation.find((project) => project.id === activeProjectId) ?? null;
   const activeProjectImage = (activeProject?.media as MediaItem[] | undefined)?.find(
     (item) => item.type === "image" && item.key
   );
+
+  async function showProjectDirections(project: ProjectWithLocation) {
+    const shown = await showDirections(project.location.coordinates, project.title);
+    // The info window would cover most of the route.
+    if (shown) setActiveProjectId(null);
+  }
 
   return (
     <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
@@ -173,7 +184,7 @@ export default function TransparencyProjectsMapView({
                   </Badge>
                 </div>
 
-                <div className="space-y-1 text-xs text-muted-foreground">
+                <div className="mb-3 space-y-1 text-xs text-muted-foreground">
                   <p>
                     <strong className="font-medium text-foreground">Location:</strong>{" "}
                     {activeProject.location.address}
@@ -189,8 +200,28 @@ export default function TransparencyProjectsMapView({
                     {formatDateTime(new Date(activeProject.createdAt))}
                   </p>
                 </div>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => showProjectDirections(activeProject)}
+                  disabled={isRouting}
+                >
+                  <Navigation className="size-4" />
+                  {isRouting ? "Routing..." : "Directions"}
+                </Button>
               </div>
             </InfoWindow>
+          )}
+
+          {directions && (
+            <RouteOverlay
+              directions={directions}
+              isRefreshing={isRouting}
+              onRefresh={() => showDirections(directions.destination, directions.destinationName)}
+              onClear={clearDirections}
+            />
           )}
         </Map>
       </div>

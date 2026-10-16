@@ -37,14 +37,19 @@ export default function CurrentLocationControl() {
         {isLocating ? "Locating..." : "Show My Location"}
       </Button>
 
-      {coordinates && (
-        <AdvancedMarker position={coordinates}>
-          <div className="relative flex size-4 items-center justify-center">
-            <span className="absolute size-4 animate-ping rounded-full bg-blue-500/60" />
-            <span className="relative size-3 rounded-full border-2 border-white bg-blue-500 shadow" />
-          </div>
-        </AdvancedMarker>
-      )}
+      {coordinates && <CurrentLocationMarker position={coordinates} />}
     </>
+  );
+}
+
+/** The pulsing blue dot that marks the user's position. Place it inside the same <APIProvider> as the <Map>. */
+export function CurrentLocationMarker({ position }: { position: google.maps.LatLngLiteral }) {
+  return (
+    <AdvancedMarker position={position}>
+      <div className="relative flex size-4 items-center justify-center">
+        <span className="absolute size-4 animate-ping rounded-full bg-blue-500/60" />
+        <span className="relative size-3 rounded-full border-2 border-white bg-blue-500 shadow" />
+      </div>
+    </AdvancedMarker>
   );
 }
