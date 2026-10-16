@@ -13,6 +13,8 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
+import { PICKUP_DELIVERY_METHOD } from "@/lib/document-requests";
+import PreferredClaimField from "./preferred-claim-field";
 import FileUploader from "@/components/file-uploader";
 import {
   Select,
@@ -34,6 +36,7 @@ const baseDefaults: IndigencyDocumentRequestFormValues = {
   situationDescription: "",
   supportingDocuments: [],
   receiveVia: INDIGENCY_DELIVERY_METHODS[0],
+  preferredClaimAt: "",
 };
 
 export default function IndigencyDocumentRequestForm({
@@ -53,6 +56,7 @@ export default function IndigencyDocumentRequestForm({
   });
 
   const purpose = watch("purpose");
+  const receiveVia = watch("receiveVia");
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -149,6 +153,10 @@ export default function IndigencyDocumentRequestForm({
             </Field>
           )}
         />
+
+        {receiveVia === PICKUP_DELIVERY_METHOD && (
+          <PreferredClaimField {...register("preferredClaimAt")} error={errors.preferredClaimAt} />
+        )}
 
         <div className="flex justify-end gap-2">
           {onCancel && (

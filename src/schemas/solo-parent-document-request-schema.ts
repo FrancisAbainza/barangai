@@ -1,4 +1,5 @@
 import z from "zod";
+import { checkPreferredClaimAt } from "@/schemas/preferred-claim-schema";
 import type { MediaItem } from "@/components/file-uploader";
 
 export const SOLO_PARENT_REQUEST_PURPOSES = [
@@ -27,11 +28,13 @@ export const soloParentDocumentRequestFormSchema = z
       .min(1, "Upload at least one supporting document")
       .max(5, "Only up to 5 files are allowed"),
     receiveVia: z.enum(SOLO_PARENT_DELIVERY_METHODS),
+    preferredClaimAt: z.string(),
   })
   .refine((data) => data.purpose !== "Other" || !!data.otherPurpose?.trim(), {
     message: "Please specify your purpose",
     path: ["otherPurpose"],
-  });
+  })
+  .superRefine(checkPreferredClaimAt);
 
 export type SoloParentDocumentRequestFormValues = z.infer<
   typeof soloParentDocumentRequestFormSchema

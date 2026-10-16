@@ -7,6 +7,7 @@ import type { MedicalAssistanceDocumentRequestFormValues } from "@/schemas/medic
 import MedicalAssistanceDocumentRequestForm from "../forms/medical-assistance-document-request-form";
 import { uploadFile } from "@/lib/storage";
 import { createDocumentRequest } from "@/actions/document-requests";
+import { toPreferredClaimAt } from "@/lib/document-requests";
 
 interface MedicalAssistanceDocumentRequestDialogProps {
   open: boolean;
@@ -36,6 +37,7 @@ export default function MedicalAssistanceDocumentRequestDialog({
         situationDescription: data.situationDescription,
         supportingDocuments,
         receiveVia: data.receiveVia,
+        preferredClaimAt: toPreferredClaimAt(data),
       });
     },
     onSuccess: () => {

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import type { NoObjectionDocumentRequestFormValues } from "@/schemas/no-objection-document-request-schema";
 import NoObjectionDocumentRequestForm from "../forms/no-objection-document-request-form";
 import { createDocumentRequest } from "@/actions/document-requests";
+import { toPreferredClaimAt } from "@/lib/document-requests";
 
 interface NoObjectionDocumentRequestDialogProps {
   open: boolean;
@@ -25,6 +26,7 @@ export default function NoObjectionDocumentRequestDialog({
         purpose: data.purpose,
         otherPurpose: data.otherPurpose,
         receiveVia: data.receiveVia,
+        preferredClaimAt: toPreferredClaimAt(data),
       });
     },
     onSuccess: () => {

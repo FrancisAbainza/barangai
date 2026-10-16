@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MediaLightbox from "@/components/media-lightbox";
 import MediaPreviewList from "@/components/media-preview-list";
 import { fetchFile } from "@/lib/storage";
-import { statusBadgeVariant, handlerLabel, formatDate } from "@/lib/document-requests";
+import { statusBadgeVariant, handlerLabel, formatDate, formatDateTime } from "@/lib/document-requests";
 import { getResidentProfile } from "@/actions/resident-profile";
 import type { DocumentRequestWithRequester } from "@/actions/document-requests";
 import type { MediaItem } from "@/components/file-uploader";
@@ -122,6 +122,13 @@ export default function ViewDocumentRequestDialog({
               <FieldLabel>Receive Document Via</FieldLabel>
               <p className="text-sm">{request.receiveVia}</p>
             </Field>
+
+            {request.preferredClaimAt && (
+              <Field>
+                <FieldLabel>Preferred Claim Date &amp; Time</FieldLabel>
+                <p className="text-sm">{formatDateTime(request.preferredClaimAt)}</p>
+              </Field>
+            )}
 
             <Field>
               <FieldLabel>Submission Date</FieldLabel>

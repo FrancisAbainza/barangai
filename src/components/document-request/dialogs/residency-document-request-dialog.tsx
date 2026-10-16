@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import type { ResidencyDocumentRequestFormValues } from "@/schemas/residency-document-request-schema";
 import ResidencyDocumentRequestForm from "../forms/residency-document-request-form";
 import { createDocumentRequest } from "@/actions/document-requests";
+import { toPreferredClaimAt } from "@/lib/document-requests";
 
 interface ResidencyDocumentRequestDialogProps {
   open: boolean;
@@ -25,6 +26,7 @@ export default function ResidencyDocumentRequestDialog({
         purpose: data.purpose,
         otherPurpose: data.otherPurpose,
         receiveVia: data.receiveVia,
+        preferredClaimAt: toPreferredClaimAt(data),
       });
     },
     onSuccess: () => {

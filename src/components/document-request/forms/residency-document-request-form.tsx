@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Loader2, Send } from "lucide-react";
+import { PICKUP_DELIVERY_METHOD } from "@/lib/document-requests";
+import PreferredClaimField from "./preferred-claim-field";
 import {
   Select,
   SelectContent,
@@ -30,6 +32,7 @@ const baseDefaults: ResidencyDocumentRequestFormValues = {
   purpose: RESIDENCY_REQUEST_PURPOSES[0],
   otherPurpose: "",
   receiveVia: RESIDENCY_DELIVERY_METHODS[0],
+  preferredClaimAt: "",
 };
 
 export default function ResidencyDocumentRequestForm({
@@ -49,6 +52,7 @@ export default function ResidencyDocumentRequestForm({
   });
 
   const purpose = watch("purpose");
+  const receiveVia = watch("receiveVia");
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -111,6 +115,10 @@ export default function ResidencyDocumentRequestForm({
             </Field>
           )}
         />
+
+        {receiveVia === PICKUP_DELIVERY_METHOD && (
+          <PreferredClaimField {...register("preferredClaimAt")} error={errors.preferredClaimAt} />
+        )}
 
         <div className="flex justify-end gap-2">
           {onCancel && (

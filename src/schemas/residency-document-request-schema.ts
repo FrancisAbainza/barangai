@@ -1,4 +1,5 @@
 import z from "zod";
+import { checkPreferredClaimAt } from "@/schemas/preferred-claim-schema";
 
 export const RESIDENCY_REQUEST_PURPOSES = [
   "Employment Requirement",
@@ -20,11 +21,13 @@ export const residencyDocumentRequestFormSchema = z
     purpose: z.enum(RESIDENCY_REQUEST_PURPOSES),
     otherPurpose: z.string().optional(),
     receiveVia: z.enum(RESIDENCY_DELIVERY_METHODS),
+    preferredClaimAt: z.string(),
   })
   .refine((data) => data.purpose !== "Other" || !!data.otherPurpose?.trim(), {
     message: "Please specify your purpose",
     path: ["otherPurpose"],
-  });
+  })
+  .superRefine(checkPreferredClaimAt);
 
 export type ResidencyDocumentRequestFormValues = z.infer<
   typeof residencyDocumentRequestFormSchema

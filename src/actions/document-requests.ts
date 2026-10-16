@@ -7,6 +7,7 @@ import { db } from "@/db/config";
 import { documentRequestsTable, type DocumentRequest } from "@/db/schema";
 import { and, asc, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
+import { PICKUP_DELIVERY_METHOD } from "@/lib/document-requests";
 import type { MediaItem } from "@/components/file-uploader";
 
 export type CreateDocumentRequestInput = {
@@ -17,11 +18,25 @@ export type CreateDocumentRequestInput = {
   paymentReceipt?: Omit<MediaItem, "file">[];
   supportingDocuments?: Omit<MediaItem, "file">[];
   receiveVia: string;
+  // Required for pickups and ignored otherwise.
+  preferredClaimAt?: Date;
 };
+
+// The form already rejects past times; this slack covers the file uploads that run between
+// validating the form and this call.
+const CLAIM_TIME_GRACE_MS = 10 * 60 * 1000;
 
 export async function createDocumentRequest(data: CreateDocumentRequestInput) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
+
+  const isPickup = data.receiveVia === PICKUP_DELIVERY_METHOD;
+  if (isPickup) {
+    const claimTime = data.preferredClaimAt?.getTime() ?? NaN;
+    if (Number.isNaN(claimTime) || claimTime < Date.now() - CLAIM_TIME_GRACE_MS) {
+      throw new Error("Pickups need a preferred claim date and time that hasn't passed");
+    }
+  }
 
   await db.insert(documentRequestsTable).values({
     documentType: data.documentType,
@@ -32,6 +47,7 @@ export async function createDocumentRequest(data: CreateDocumentRequestInput) {
     paymentReceipt: data.paymentReceipt ?? [],
     supportingDocuments: data.supportingDocuments ?? [],
     receiveVia: data.receiveVia,
+    preferredClaimAt: isPickup ? data.preferredClaimAt : null,
   });
 }
 

@@ -7,6 +7,7 @@ import type { IndigencyDocumentRequestFormValues } from "@/schemas/indigency-doc
 import IndigencyDocumentRequestForm from "../forms/indigency-document-request-form";
 import { uploadFile } from "@/lib/storage";
 import { createDocumentRequest } from "@/actions/document-requests";
+import { toPreferredClaimAt } from "@/lib/document-requests";
 
 interface IndigencyDocumentRequestDialogProps {
   open: boolean;
@@ -36,6 +37,7 @@ export default function IndigencyDocumentRequestDialog({
         situationDescription: data.situationDescription,
         supportingDocuments,
         receiveVia: data.receiveVia,
+        preferredClaimAt: toPreferredClaimAt(data),
       });
     },
     onSuccess: () => {

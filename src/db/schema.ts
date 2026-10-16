@@ -141,6 +141,8 @@ export const documentRequestsTable = pgTable("document_requests", {
   paymentReceipt: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
   supportingDocuments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
   receiveVia: varchar({ length: 255 }).notNull(),
+  // Only set for "Pickup at Barangay Hall".
+  preferredClaimAt: timestamp(),
   status: documentRequestStatusEnum().notNull().default("Pending"),
   handlerId: varchar({ length: 255 }),
   pickupMessage: text(),
