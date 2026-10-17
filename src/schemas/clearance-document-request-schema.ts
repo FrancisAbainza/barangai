@@ -1,7 +1,7 @@
 import z from "zod";
 import { checkPreferredClaimAt } from "@/schemas/preferred-claim-schema";
 import type { MediaItem } from "@/components/file-uploader";
-import { CLEARANCE_PURPOSES } from "@/lib/data";
+import { CLEARANCE_PURPOSES, isFreeClearancePurpose } from "@/lib/data";
 import { ONLINE_SOFT_COPY_DELIVERY_METHOD } from "@/lib/document-requests";
 
 export { CLEARANCE_PURPOSES };
@@ -17,7 +17,9 @@ export const clearanceDocumentRequestFormSchema = z
   })
   .refine(
     (data) =>
-      data.receiveVia !== ONLINE_SOFT_COPY_DELIVERY_METHOD || data.paymentReceipt.length > 0,
+      isFreeClearancePurpose(data.purpose) ||
+      data.receiveVia !== ONLINE_SOFT_COPY_DELIVERY_METHOD ||
+      data.paymentReceipt.length > 0,
     { message: "Upload your GCash payment receipt", path: ["paymentReceipt"] }
   )
   .superRefine(checkPreferredClaimAt);

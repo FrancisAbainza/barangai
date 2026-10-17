@@ -52,15 +52,47 @@ function DialogContent({
   children,
   showCloseButton = true,
   onOpenAutoFocus,
+  onPointerDownOutside,
+  ref,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
+  const contentRef = React.useRef<HTMLDivElement | null>(null)
+  const composedRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      contentRef.current = node
+      if (typeof ref === "function") ref(node)
+      else if (ref) ref.current = node
+    },
+    [ref]
+  )
+  // A press that started while a layer above the dialog (e.g. an open Select) had the panel
+  // ignoring the pointer, so it landed on the overlay.
+  const pressUnderLayerRef = React.useRef<Event | null>(null)
+
   return (
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay
+        onPointerDown={(event) => {
+          if (contentRef.current?.style.pointerEvents === "none") {
+            pressUnderLayerRef.current = event.nativeEvent
+          }
+        }}
+      />
       <DialogPrimitive.Content
+        ref={composedRef}
         data-slot="dialog-content"
+        onPointerDownOutside={(event) => {
+          onPointerDownOutside?.(event)
+          // Radix Select closes on pointerdown, but the dialog only checks for an outside press
+          // on the click that follows. By then the Select is gone, so a click meant to close the
+          // Select (even on an empty part of the panel) would close the dialog too. That press
+          // only closes the layer above.
+          if (event.detail.originalEvent === pressUnderLayerRef.current) {
+            event.preventDefault()
+          }
+        }}
         onOpenAutoFocus={(event) => {
           onOpenAutoFocus?.(event)
           if (event.defaultPrevented) return

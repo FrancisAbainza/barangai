@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Store } from "lucide-react";
 import FileUploader from "@/components/file-uploader";
 import MapPicker from "@/components/map-picker";
+import TimePicker from "@/components/time-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface BusinessFormProps {
@@ -155,27 +156,39 @@ export default function BusinessForm({ defaultValues, onSubmit, onCancel }: Busi
         />
 
         <div className="grid grid-cols-2 gap-4">
-          <Field data-invalid={!!errors.operatingHours?.opens}>
-            <FieldLabel htmlFor="opens">Opens</FieldLabel>
-            <Input
-              {...register("operatingHours.opens")}
-              id="opens"
-              type="time"
-              aria-invalid={!!errors.operatingHours?.opens}
-            />
-            <FieldError errors={[errors.operatingHours?.opens]} />
-          </Field>
+          <Controller
+            name="operatingHours.opens"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="opens">Opens</FieldLabel>
+                <TimePicker
+                  id="opens"
+                  value={field.value}
+                  onChange={field.onChange}
+                  aria-invalid={fieldState.invalid}
+                />
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
+          />
 
-          <Field data-invalid={!!errors.operatingHours?.closes}>
-            <FieldLabel htmlFor="closes">Closes</FieldLabel>
-            <Input
-              {...register("operatingHours.closes")}
-              id="closes"
-              type="time"
-              aria-invalid={!!errors.operatingHours?.closes}
-            />
-            <FieldError errors={[errors.operatingHours?.closes]} />
-          </Field>
+          <Controller
+            name="operatingHours.closes"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="closes">Closes</FieldLabel>
+                <TimePicker
+                  id="closes"
+                  value={field.value}
+                  onChange={field.onChange}
+                  aria-invalid={fieldState.invalid}
+                />
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
+          />
         </div>
 
         <Controller

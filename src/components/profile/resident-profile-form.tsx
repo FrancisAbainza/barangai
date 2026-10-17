@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -13,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save } from "lucide-react";
 import FileUploader from "@/components/file-uploader";
+import DatePicker from "@/components/date-picker";
 import {
   Select,
   SelectContent,
@@ -41,11 +43,15 @@ const baseDefaults: ResidentProfileFormValues = {
   validIdBack: [],
 };
 
+// The earliest month the birthdate calendar's year dropdown goes back to.
+const BIRTHDATE_START_MONTH = new Date(1900, 0);
+
 export default function ResidentProfileForm({
   defaultValues,
   onSubmit,
   onCancel,
 }: ResidentProfileFormProps) {
+  const [today] = useState(() => new Date());
   const {
     register,
     control,
@@ -98,16 +104,27 @@ export default function ResidentProfileForm({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field data-invalid={!!errors.birthdate}>
-            <FieldLabel htmlFor="birthdate">Birthdate</FieldLabel>
-            <Input
-              {...register("birthdate")}
-              id="birthdate"
-              type="date"
-              aria-invalid={!!errors.birthdate}
-            />
-            <FieldError errors={[errors.birthdate]} />
-          </Field>
+          <Controller
+            name="birthdate"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="birthdate">Birthdate</FieldLabel>
+                <DatePicker
+                  id="birthdate"
+                  value={field.value}
+                  onChange={field.onChange}
+                  required
+                  captionLayout="dropdown"
+                  disabledDays={{ after: today }}
+                  startMonth={BIRTHDATE_START_MONTH}
+                  endMonth={today}
+                  aria-invalid={fieldState.invalid}
+                />
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
+          />
 
           <Controller
             name="sex"

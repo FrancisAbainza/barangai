@@ -33,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import DatePicker from "@/components/date-picker";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
 import CourtReservationActionsMenu from "@/components/court-reservation/court-reservation-actions-menu";
@@ -252,12 +253,7 @@ export default function AdminCourtReservation() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="reservation-date">Reservation Date</Label>
-                  <Input
-                    id="reservation-date"
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                  />
+                  <DatePicker id="reservation-date" value={date} onChange={setDate} />
                 </div>
 
                 <div className="space-y-1.5">

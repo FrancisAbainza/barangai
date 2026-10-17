@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DatePicker from "@/components/date-picker";
 import StatCard from "@/components/stat-card";
 import BusinessSubmissionsTable from "@/components/community-hub/business-submissions-table";
 import BusinessGrid from "@/components/community-hub/business-grid";
@@ -267,22 +268,12 @@ export default function AdminCommunityHub() {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="business-date-from">From</Label>
-                    <Input
-                      id="business-date-from"
-                      type="date"
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
-                    />
+                    <DatePicker id="business-date-from" value={dateFrom} onChange={setDateFrom} />
                   </div>
 
                   <div className="space-y-1.5">
                     <Label htmlFor="business-date-to">To</Label>
-                    <Input
-                      id="business-date-to"
-                      type="date"
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
-                    />
+                    <DatePicker id="business-date-to" value={dateTo} onChange={setDateTo} />
                   </div>
 
                   <div className="flex items-center gap-2 sm:col-span-2">

@@ -89,7 +89,7 @@ export function formatReservationTime(reservation: { startTime: number; duration
   return `${formatTimeRange(getReservationRange(reservation))} (${hours} ${hours === 1 ? "hr" : "hrs"})`;
 }
 
-// "HH:MM" (an <input type="time"> value) <-> minutes after midnight.
+// "HH:MM" (a `TimePicker` value) <-> minutes after midnight.
 export function parseTimeInput(value: string): number | null {
   const match = /^(\d{2}):(\d{2})$/.exec(value);
   if (!match) return null;

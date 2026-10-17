@@ -34,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DatePicker from "@/components/date-picker";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
 import ComplaintActionsMenu from "@/components/complaint/complaint-actions-menu";
@@ -311,22 +312,12 @@ export default function AdminComplaint() {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="date-from">From</Label>
-                    <Input
-                      id="date-from"
-                      type="date"
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
-                    />
+                    <DatePicker id="date-from" value={dateFrom} onChange={setDateFrom} />
                   </div>
 
                   <div className="space-y-1.5">
                     <Label htmlFor="date-to">To</Label>
-                    <Input
-                      id="date-to"
-                      type="date"
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
-                    />
+                    <DatePicker id="date-to" value={dateTo} onChange={setDateTo} />
                   </div>
 
                   <div className="flex items-center gap-2 sm:col-span-2">

@@ -9,7 +9,12 @@ import {
   CLEARANCE_PURPOSES,
   CLEARANCE_DELIVERY_METHODS,
 } from "@/schemas/clearance-document-request-schema";
-import { DEFAULT_CLEARANCE_PURPOSE_FEES, DEFAULT_GCASH_NUMBER, GCASH_ACCOUNT_NAME } from "@/lib/data";
+import {
+  DEFAULT_CLEARANCE_PURPOSE_FEES,
+  DEFAULT_GCASH_NUMBER,
+  GCASH_ACCOUNT_NAME,
+  isFreeClearancePurpose,
+} from "@/lib/data";
 import { getBarangaySettings } from "@/actions/settings";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -48,17 +53,17 @@ export default function ClearanceDocumentRequestForm({
   onCancel,
 }: ClearanceDocumentRequestFormProps) {
   const {
-    register,
     control,
     watch,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<ClearanceDocumentRequestFormValues>({
     resolver: zodResolver(clearanceDocumentRequestFormSchema),
     defaultValues: { ...baseDefaults, ...defaultValues },
   });
 
   const purpose = watch("purpose");
+  const isFree = isFreeClearancePurpose(purpose);
   const isPickup = watch("receiveVia") === PICKUP_DELIVERY_METHOD;
 
   const { data: settings } = useQuery({
@@ -68,8 +73,18 @@ export default function ClearanceDocumentRequestForm({
   const gcashNumber = settings?.gcashNumber ?? DEFAULT_GCASH_NUMBER;
   const purposeFees = settings?.clearancePurposeFees ?? DEFAULT_CLEARANCE_PURPOSE_FEES;
 
+  const feeLabel = (option: string) =>
+    isFreeClearancePurpose(option)
+      ? "Free"
+      : formatFee(purposeFees[option as keyof typeof purposeFees]);
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form
+      onSubmit={handleSubmit((data) =>
+        // Drop a receipt uploaded before switching to a free purpose.
+        onSubmit(isFree ? { ...data, paymentReceipt: [] } : data)
+      )}
+    >
       <fieldset disabled={isSubmitting} className="space-y-4">
         <Controller
           name="purpose"
@@ -84,14 +99,12 @@ export default function ClearanceDocumentRequestForm({
                 <SelectContent>
                   {CLEARANCE_PURPOSES.map((option) => (
                     <SelectItem key={option} value={option}>
-                      {option} — {formatFee(purposeFees[option])}
+                      {option} — {feeLabel(option)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <FieldDescription>
-                Amount due: {formatFee(purposeFees[purpose])}
-              </FieldDescription>
+              <FieldDescription>Amount due: {feeLabel(purpose)}</FieldDescription>
               <FieldError errors={[fieldState.error]} />
             </Field>
           )}
@@ -120,33 +133,45 @@ export default function ClearanceDocumentRequestForm({
           )}
         />
 
-        <Controller
-          name="paymentReceipt"
-          control={control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel>
-                Payment Receipt (GCash Only)
-                {isPickup && <span className="font-normal text-muted-foreground"> (optional)</span>}
-              </FieldLabel>
-              <FieldDescription>
-                Send payment to GCash {gcashNumber} ({GCASH_ACCOUNT_NAME}), then upload a
-                screenshot of the receipt.
-                {isPickup && " For pickups, you can also pay when you claim the document."}
-              </FieldDescription>
-              <FileUploader
-                files={field.value}
-                onFilesChange={field.onChange}
-                maxFiles={1}
-                accept={["images"]}
-              />
-              <FieldError errors={[fieldState.error]} />
-            </Field>
-          )}
-        />
+        {!isFree && (
+          <Controller
+            name="paymentReceipt"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel>
+                  Payment Receipt (GCash Only)
+                  {isPickup && <span className="font-normal text-muted-foreground"> (optional)</span>}
+                </FieldLabel>
+                <FieldDescription>
+                  Send payment to GCash {gcashNumber} ({GCASH_ACCOUNT_NAME}), then upload a
+                  screenshot of the receipt.
+                  {isPickup && " For pickups, you can also pay when you claim the document."}
+                </FieldDescription>
+                <FileUploader
+                  files={field.value}
+                  onFilesChange={field.onChange}
+                  maxFiles={1}
+                  accept={["images"]}
+                />
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
+          />
+        )}
 
         {isPickup && (
-          <PreferredClaimField {...register("preferredClaimAt")} error={errors.preferredClaimAt} />
+          <Controller
+            name="preferredClaimAt"
+            control={control}
+            render={({ field, fieldState }) => (
+              <PreferredClaimField
+                value={field.value}
+                onChange={field.onChange}
+                error={fieldState.error}
+              />
+            )}
+          />
         )}
 
         <div className="flex justify-end gap-2">

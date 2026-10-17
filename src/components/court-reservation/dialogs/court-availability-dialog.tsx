@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import DatePicker from "@/components/date-picker";
+import { toDateValue } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getTakenTimeRanges } from "@/actions/court-reservations";
 import {
@@ -18,8 +19,6 @@ interface CourtAvailabilityDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const todayIso = new Date().toISOString().split("T")[0];
 
 const TIMELINE_TICKS = [
   { minutes: 0, label: "12 AM" },
@@ -59,7 +58,7 @@ function RangeList({ title, ranges, emptyText, dotClassName }: {
 }
 
 export default function CourtAvailabilityDialog({ open, onOpenChange }: CourtAvailabilityDialogProps) {
-  const [date, setDate] = useState(todayIso);
+  const [date, setDate] = useState(() => toDateValue(new Date()));
 
   const { data: takenRanges = [], isLoading } = useQuery({
     queryKey: ["court-reservation-taken-ranges", date],
@@ -81,12 +80,7 @@ export default function CourtAvailabilityDialog({ open, onOpenChange }: CourtAva
 
         <div className="space-y-1.5">
           <Label htmlFor="availability-date">Date</Label>
-          <Input
-            id="availability-date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+          <DatePicker id="availability-date" value={date} onChange={setDate} required />
         </div>
 
         {isLoading ? (

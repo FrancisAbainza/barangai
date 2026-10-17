@@ -9,14 +9,15 @@ export function getCourtReservationFormSchema(isAdmin: boolean) {
     .object({
       date: z.string().min(1, "Please select a date"),
       purpose: z.string().trim().min(1, "Please provide the purpose of your reservation"),
-      // "HH:MM" from an <input type="time">; converted to minutes after midnight on submit.
+      // "HH:MM" from a `TimePicker`; converted to minutes after midnight on submit.
       startTime: z
         .string()
         .min(1, "Please select a start time")
         .refine((value) => parseTimeInput(value) !== null, "Please enter a valid time"),
       durationHours: z.number().int().min(1, "Reserve at least 1 hour"),
+      // Admins don't pay, so the form hides the upload and leaves this empty.
       gcashPayment: isAdmin
-        ? z.array(z.custom<MediaItem>()).max(1, "Only 1 file is allowed")
+        ? z.array(z.custom<MediaItem>())
         : z
             .array(z.custom<MediaItem>())
             .min(1, "Upload your GCash payment screenshot")

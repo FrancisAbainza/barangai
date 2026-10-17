@@ -18,26 +18,16 @@ export type CreateDocumentRequestInput = {
   paymentReceipt?: Omit<MediaItem, "file">[];
   supportingDocuments?: Omit<MediaItem, "file">[];
   receiveVia: string;
-  // Required for pickups and ignored otherwise.
-  preferredClaimAt?: Date;
+  // Only stored for pickups. Forms convert their local "YYYY-MM-DDTHH:MM" to a Date in the
+  // browser, since the server runs in UTC. An unpicked "" arrives as null.
+  preferredClaimAt?: Date | null;
 };
-
-// The form already rejects past times; this slack covers the file uploads that run between
-// validating the form and this call.
-const CLAIM_TIME_GRACE_MS = 10 * 60 * 1000;
 
 export async function createDocumentRequest(data: CreateDocumentRequestInput) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
   const isPickup = data.receiveVia === PICKUP_DELIVERY_METHOD;
-  if (isPickup) {
-    const claimTime = data.preferredClaimAt?.getTime() ?? NaN;
-    if (Number.isNaN(claimTime) || claimTime < Date.now() - CLAIM_TIME_GRACE_MS) {
-      throw new Error("Pickups need a preferred claim date and time that hasn't passed");
-    }
-  }
-
   await db.insert(documentRequestsTable).values({
     documentType: data.documentType,
     requesterId: userId,

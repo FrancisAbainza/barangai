@@ -6,7 +6,7 @@ import {
   documentRequestSettingsFormSchema,
   DocumentRequestSettingsFormValues,
 } from "@/schemas/settings-schema";
-import { CLEARANCE_PURPOSES } from "@/lib/data";
+import { PAID_CLEARANCE_PURPOSES } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -48,7 +48,7 @@ export default function DocumentPricingForm({
           <FieldError errors={[errors.gcashNumber]} />
         </Field>
 
-        {CLEARANCE_PURPOSES.map((purpose) => (
+        {PAID_CLEARANCE_PURPOSES.map((purpose) => (
           <Controller
             key={purpose}
             name={`clearancePurposeFees.${purpose}`}

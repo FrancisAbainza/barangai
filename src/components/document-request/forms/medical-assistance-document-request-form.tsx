@@ -155,7 +155,17 @@ export default function MedicalAssistanceDocumentRequestForm({
         />
 
         {receiveVia === PICKUP_DELIVERY_METHOD && (
-          <PreferredClaimField {...register("preferredClaimAt")} error={errors.preferredClaimAt} />
+          <Controller
+            name="preferredClaimAt"
+            control={control}
+            render={({ field, fieldState }) => (
+              <PreferredClaimField
+                value={field.value}
+                onChange={field.onChange}
+                error={fieldState.error}
+              />
+            )}
+          />
         )}
 
         <div className="flex justify-end gap-2">

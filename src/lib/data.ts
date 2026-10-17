@@ -8,13 +8,27 @@ export const barangayVision =
 
 export const GCASH_ACCOUNT_NAME = "Barangay Maduya";
 
-export const CLEARANCE_PURPOSES = [
+// Paid purposes have admin-editable fees in barangay_settings; free purposes are always ₱0.
+export const PAID_CLEARANCE_PURPOSES = [
   "Clearance for Local Employment",
   "Bank / Loan Requirements",
   "Business Clearance",
 ] as const;
 
-export type ClearancePurposeFees = Record<(typeof CLEARANCE_PURPOSES)[number], number>;
+export const FREE_CLEARANCE_PURPOSES = [
+  "Scholarship",
+  "Financial Support",
+  "Hospital Support",
+  "PAO (Public Attorney's Office)",
+] as const;
+
+export const CLEARANCE_PURPOSES = [...PAID_CLEARANCE_PURPOSES, ...FREE_CLEARANCE_PURPOSES] as const;
+
+export type ClearancePurposeFees = Record<(typeof PAID_CLEARANCE_PURPOSES)[number], number>;
+
+export function isFreeClearancePurpose(purpose: string): boolean {
+  return (FREE_CLEARANCE_PURPOSES as readonly string[]).includes(purpose);
+}
 
 // Fallback values used to seed/backfill barangay_settings; the live values editable by
 // admins in the document request and court reservation portals (src/actions/settings.ts)

@@ -7,7 +7,6 @@ import type { SoloParentDocumentRequestFormValues } from "@/schemas/solo-parent-
 import SoloParentDocumentRequestForm from "../forms/solo-parent-document-request-form";
 import { uploadFile } from "@/lib/storage";
 import { createDocumentRequest } from "@/actions/document-requests";
-import { toPreferredClaimAt } from "@/lib/document-requests";
 
 interface SoloParentDocumentRequestDialogProps {
   open: boolean;
@@ -37,7 +36,7 @@ export default function SoloParentDocumentRequestDialog({
         situationDescription: data.situationDescription,
         supportingDocuments,
         receiveVia: data.receiveVia,
-        preferredClaimAt: toPreferredClaimAt(data),
+        preferredClaimAt: new Date(data.preferredClaimAt),
       });
     },
     onSuccess: () => {

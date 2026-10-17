@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,6 +43,8 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Send } from "lucide-react";
 import FileUploader from "@/components/file-uploader";
+import DatePicker from "@/components/date-picker";
+import TimePicker from "@/components/time-picker";
 
 interface CourtReservationFormProps {
   defaultValues?: Partial<CourtReservationFormValues>;
@@ -57,8 +60,6 @@ const baseDefaults: CourtReservationFormValues = {
   gcashPayment: [],
 };
 
-const todayIso = new Date().toISOString().split("T")[0];
-
 export default function CourtReservationForm({
   defaultValues,
   onSubmit,
@@ -66,6 +67,7 @@ export default function CourtReservationForm({
 }: CourtReservationFormProps) {
   const { user } = useUser();
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
+  const [today] = useState(() => new Date());
 
   const {
     register,
@@ -127,17 +129,25 @@ export default function CourtReservationForm({
   return (
     <form onSubmit={handleSubmit(submit)}>
       <fieldset disabled={isSubmitting} className="space-y-4">
-        <Field data-invalid={!!errors.date}>
-          <FieldLabel htmlFor="date">Date</FieldLabel>
-          <Input
-            {...register("date")}
-            id="date"
-            type="date"
-            min={todayIso}
-            aria-invalid={!!errors.date}
-          />
-          <FieldError errors={[errors.date]} />
-        </Field>
+        <Controller
+          name="date"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="date">Date</FieldLabel>
+              <DatePicker
+                id="date"
+                value={field.value}
+                onChange={field.onChange}
+                required
+                disabledDays={{ before: today }}
+                startMonth={today}
+                aria-invalid={fieldState.invalid}
+              />
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
 
         <Field data-invalid={!!errors.purpose}>
           <FieldLabel htmlFor="purpose">Purpose</FieldLabel>
@@ -152,15 +162,21 @@ export default function CourtReservationForm({
 
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-3">
-            <Field data-invalid={!!errors.startTime}>
-              <FieldLabel htmlFor="startTime">Start Time</FieldLabel>
-              <Input
-                {...register("startTime")}
-                id="startTime"
-                type="time"
-                aria-invalid={!!errors.startTime}
-              />
-            </Field>
+            <Controller
+              name="startTime"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="startTime">Start Time</FieldLabel>
+                  <TimePicker
+                    id="startTime"
+                    value={field.value}
+                    onChange={field.onChange}
+                    aria-invalid={fieldState.invalid}
+                  />
+                </Field>
+              )}
+            />
 
             <Controller
               name="durationHours"
@@ -241,32 +257,29 @@ export default function CourtReservationForm({
           <span className="text-lg font-semibold">{formatFee(totalAmount)}</span>
         </div>
 
-        <Controller
-          name="gcashPayment"
-          control={control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel>
-                GCash Payment
-                {isAdmin && (
-                  <span className="font-normal text-muted-foreground"> (optional)</span>
-                )}
-              </FieldLabel>
-              <FieldDescription>
-                Send {formatFee(totalAmount)} to GCash {gcashNumber} ({GCASH_ACCOUNT_NAME}), then
-                upload a screenshot of the receipt.
-                {isAdmin && " Not required for admin-created reservations."}
-              </FieldDescription>
-              <FileUploader
-                files={field.value}
-                onFilesChange={field.onChange}
-                maxFiles={1}
-                accept={["images"]}
-              />
-              <FieldError errors={[fieldState.error]} />
-            </Field>
-          )}
-        />
+        {/* Admins don't pay for court reservations, so they skip the payment upload. */}
+        {!isAdmin && (
+          <Controller
+            name="gcashPayment"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel>GCash Payment</FieldLabel>
+                <FieldDescription>
+                  Send {formatFee(totalAmount)} to GCash {gcashNumber} ({GCASH_ACCOUNT_NAME}),
+                  then upload a screenshot of the receipt.
+                </FieldDescription>
+                <FileUploader
+                  files={field.value}
+                  onFilesChange={field.onChange}
+                  maxFiles={1}
+                  accept={["images"]}
+                />
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
+          />
+        )}
 
         <div className="flex justify-end gap-2">
           {onCancel && (
