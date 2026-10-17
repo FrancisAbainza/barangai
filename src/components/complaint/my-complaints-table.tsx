@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Map, MapPinOff, Table as TableIcon } from "lucide-react";
+import { Map, MapPinOff, MessageSquareWarning, Table as TableIcon } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import EmptyState from "@/components/empty-state";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import ComplaintActionsMenu from "@/components/complaint/complaint-actions-menu";
 import ComplaintsMapView from "@/components/complaint/complaints-map-view";
@@ -62,87 +63,86 @@ export default function MyComplaintsTable() {
         </TabsList>
 
         <TabsContent value="table" className="pt-2">
-          <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Submission Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
+          {!isLoading && myComplaints.length === 0 ? (
+            <EmptyState
+              icon={MessageSquareWarning}
+              title="No complaints filed yet"
+              description="Complaints you file will appear here."
+            />
+          ) : (
+            <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6}>
-                      <Skeleton className="h-5 w-full" />
-                    </TableCell>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Submission Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ) : myComplaints.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
-                      No complaints filed yet.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  <>
-                    {myComplaints.map((complaint) => (
-                      <TableRow key={complaint.id}>
-                        <TableCell className="font-medium">{complaint.subject}</TableCell>
-                        <TableCell className="text-muted-foreground">{complaint.category}</TableCell>
-                        <TableCell>
-                          <Badge variant={priorityBadgeVariant(complaint.priority)}>
-                            {complaint.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(complaint.createdAt)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={statusBadgeVariant(complaint.status)}>{complaint.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <ComplaintActionsMenu complaint={complaint} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {hasNextPage && (
-                      <LoadMoreTrigger
-                        colSpan={6}
-                        onIntersect={fetchNextPage}
-                        disabled={isFetchingNextPage}
-                      />
-                    )}
-                    {isFetchingNextPage && (
-                      <TableRow>
-                        <TableCell colSpan={6}>
-                          <Skeleton className="h-5 w-full" />
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6}>
+                        <Skeleton className="h-5 w-full" />
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <>
+                      {myComplaints.map((complaint) => (
+                        <TableRow key={complaint.id}>
+                          <TableCell className="font-medium">{complaint.subject}</TableCell>
+                          <TableCell className="text-muted-foreground">{complaint.category}</TableCell>
+                          <TableCell>
+                            <Badge variant={priorityBadgeVariant(complaint.priority)}>
+                              {complaint.priority}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDate(complaint.createdAt)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={statusBadgeVariant(complaint.status)}>{complaint.status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <ComplaintActionsMenu complaint={complaint} />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {hasNextPage && (
+                        <LoadMoreTrigger
+                          colSpan={6}
+                          onIntersect={fetchNextPage}
+                          disabled={isFetchingNextPage}
+                        />
+                      )}
+                      {isFetchingNextPage && (
+                        <TableRow>
+                          <TableCell colSpan={6}>
+                            <Skeleton className="h-5 w-full" />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="map" className="pt-2">
           {isLoading || (isFetchingNextPage && hasNextPage) ? (
             <Skeleton className="h-128 w-full rounded-lg" />
           ) : myComplaints.length === 0 ? (
-            <div className="flex h-128 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/20 text-center">
-              <div className="mb-1 rounded-full bg-muted p-3">
-                <MapPinOff className="size-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium">No complaints to display</p>
-              <p className="text-sm text-muted-foreground">
-                File a complaint to see it plotted on the map.
-              </p>
-            </div>
+            <EmptyState
+              icon={MapPinOff}
+              title="No complaints to display"
+              description="File a complaint to see it plotted on the map."
+              className="h-128"
+            />
           ) : (
             <ComplaintsMapView complaints={myComplaints} />
           )}

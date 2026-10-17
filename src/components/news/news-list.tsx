@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { Megaphone, Search } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import EmptyState from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -120,7 +121,11 @@ export default function NewsList() {
           <NewsCardSkeleton />
         </div>
       ) : news.length === 0 ? (
-        <p className="text-center py-16 text-sm text-muted-foreground">No news posts found.</p>
+        <EmptyState
+          icon={Megaphone}
+          title="No news posts found"
+          description="News and announcements that match your search will appear here."
+        />
       ) : (
         <div className="space-y-4">
           {news.map((item) => (

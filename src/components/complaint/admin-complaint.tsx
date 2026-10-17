@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUpDown, FileText, Hourglass, ListFilter, Map, MapPinOff, Search, Table as TableIcon } from "lucide-react";
+import {
+  ArrowUpDown,
+  FileText,
+  Hourglass,
+  ListFilter,
+  Map,
+  MapPinOff,
+  MessageSquareWarning,
+  Search,
+  Table as TableIcon,
+} from "lucide-react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +45,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DatePicker from "@/components/date-picker";
+import EmptyState from "@/components/empty-state";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
 import ComplaintActionsMenu from "@/components/complaint/complaint-actions-menu";
@@ -348,82 +359,81 @@ export default function AdminComplaint() {
         </div>
 
         <TabsContent value="table" className="pt-2">
-          <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Submission Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <>
-                    <ComplaintRowSkeleton />
-                    <ComplaintRowSkeleton />
-                    <ComplaintRowSkeleton />
-                  </>
-                ) : complaints.length === 0 ? (
+          {!isLoading && complaints.length === 0 ? (
+            <EmptyState
+              icon={MessageSquareWarning}
+              title="No complaints found"
+              description="Complaints that match your search and filters will appear here."
+            />
+          ) : (
+            <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
-                      No complaints found.
-                    </TableCell>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Submission Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
-                ) : (
-                  <>
-                    {complaints.map((complaint) => (
-                      <TableRow key={complaint.id}>
-                        <TableCell>
-                          <p className="font-medium truncate">{complaint.subject}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {complaint.complainantName}
-                          </p>
-                        </TableCell>
-                        <TableCell>{complaint.category}</TableCell>
-                        <TableCell>
-                          <Badge variant={priorityBadgeVariant(complaint.priority)}>
-                            {complaint.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(complaint.createdAt)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={statusBadgeVariant(complaint.status)}>{complaint.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <ComplaintActionsMenu complaint={complaint} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {hasNextPage && (
-                      <LoadMoreTrigger colSpan={6} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
-                    )}
-                    {isFetchingNextPage && <ComplaintRowSkeleton />}
-                  </>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <>
+                      <ComplaintRowSkeleton />
+                      <ComplaintRowSkeleton />
+                      <ComplaintRowSkeleton />
+                    </>
+                  ) : (
+                    <>
+                      {complaints.map((complaint) => (
+                        <TableRow key={complaint.id}>
+                          <TableCell>
+                            <p className="font-medium truncate">{complaint.subject}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {complaint.complainantName}
+                            </p>
+                          </TableCell>
+                          <TableCell>{complaint.category}</TableCell>
+                          <TableCell>
+                            <Badge variant={priorityBadgeVariant(complaint.priority)}>
+                              {complaint.priority}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDate(complaint.createdAt)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={statusBadgeVariant(complaint.status)}>{complaint.status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <ComplaintActionsMenu complaint={complaint} />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {hasNextPage && (
+                        <LoadMoreTrigger colSpan={6} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                      )}
+                      {isFetchingNextPage && <ComplaintRowSkeleton />}
+                    </>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="map" className="pt-2">
           {isLoading || (isFetchingNextPage && hasNextPage) ? (
             <Skeleton className="h-128 w-full rounded-lg" />
           ) : complaints.length === 0 ? (
-            <div className="flex h-128 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/20 text-center">
-              <div className="mb-1 rounded-full bg-muted p-3">
-                <MapPinOff className="size-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium">No complaints to display</p>
-              <p className="text-sm text-muted-foreground">
-                Complaints that match your search and filters will appear here.
-              </p>
-            </div>
+            <EmptyState
+              icon={MapPinOff}
+              title="No complaints to display"
+              description="Complaints that match your search and filters will appear here."
+              className="h-128"
+            />
           ) : (
             <ComplaintsMapView complaints={complaints} />
           )}

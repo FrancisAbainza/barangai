@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import EmptyState from "@/components/empty-state";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import ResidentCredentialsBanner from "@/components/resident-credentials-banner";
 import { ShortcutTileContent, shortcutTileClassName } from "@/components/shortcut-tile";
@@ -29,6 +30,7 @@ import { useDialogParam } from "@/hooks/use-dialog-param";
 import { useViewParam } from "@/hooks/use-view-param";
 import { statusBadgeVariant } from "@/lib/document-requests";
 import {
+  FileText,
   FileUser,
   HandHeart,
   HeartPulse,
@@ -167,64 +169,66 @@ export default function ResidentDocumentRequest() {
 
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">My Requests</h2>
-        <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Document Type</TableHead>
-                <TableHead>Submission Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+        {!isLoading && myRequests.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="No requests yet"
+            description="Documents you request will appear here."
+          />
+        ) : (
+          <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4}>
-                    <Skeleton className="h-5 w-full" />
-                  </TableCell>
+                  <TableHead>Document Type</TableHead>
+                  <TableHead>Submission Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ) : myRequests.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-8">
-                    No requests yet.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                <>
-                  {myRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-medium">{request.documentType}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatSubmittedDate(request.createdAt)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={statusBadgeVariant(request.status)}>{request.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DocumentRequestActionsMenu request={request} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {hasNextPage && (
-                    <LoadMoreTrigger
-                      colSpan={4}
-                      onIntersect={fetchNextPage}
-                      disabled={isFetchingNextPage}
-                    />
-                  )}
-                  {isFetchingNextPage && (
-                    <TableRow>
-                      <TableCell colSpan={4}>
-                        <Skeleton className="h-5 w-full" />
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4}>
+                      <Skeleton className="h-5 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  <>
+                    {myRequests.map((request) => (
+                      <TableRow key={request.id}>
+                        <TableCell className="font-medium">{request.documentType}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatSubmittedDate(request.createdAt)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusBadgeVariant(request.status)}>{request.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DocumentRequestActionsMenu request={request} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {hasNextPage && (
+                      <LoadMoreTrigger
+                        colSpan={4}
+                        onIntersect={fetchNextPage}
+                        disabled={isFetchingNextPage}
+                      />
+                    )}
+                    {isFetchingNextPage && (
+                      <TableRow>
+                        <TableCell colSpan={4}>
+                          <Skeleton className="h-5 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
 
       <ResidencyDocumentRequestDialog

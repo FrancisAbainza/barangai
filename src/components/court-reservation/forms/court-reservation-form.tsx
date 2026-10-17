@@ -210,9 +210,8 @@ export default function CourtReservationForm({
 
           <FieldDescription>
             {COURT_DAY_HOURS}: {formatFee(dayRate)}/hour &middot; {COURT_NIGHT_HOURS}:{" "}
-            {formatFee(nightRate)}/hour. Start at any minute and book whole hours, ending by
-            midnight. An hour that crosses 6:00 AM or 6:00 PM is charged the day rate if at least
-            30 minutes of it is daytime.
+            {formatFee(nightRate)}/hour. An hour that crosses 6:00 AM or 6:00 PM is charged the night rate, even if
+            only 1 minute of it is nighttime.
           </FieldDescription>
 
           {selectedRange && (

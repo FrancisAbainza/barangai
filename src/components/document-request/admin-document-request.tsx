@@ -34,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DatePicker from "@/components/date-picker";
+import EmptyState from "@/components/empty-state";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
 import DocumentRequestActionsMenu from "@/components/document-request/document-request-actions-menu";
@@ -298,59 +299,61 @@ export default function AdminDocumentRequest() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Requester</TableHead>
-              <TableHead>Document Type</TableHead>
-              <TableHead>Submission Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <>
-                <RequestRowSkeleton />
-                <RequestRowSkeleton />
-                <RequestRowSkeleton />
-              </>
-            ) : requests.length === 0 ? (
+      {!isLoading && requests.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="No requests found"
+          description="Document requests that match your search and filters will appear here."
+        />
+      ) : (
+        <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
-                  No requests found.
-                </TableCell>
+                <TableHead>Requester</TableHead>
+                <TableHead>Document Type</TableHead>
+                <TableHead>Submission Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
-            ) : (
-              <>
-                {requests.map((request) => (
-                  <TableRow key={request.id}>
-                    <TableCell>
-                      <p className="font-medium truncate">{request.requesterName}</p>
-                      <p className="text-xs text-muted-foreground truncate">{request.requesterEmail}</p>
-                    </TableCell>
-                    <TableCell>{request.documentType}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatSubmittedDate(request.createdAt)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={statusBadgeVariant(request.status)}>{request.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DocumentRequestActionsMenu request={request} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {hasNextPage && (
-                  <LoadMoreTrigger colSpan={5} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
-                )}
-                {isFetchingNextPage && <RequestRowSkeleton />}
-              </>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <>
+                  <RequestRowSkeleton />
+                  <RequestRowSkeleton />
+                  <RequestRowSkeleton />
+                </>
+              ) : (
+                <>
+                  {requests.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell>
+                        <p className="font-medium truncate">{request.requesterName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{request.requesterEmail}</p>
+                      </TableCell>
+                      <TableCell>{request.documentType}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatSubmittedDate(request.createdAt)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusBadgeVariant(request.status)}>{request.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DocumentRequestActionsMenu request={request} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {hasNextPage && (
+                    <LoadMoreTrigger colSpan={5} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                  )}
+                  {isFetchingNextPage && <RequestRowSkeleton />}
+                </>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {viewedRequest && viewId !== null && (
         <ViewDocumentRequestDialog request={viewedRequest} open onOpenChange={(open) => !open && setViewId(null)} />

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { ArrowUpDown, CalendarCheck, Clock, Hourglass, ListFilter, Search } from "lucide-react";
+import { ArrowUpDown, CalendarCheck, Clock, Hourglass, ListFilter, Search, SportShoe } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DatePicker from "@/components/date-picker";
+import EmptyState from "@/components/empty-state";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import StatCard from "@/components/stat-card";
 import CourtReservationActionsMenu from "@/components/court-reservation/court-reservation-actions-menu";
@@ -314,62 +315,64 @@ export default function AdminCourtReservation() {
       <CourtAvailabilityDialog open={availabilityOpen} onOpenChange={setAvailabilityOpen} />
       <CourtReservationDialog open={reserveOpen} onOpenChange={setReserveOpen} />
 
-      <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Requester</TableHead>
-              <TableHead>Schedule</TableHead>
-              <TableHead>Purpose</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <>
-                <ReservationRowSkeleton />
-                <ReservationRowSkeleton />
-                <ReservationRowSkeleton />
-              </>
-            ) : reservations.length === 0 ? (
+      {!isLoading && reservations.length === 0 ? (
+        <EmptyState
+          icon={SportShoe}
+          title="No reservations found"
+          description="Court reservations that match your search and filters will appear here."
+        />
+      ) : (
+        <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
-                  No reservations found.
-                </TableCell>
+                <TableHead>Requester</TableHead>
+                <TableHead>Schedule</TableHead>
+                <TableHead>Purpose</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
-            ) : (
-              <>
-                {reservations.map((reservation) => (
-                  <TableRow key={reservation.id}>
-                    <TableCell>
-                      <p className="font-medium truncate">{reservation.requesterName}</p>
-                      <p className="text-xs text-muted-foreground truncate">{reservation.requesterEmail}</p>
-                    </TableCell>
-                    <TableCell>
-                      <p className="truncate">{formatReservationDate(reservation.date)}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {formatReservationTime(reservation)}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{reservation.purpose}</TableCell>
-                    <TableCell>
-                      <Badge variant={statusBadgeVariant(reservation.status)}>{reservation.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <CourtReservationActionsMenu reservation={reservation} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {hasNextPage && (
-                  <LoadMoreTrigger colSpan={5} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
-                )}
-                {isFetchingNextPage && <ReservationRowSkeleton />}
-              </>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <>
+                  <ReservationRowSkeleton />
+                  <ReservationRowSkeleton />
+                  <ReservationRowSkeleton />
+                </>
+              ) : (
+                <>
+                  {reservations.map((reservation) => (
+                    <TableRow key={reservation.id}>
+                      <TableCell>
+                        <p className="font-medium truncate">{reservation.requesterName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{reservation.requesterEmail}</p>
+                      </TableCell>
+                      <TableCell>
+                        <p className="truncate">{formatReservationDate(reservation.date)}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {formatReservationTime(reservation)}
+                        </p>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{reservation.purpose}</TableCell>
+                      <TableCell>
+                        <Badge variant={statusBadgeVariant(reservation.status)}>{reservation.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <CourtReservationActionsMenu reservation={reservation} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {hasNextPage && (
+                    <LoadMoreTrigger colSpan={5} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                  )}
+                  {isFetchingNextPage && <ReservationRowSkeleton />}
+                </>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {viewedReservation && viewId !== null && (
         <ViewCourtReservationDialog reservation={viewedReservation} open onOpenChange={(open) => !open && setViewId(null)} />

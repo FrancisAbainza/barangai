@@ -1,5 +1,6 @@
 "use client";
 
+import { Store } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -10,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import EmptyState from "@/components/empty-state";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import BusinessActionsMenu from "@/components/community-hub/business-actions-menu";
 import { statusBadgeVariant, formatDate } from "@/lib/business";
@@ -60,6 +62,16 @@ export default function BusinessSubmissionsTable({
   fetchNextPage,
   isFetchingNextPage,
 }: BusinessSubmissionsTableProps) {
+  if (!isLoading && businesses.length === 0) {
+    return (
+      <EmptyState
+        icon={Store}
+        title="No submissions found"
+        description="Business submissions that match your search and filters will appear here."
+      />
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
       <Table>
@@ -80,12 +92,6 @@ export default function BusinessSubmissionsTable({
               <SubmissionRowSkeleton />
               <SubmissionRowSkeleton />
             </>
-          ) : businesses.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={COLUMN_COUNT} className="text-center text-sm text-muted-foreground py-8">
-                No submissions found.
-              </TableCell>
-            </TableRow>
           ) : (
             <>
               {businesses.map((business) => (

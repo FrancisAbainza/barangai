@@ -20,10 +20,6 @@ export const COURT_DAY_END = 18 * 60;
 export const COURT_DAY_HOURS = "6:00 AM - 6:00 PM";
 export const COURT_NIGHT_HOURS = "6:00 PM - 6:00 AM";
 
-// An hour that spans day and night is billed at the day rate when at least this many of its
-// minutes fall within the day hours (e.g. 5:30 - 6:30 PM is day, 5:31 - 6:31 PM is night).
-const MIN_DAY_MINUTES_FOR_DAY_RATE = 30;
-
 export type CourtTimeRange = { start: number; end: number };
 
 export function getReservationRange(reservation: {
@@ -44,7 +40,9 @@ export function maxDurationHours(startTime: number): number {
 export type CourtHourCharge = CourtTimeRange & { isDayRate: boolean; rate: number };
 
 // Bills each hour of the reservation separately, so a 12:10 PM - 3:10 PM booking is three
-// day-rate hours while 5:00 PM - 7:00 PM is one day hour plus one night hour.
+// day-rate hours while 5:00 PM - 7:00 PM is one day hour plus one night hour. An hour is
+// billed at the night rate if any minute of it falls outside the day hours (e.g. 5:00 - 6:00 PM
+// is day, 5:01 - 6:01 PM is night).
 export function getCourtHourCharges(
   startTime: number,
   durationHours: number,
@@ -54,8 +52,7 @@ export function getCourtHourCharges(
   return Array.from({ length: durationHours }, (_, i) => {
     const start = startTime + i * 60;
     const end = start + 60;
-    const dayMinutes = Math.max(0, Math.min(end, COURT_DAY_END) - Math.max(start, COURT_DAY_START));
-    const isDayRate = dayMinutes >= MIN_DAY_MINUTES_FOR_DAY_RATE;
+    const isDayRate = start >= COURT_DAY_START && end <= COURT_DAY_END;
     return { start, end, isDayRate, rate: isDayRate ? dayRate : nightRate };
   });
 }

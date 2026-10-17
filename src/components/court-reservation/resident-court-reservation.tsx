@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import EmptyState from "@/components/empty-state";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import ResidentCredentialsBanner from "@/components/resident-credentials-banner";
 import CourtReservationActionsMenu from "@/components/court-reservation/court-reservation-actions-menu";
@@ -25,7 +26,7 @@ import { useDialogParam } from "@/hooks/use-dialog-param";
 import { useViewParam } from "@/hooks/use-view-param";
 import { getCourtReservationById, getMyCourtReservations } from "@/actions/court-reservations";
 import { statusBadgeVariant, formatReservationTime, formatFee } from "@/lib/court-reservations";
-import { CalendarCheck, Clock } from "lucide-react";
+import { CalendarCheck, Clock, SportShoe } from "lucide-react";
 
 function formatReservationDate(date: string) {
   return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
@@ -109,74 +110,76 @@ export default function ResidentCourtReservation() {
 
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">My Reservations</h2>
-        <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Purpose</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isReservationsLoading ? (
+        {!isReservationsLoading && myReservations.length === 0 ? (
+          <EmptyState
+            icon={SportShoe}
+            title="No reservations yet"
+            description="Court reservations you make will appear here."
+          />
+        ) : (
+          <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6}>
-                    <Skeleton className="h-5 w-full" />
-                  </TableCell>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Purpose</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ) : myReservations.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
-                    No reservations yet.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                <>
-                  {myReservations.map((reservation) => (
-                    <TableRow key={reservation.id}>
-                      <TableCell className="font-medium">
-                        {formatReservationDate(reservation.date)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatReservationTime(reservation)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{reservation.purpose}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatFee(Number(reservation.totalAmount))}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={statusBadgeVariant(reservation.status)}>
-                          {reservation.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <CourtReservationActionsMenu reservation={reservation} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {hasNextPage && (
-                    <LoadMoreTrigger
-                      colSpan={6}
-                      onIntersect={fetchNextPage}
-                      disabled={isFetchingNextPage}
-                    />
-                  )}
-                  {isFetchingNextPage && (
-                    <TableRow>
-                      <TableCell colSpan={6}>
-                        <Skeleton className="h-5 w-full" />
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {isReservationsLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6}>
+                      <Skeleton className="h-5 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  <>
+                    {myReservations.map((reservation) => (
+                      <TableRow key={reservation.id}>
+                        <TableCell className="font-medium">
+                          {formatReservationDate(reservation.date)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatReservationTime(reservation)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{reservation.purpose}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatFee(Number(reservation.totalAmount))}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusBadgeVariant(reservation.status)}>
+                            {reservation.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <CourtReservationActionsMenu reservation={reservation} />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {hasNextPage && (
+                      <LoadMoreTrigger
+                        colSpan={6}
+                        onIntersect={fetchNextPage}
+                        disabled={isFetchingNextPage}
+                      />
+                    )}
+                    {isFetchingNextPage && (
+                      <TableRow>
+                        <TableCell colSpan={6}>
+                          <Skeleton className="h-5 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
 
       <CourtReservationDialog open={isReserveDialogOpen && hasResidentProfile} onOpenChange={setIsReserveDialogOpen} />
