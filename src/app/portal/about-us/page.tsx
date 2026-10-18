@@ -1,5 +1,5 @@
 import AboutHero from "@/components/about-us/about-hero";
-import MissionVisionSection from "@/components/about-us/mission-vision-section";
+import GoalMissionVisionSection from "@/components/about-us/goal-mission-vision-section";
 import OfficialsCarousel from "@/components/about-us/officials-carousel";
 import { barangayName } from "@/lib/data";
 
@@ -8,7 +8,7 @@ export default function AboutUsPage() {
     <div className="mx-auto w-full max-w-7xl space-y-6">
       <AboutHero />
 
-      <MissionVisionSection />
+      <GoalMissionVisionSection />
 
       <OfficialsCarousel
         title="Barangay"

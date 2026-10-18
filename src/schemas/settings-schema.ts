@@ -21,9 +21,10 @@ export const courtFeesFormSchema = z.object({
 
 export type CourtFeesFormValues = z.infer<typeof courtFeesFormSchema>;
 
-export const missionVisionFormSchema = z.object({
+export const goalMissionVisionFormSchema = z.object({
+  goal: z.string().trim().min(1, "Goal is required").max(2000, "Goal is too long"),
   mission: z.string().trim().min(1, "Mission is required").max(2000, "Mission is too long"),
   vision: z.string().trim().min(1, "Vision is required").max(2000, "Vision is too long"),
 });
 
-export type MissionVisionFormValues = z.infer<typeof missionVisionFormSchema>;
+export type GoalMissionVisionFormValues = z.infer<typeof goalMissionVisionFormSchema>;

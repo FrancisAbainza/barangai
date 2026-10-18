@@ -5,7 +5,7 @@ import { Eye } from "lucide-react";
 
 export default function TransparencyPage() {
   return (
-    <div className="w-full md:container space-y-6 m-auto px-6 py-20">
+    <div className="w-full md:container space-y-6 m-auto px-6 py-10">
       <PageHeader
         icon={Eye}
         title="Governance Transparency"

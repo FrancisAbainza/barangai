@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import CourtFeesForm from "@/components/barangay-settings/forms/court-fees-form";
 import DocumentPricingForm from "@/components/barangay-settings/forms/document-pricing-form";
-import MissionVisionForm from "@/components/barangay-settings/forms/mission-vision-form";
+import GoalMissionVisionForm from "@/components/barangay-settings/forms/goal-mission-vision-form";
 import OfficialsList from "@/components/barangay-settings/officials-list";
 import { getBarangaySettings, updateBarangaySettings, type BarangaySettingsValues } from "@/actions/settings";
 
@@ -50,7 +50,11 @@ export default function BarangaySettings() {
     courtDayRate: settings.courtDayRate,
     courtNightRate: settings.courtNightRate,
   };
-  const missionVision = settings && { mission: settings.mission, vision: settings.vision };
+  const goalMissionVision = settings && {
+    goal: settings.goal,
+    mission: settings.mission,
+    vision: settings.vision,
+  };
 
   return (
     <div className="space-y-6">
@@ -113,17 +117,17 @@ export default function BarangaySettings() {
             <Target />
           </div>
           <div>
-            <CardTitle className="text-lg">Mission & Vision</CardTitle>
-            <CardDescription>The barangay&apos;s mission and vision shown on the About Us page.</CardDescription>
+            <CardTitle className="text-lg">Goal, Mission & Vision</CardTitle>
+            <CardDescription>The barangay&apos;s goal, mission, and vision shown on the About Us page.</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading || !missionVision ? (
-            <FormSkeleton fields={2} />
+          {isLoading || !goalMissionVision ? (
+            <FormSkeleton fields={3} />
           ) : (
-            <MissionVisionForm
-              key={JSON.stringify(missionVision)}
-              defaultValues={missionVision}
+            <GoalMissionVisionForm
+              key={JSON.stringify(goalMissionVision)}
+              defaultValues={goalMissionVision}
               onSubmit={async (data) => {
                 await saveSettings(data);
               }}

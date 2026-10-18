@@ -51,7 +51,7 @@ export default async function NewsPostPage({
   if (!news) notFound();
 
   return (
-    <div className="w-full md:max-w-2xl space-y-4 m-auto px-6 py-20">
+    <div className="w-full md:max-w-2xl space-y-4 m-auto px-6 py-10">
       <Button variant="ghost" size="sm" asChild className="-ml-2 gap-2">
         <Link href="/news">
           <ArrowLeft className="size-4" />

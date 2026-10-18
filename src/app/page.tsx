@@ -1,350 +1,458 @@
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { barangayLogoSrc, barangayName } from "@/lib/data";
+import Image from "next/image";
+import Link from "next/link";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import {
-  AlertTriangle,
-  Brain,
-  Calendar,
+  ArrowRight,
+  Bot,
+  BrainCircuit,
+  CalendarCheck,
+  ChartColumn,
   Cloud,
   Eye,
   FileText,
-  Globe,
-  Mail,
+  Flag,
+  LockKeyhole,
   MapPin,
-  Mic,
-  Newspaper,
-  Phone,
   Store,
+  Target,
+  TriangleAlert,
+  type LucideIcon,
 } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import { getBarangaySettings } from "@/actions/settings";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Float, ReducedMotionConfig, Reveal, RevealGroup, RevealItem } from "@/components/landing/animations";
+import NewsCarousel from "@/components/landing/news-carousel";
+import OfficialsShowcase from "@/components/landing/officials-showcase";
+import SectionIntro from "@/components/landing/section-intro";
+import { barangayCity, barangayEmail, barangayHotlines, barangayLogoSrc, barangayName } from "@/lib/data";
+import { cn } from "@/lib/utils";
 
-const communityServices = [
-  {
-    icon: Newspaper,
-    title: "News & Announcements",
-    description:
-      "Stay updated on latest events, announcements, and programs.",
-  },
+type Service = {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  cta: string;
+  href: string;
+  featured?: boolean;
+};
+
+// The portal routes send signed-out visitors to log in, then on to the service.
+const services: Service[] = [
   {
     icon: FileText,
-    title: "Document Request",
+    title: "Document request",
     description:
-      "Seamless online application and processing of barangay certificates.",
+      "Apply online for a barangay clearance, a certificate of residency or indigency, and other documents, then follow your request until it's ready.",
+    cta: "Log in to request",
+    href: "/portal/document-request",
+    featured: true,
+  },
+  {
+    icon: TriangleAlert,
+    title: "Complaint reporting",
+    description: "Report noise, sanitation, safety and other concerns to the barangay, and follow each report's progress.",
+    cta: "Log in to file a report",
+    href: "/portal/complaint",
+    featured: true,
+  },
+  {
+    icon: CalendarCheck,
+    title: "Court reservation",
+    description: "Book the barangay court and see which times are already taken.",
+    cta: "Log in to book",
+    href: "/portal/court-reservation",
   },
   {
     icon: Store,
-    title: "Community Hub",
-    description:
-      "Discover and support local businesses in our business directory.",
+    title: "Community hub",
+    description: "Discover and support local businesses in our business directory.",
+    cta: "Log in to browse",
+    href: "/portal/community-hub",
   },
   {
-    icon: Calendar,
-    title: "Court Reservation",
-    description: "Online sports court booking with real-time schedule checks.",
-  },
-  {
-    icon: AlertTriangle,
-    title: "Complaint Reporting",
-    description: "Dedicated portal for hazard reporting and civic complaints.",
-  },
-  {
-    icon: Eye,
+    icon: ChartColumn,
     title: "Transparency",
-    description:
-      "Overview of barangay projects and budget transparency.",
+    description: "Browse the barangay's projects and programs, with their budgets and locations.",
+    cta: "View projects",
+    href: "/transparency",
   },
 ];
 
-const techFeatures = [
-  {
-    icon: Brain,
+type TechFeature = {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+};
+
+const techFeatures: Record<"ai" | "assistant" | "cloud", TechFeature> = {
+  ai: {
+    icon: BrainCircuit,
     title: "Artificial Intelligence",
     description:
-      "Automated triage for citizen concerns and predictive analysis for community resource management.",
+      "Sorts each complaint report by category and urgency as soon as it's filed, and gives barangay staff budget, manpower and timeframe estimates for the response.",
   },
-  {
-    icon: Mic,
-    title: "Voice-Powered Assistant",
+  assistant: {
+    icon: Bot,
+    title: "AI Assistant",
     description:
-      "Hands-free accessibility for senior citizens and disabled residents to access government news and services.",
+      "Ask about barangay services by typing or speaking. The portal's assistant answers your questions and points you to the right page or form.",
   },
-  {
+  cloud: {
     icon: Cloud,
     title: "Cloud-Based Infrastructure",
     description:
-      "Secure, scalable, and real-time document storage ensuring 24/7 availability of your vital records.",
+      "Your requests, reports, bookings and uploaded files are saved online, so you can sign in from any device to check their status and get notified when it changes.",
   },
+};
+
+const footerLinks = [
+  { href: "/", label: "Home" },
+  { href: "/news", label: "News" },
+  { href: "/transparency", label: "Transparency" },
+  { href: "/about-us", label: "About Us" },
 ];
 
-export default function Home() {
+// Same width and side padding as the News and About Us pages.
+const containerClassName = "mx-auto w-full px-6 md:container";
+const sectionClassName = cn(containerClassName, "py-20 lg:py-22");
+
+function ServiceCard({ service }: { service: Service }) {
+  const { icon: Icon, title, description, cta, href, featured } = service;
+
   return (
-    <main className="pt-16">
-      {/* ── Hero ── */}
-      <section
-        className="flex flex-col items-center justify-center text-center py-20 px-4"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(0, 56, 168, 0.7) 0%, transparent 30%, transparent 70%, rgba(206, 17, 38, 0.7) 100%)",
-        }}
+    <RevealItem
+      className={cn(
+        featured ? "lg:col-span-3" : "lg:col-span-2",
+        // In the two-column layout the last card spans both columns instead of sitting alone.
+        "sm:last:col-span-2",
+      )}
+    >
+      <Link
+        href={href}
+        className="group block h-full rounded-xl outline-offset-2 focus-visible:outline-3 focus-visible:outline-yellow-500"
       >
-        <div className="rounded-full overflow-hidden mb-8 w-40 h-40 relative shrink-0">
-          <Image
-            src={barangayLogoSrc}
-            alt={`${barangayName} logo`}
-            fill
-          />
-        </div>
-        <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4 max-w-2xl leading-tight">
-          Welcome to {barangayName} Official Website
-        </h1>
-        <p className="text-muted-foreground text-base sm:text-lg max-w-xl mb-8 leading-relaxed">
-          Your one-stop digital portal for barangay services. Access
-          announcements, request documents, report complaints, and connect
-          with your community — all in one place.
-        </p>
-        <div className="flex gap-3">
-          <SignInButton mode="modal">
-            <Button size="lg">Sign In</Button>
-          </SignInButton>
-          <SignUpButton mode="modal">
-            <Button size="lg" variant="outline">
-              Sign Up
-            </Button>
-          </SignUpButton>
-        </div>
-      </section>
-
-      {/* ── Emergency Hotlines Banner ── */}
-      <div className="bg-foreground text-background py-4 px-4">
-        <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span className="font-bold text-sm tracking-widest">
-            EMERGENCY HOTLINES
+        <Card
+          className={cn(
+            "flex h-full min-h-65 flex-col gap-3.5 shadow-none transition duration-300 group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-primary-deep/10",
+            featured
+              ? "border-0 bg-primary p-8 text-primary-foreground group-hover:bg-primary/90"
+              : "p-7 group-hover:border-primary/40",
+          )}
+        >
+          <span
+            className={cn(
+              "flex size-13 items-center justify-center rounded-xl",
+              featured ? "bg-background text-primary" : "bg-primary/8 text-primary",
+            )}
+          >
+            <Icon className="size-6.5" />
           </span>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
-            <span>
-              POLICE{" "}
-              <strong className="font-semibold">911</strong>
-            </span>
-            <span className="opacity-40">·</span>
-            <span>
-              FIRE{" "}
-              <strong className="font-semibold">122</strong>
-            </span>
-            <span className="opacity-40">·</span>
-            <span>
-              HALL{" "}
-              <strong className="font-semibold">0905 123 4567</strong>
-            </span>
-          </div>
-        </div>
-      </div>
+          <h3 className="text-2xl font-bold">{title}</h3>
+          <p className={cn("text-[1.0625rem] leading-relaxed", featured ? "text-primary-foreground/85" : "text-foreground/70")}>
+            {description}
+          </p>
+          <span
+            className={cn(
+              "mt-auto inline-flex items-center gap-2 text-[1.0625rem] font-bold",
+              !featured && "text-primary",
+            )}
+          >
+            {cta}
+            <ArrowRight className="size-5 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Card>
+      </Link>
+    </RevealItem>
+  );
+}
 
-      {/* ── Community Services ── */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl sm:text-3xl font-bold">
-              Community Services
-            </h2>
-            <p className="text-muted-foreground mt-2">
-              Access essential barangay resources and digital tools.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {communityServices.map(({ icon: Icon, title, description }) => (
-              <Card key={title} className="flex flex-col">
-                <CardHeader className="pb-3">
-                  <Icon className="h-7 w-7 text-primary mb-2" />
-                  <CardTitle className="text-base">{title}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col flex-1 pt-0">
-                  <p className="text-muted-foreground text-sm flex-1">
-                    {description}
-                  </p>
-                  <Link
-                    href="#"
-                    className="text-sm text-primary font-medium mt-5 hover:underline inline-block"
-                  >
-                    View Details →
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+function TechCard({
+  feature,
+  className,
+  descriptionClassName,
+}: {
+  feature: TechFeature;
+  className?: string;
+  descriptionClassName?: string;
+}) {
+  const { icon: Icon, title, description } = feature;
 
-      {/* ── Technological Foundation ── */}
-      <section className="bg-muted py-16 px-4">
-        <div className="container mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl sm:text-3xl font-bold">
-              Technological Foundation
-            </h2>
-            <p className="text-muted-foreground mt-2">
-              Leveraging modern tech for a more efficient government.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {techFeatures.map(({ icon: Icon, title, description }) => (
-              <div
-                key={title}
-                className="flex flex-col items-center text-center gap-3 p-6 rounded-xl bg-card/60 border border-border/40"
-              >
-                <Icon className="h-7 w-7 text-primary" />
-                <h3 className="font-semibold text-base">{title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {description}
+  return (
+    <Card className={cn("flex min-h-57.5 flex-col justify-end gap-2 border-0 p-7 shadow-none", className)}>
+      <Icon className="size-7.5" />
+      <h3 className="text-[1.375rem] font-bold">{title}</h3>
+      <p className={cn("leading-relaxed", descriptionClassName)}>{description}</p>
+    </Card>
+  );
+}
+
+export default async function Home() {
+  const { goal, mission, vision } = await getBarangaySettings();
+  const statements = [
+    { icon: Flag, label: "Goal", statement: goal },
+    { icon: Target, label: "Mission", statement: mission },
+    { icon: Eye, label: "Vision", statement: vision },
+  ];
+
+  return (
+    <main>
+      <ReducedMotionConfig>
+        {/* ── Hero ── */}
+        <section className="bg-primary text-primary-foreground">
+          <div className={cn(containerClassName, "flex flex-col gap-12 py-16 lg:flex-row lg:items-center lg:py-20")}>
+            <RevealGroup className="flex min-w-0 flex-1 flex-col gap-6">
+              <RevealItem>
+                <p className="flex items-center gap-2 text-[0.8125rem] font-bold tracking-widest text-primary-foreground/80 uppercase">
+                  <MapPin aria-hidden className="size-4 shrink-0 text-yellow-400" />
+                  {barangayCity}
                 </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+              </RevealItem>
+              <RevealItem>
+                <h1 className="text-4xl leading-[1.08] font-bold tracking-tight text-balance sm:text-5xl lg:text-[3.5rem]">
+                  Welcome to {barangayName}
+                </h1>
+              </RevealItem>
+              <RevealItem>
+                <p className="max-w-140 text-lg leading-relaxed text-pretty text-primary-foreground/80 sm:text-[1.1875rem]">
+                  Your one-stop digital portal for barangay services. Access announcements, request documents, report
+                  complaints, and connect with your community — all in one place.
+                </p>
+              </RevealItem>
+              <RevealItem className="flex flex-wrap gap-3">
+                <SignInButton mode="modal">
+                  <Button
+                    size="lg"
+                    className="h-13 rounded-xl bg-background px-6 text-[1.0625rem] font-bold text-primary-deep hover:bg-background/90"
+                  >
+                    Log in to access services
+                    <ArrowRight className="size-5" />
+                  </Button>
+                </SignInButton>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="h-13 rounded-xl border-primary-foreground/50 bg-transparent px-6 text-[1.0625rem] font-semibold text-primary-foreground shadow-none hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                >
+                  <a href="#news">Read the latest news</a>
+                </Button>
+              </RevealItem>
+              <RevealItem>
+                <p className="text-[0.9375rem] text-primary-foreground/80">
+                  Emergency? Call the barangay hotline at{" "}
+                  <a href={`tel:${barangayHotlines[0].tel}`} className="font-semibold whitespace-nowrap text-primary-foreground underline">
+                    {barangayHotlines[0].label}
+                  </a>
+                </p>
+              </RevealItem>
+            </RevealGroup>
 
-      {/* ── About / CTA Banner ── */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row items-center gap-10 rounded-2xl border border-border bg-card p-8 md:p-12 shadow-sm">
-            <div className="flex-1 space-y-5">
-              <h2 className="text-2xl sm:text-3xl font-bold leading-snug">
-                Secure, Transparent, and Accessible Services for Everyone.
-              </h2>
-              <p className="text-muted-foreground leading-relaxed">
-                Barangay Maduya is pioneering the digital transformation of
-                local government units. We are building a modern ecosystem
-                that serves the people first.
-              </p>
-              <Button variant="outline">LEARN MORE ABOUT US</Button>
-            </div>
-            <div className="flex-1 w-full">
-              <Image
-                src="https://placehold.co/600x400"
-                alt="About Barangay Maduya"
-                width={600}
-                height={400}
-                className="rounded-xl w-full object-cover"
-                unoptimized
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer className="border-t border-border py-12 px-4">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-10">
-            {/* Col 1 — Brand */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
+            <Reveal effect="zoom" delay={0.3} className="self-center lg:shrink-0">
+              <Float>
                 <Image
                   src={barangayLogoSrc}
                   alt={`${barangayName} logo`}
-                  width={40}
-                  height={40}
+                  width={384}
+                  height={384}
+                  preload
+                  className="size-56 sm:size-72 lg:size-96"
                 />
-                <span className="font-bold text-sm">{barangayName}</span>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Leading the way in digital community governance for a smarter
-                tomorrow.
+              </Float>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ── Goal, Mission, Vision ── */}
+        <section>
+          <div className={cn(sectionClassName, "flex flex-col gap-10")}>
+            <SectionIntro
+              eyebrow="Who we are"
+              title="Our Goal, Mission and Vision"
+              className="items-center text-center"
+            />
+            <RevealGroup stagger={0.15} className="grid gap-6 lg:grid-cols-3">
+              {statements.map(({ icon: Icon, label, statement }) => (
+                <RevealItem key={label}>
+                  <Card className="flex h-full flex-col gap-4 border-0 bg-primary/8 p-8 shadow-none">
+                    <span className="flex size-13 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                      <Icon className="size-6.5" />
+                    </span>
+                    <h3 className="text-2xl font-bold">{label}</h3>
+                    <p className="text-[1.0625rem] leading-relaxed text-pretty text-foreground/80">{statement}</p>
+                  </Card>
+                </RevealItem>
+              ))}
+            </RevealGroup>
+          </div>
+        </section>
+
+        {/* ── News ── */}
+        <section id="news" className="scroll-mt-24 overflow-hidden bg-primary/15">
+          <div className={cn(sectionClassName, "flex flex-col gap-10")}>
+            <div className="flex flex-wrap items-end justify-between gap-5">
+              <SectionIntro
+                eyebrow="News & announcements"
+                title="Latest News and Announcements"
+                description={`Stay informed with the latest updates from ${barangayName}.`}
+              />
+              <Reveal delay={0.3}>
+                <Button asChild variant="link" className="h-auto px-0 text-base font-semibold">
+                  <Link href="/news">
+                    See all news
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              </Reveal>
+            </div>
+            <Reveal delay={0.2}>
+              <NewsCarousel />
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ── Officials ── */}
+        <section id="officials">
+          <div className={cn(sectionClassName, "flex flex-col gap-10")}>
+            <SectionIntro
+              eyebrow="Sangguniang Barangay"
+              title="Barangay Officials"
+              description={`Meet the current leaders who serve and support the ${barangayName} community.`}
+            />
+            <OfficialsShowcase />
+          </div>
+        </section>
+
+        {/* ── Services ── */}
+        <section id="services" className="bg-primary/5">
+          <div className={cn(sectionClassName, "flex flex-col gap-10")}>
+            <div className="flex flex-wrap items-end justify-between gap-5">
+              <SectionIntro
+                eyebrow="Community services"
+                title="Access Essential Barangay Resources"
+                description="Barangay projects are open to everyone. Log in to use the other services."
+                className="max-w-160"
+              />
+              <Reveal delay={0.3}>
+                <SignInButton mode="modal">
+                  <Button size="lg" className="h-12 rounded-xl px-5 font-bold">
+                    <LockKeyhole className="size-4.5" />
+                    Log in to continue
+                  </Button>
+                </SignInButton>
+              </Reveal>
+            </div>
+
+            <RevealGroup stagger={0.1} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-6">
+              {services.map((service) => (
+                <ServiceCard key={service.title} service={service} />
+              ))}
+            </RevealGroup>
+
+            <Reveal>
+              <p className="text-[0.9375rem] text-foreground/70">
+                No account yet?{" "}
+                <SignUpButton mode="modal">
+                  <button type="button" className="font-bold text-primary hover:underline">
+                    Register as a resident
+                  </button>
+                </SignUpButton>
+                , then complete your resident profile with a valid ID.
               </p>
-              <Link
-                href="#"
-                aria-label="Facebook"
-                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Globe className="h-5 w-5" />
-              </Link>
-            </div>
-
-            {/* Col 2 — Services */}
-            <div className="space-y-3">
-              <h4 className="font-semibold text-xs uppercase tracking-widest">
-                SERVICES
-              </h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                {[
-                  "Document Request",
-                  "Court Reservation",
-                  "Complaint Reporting",
-                  "Business Hub",
-                ].map((item) => (
-                  <li key={item}>
-                    <Link
-                      href="#"
-                      className="hover:text-foreground transition-colors"
-                    >
-                      {item}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Col 3 — Organization */}
-            <div className="space-y-3">
-              <h4 className="font-semibold text-xs uppercase tracking-widest">
-                ORGANIZATION
-              </h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                {[
-                  "About Us",
-                  "News",
-                  "Privacy Policy",
-                  "Terms of Service",
-                ].map((item) => (
-                  <li key={item}>
-                    <Link
-                      href="#"
-                      className="hover:text-foreground transition-colors"
-                    >
-                      {item}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Col 4 — Contact */}
-            <div className="space-y-3">
-              <h4 className="font-semibold text-xs uppercase tracking-widest">
-                CONTACT US
-              </h4>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 shrink-0" />
-                  <span>contact@barangaymaduya.gov</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 shrink-0" />
-                  <span>+63 (2) 8888-0000</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>Barangay Hall, Maduya, Carmona, Cavite</span>
-                </li>
-              </ul>
-            </div>
+            </Reveal>
           </div>
+        </section>
 
-          {/* Bottom bar */}
-          <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span>
-              © 2026 Barangay Maduya. Official Barangay Portal.
-            </span>
-            <span>Republic of the Philippines</span>
+        {/* ── Technological Foundation ── */}
+        {/* Clipped sideways so the cards sliding in don't widen the page. */}
+        <section className="overflow-x-clip">
+          <div className={cn(sectionClassName, "flex flex-col gap-5 lg:py-24")}>
+            {/* Column-reversed below lg so the heading comes before the first card. */}
+            <div className="flex flex-col-reverse gap-5 lg:flex-row lg:items-end">
+              <Reveal effect="left" className="flex flex-1 lg:justify-end">
+                <TechCard
+                  feature={techFeatures.ai}
+                  className="w-full bg-primary text-primary-foreground lg:w-[86%]"
+                  descriptionClassName="text-primary-foreground/85"
+                />
+              </Reveal>
+              <Reveal effect="right" delay={0.15} className="flex flex-1 flex-col gap-3 lg:pb-2">
+                <p className="text-[0.8125rem] font-bold tracking-widest text-primary uppercase">Behind the portal</p>
+                <h2 className="text-4xl leading-[1.08] font-bold tracking-tight sm:text-5xl">Technological Foundation</h2>
+                <p className="text-lg text-foreground/70">Leveraging modern tech for a more efficient government.</p>
+              </Reveal>
+            </div>
+            <RevealGroup stagger={0.15} className="grid gap-5 lg:grid-cols-2">
+              <RevealItem>
+                <TechCard
+                  feature={techFeatures.assistant}
+                  className="h-full bg-primary-deep text-primary-foreground"
+                  descriptionClassName="text-primary-foreground/80"
+                />
+              </RevealItem>
+              <RevealItem>
+                <TechCard
+                  feature={techFeatures.cloud}
+                  className="h-full bg-primary/40 text-primary-deep"
+                  descriptionClassName="text-primary-deep/90"
+                />
+              </RevealItem>
+            </RevealGroup>
           </div>
-        </div>
-      </footer>
+        </section>
+
+        {/* ── Footer ── */}
+        <footer className="bg-primary-deep text-[0.9375rem] text-primary-foreground/80">
+          <div className={cn(containerClassName, "flex flex-col gap-10 pt-16 pb-8")}>
+            <Reveal className="flex flex-wrap gap-x-14 gap-y-10">
+              <div className="flex min-w-0 flex-[2_1_18rem] flex-col gap-4">
+                <div className="flex items-center gap-3.5">
+                  <Image src={barangayLogoSrc} alt="" width={56} height={56} />
+                  <span className="text-[1.375rem] font-bold text-primary-foreground">{barangayName}</span>
+                </div>
+                <p className="leading-relaxed">
+                  Barangay Hall, Maduya
+                  <br />
+                  {barangayCity}
+                </p>
+              </div>
+
+              <div className="flex min-w-0 flex-[1_1_12rem] flex-col gap-2.5">
+                <h2 className="text-sm font-bold tracking-wider text-primary-foreground uppercase">Contact</h2>
+                {barangayHotlines.map((hotline) => (
+                  <a key={hotline.tel} href={`tel:${hotline.tel}`} className="self-start hover:text-primary-foreground">
+                    {hotline.label}
+                  </a>
+                ))}
+                <a href={`mailto:${barangayEmail}`} className="self-start break-all hover:text-primary-foreground">
+                  {barangayEmail}
+                </a>
+              </div>
+
+              <nav aria-label="Footer" className="flex min-w-0 flex-[1_1_12rem] flex-col gap-2.5">
+                <h2 className="text-sm font-bold tracking-wider text-primary-foreground uppercase">Explore</h2>
+                {footerLinks.map(({ href, label }) => (
+                  <Link key={href} href={href} className="self-start hover:text-primary-foreground">
+                    {label}
+                  </Link>
+                ))}
+                <SignInButton mode="modal">
+                  <button type="button" className="self-start hover:text-primary-foreground">
+                    Log in / Register
+                  </button>
+                </SignInButton>
+              </nav>
+            </Reveal>
+
+            <Separator className="bg-primary-foreground/15" />
+
+            <p className="text-sm">
+              © {new Date().getFullYear()} {barangayName}, {barangayCity}
+            </p>
+          </div>
+        </footer>
+      </ReducedMotionConfig>
     </main>
   );
 }

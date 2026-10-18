@@ -36,6 +36,7 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
   --color-nameplate: var(--nameplate);
+  --color-primary-deep: var(--primary-deep);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -64,6 +65,8 @@
   /* Brand-blue surfaces on the About Us page (hero, mission and vision, officials' nameplates),
      always paired with --primary-foreground text. */
   --nameplate: var(--primary);
+  /* Deep navy of the public site's hotline bar, footer and dark feature cards. */
+  --primary-deep: oklch(0.25 0.063 262.5);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
