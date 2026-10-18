@@ -1,6 +1,16 @@
 export const barangayName = "Barangay Maduya";
 export const barangayLogoSrc = "/images/logo.png"
+export const barangayCity = "City of Carmona, Cavite";
 
+// Public contact details shown on the landing page header and footer.
+export const barangayHotlines = [
+  { label: "(046) 412 4977", tel: "+63464124977" },
+  { label: "(046) 412 7218", tel: "+63464127218" },
+];
+export const barangayEmail = "barangay9maduya@gmail.com";
+
+export const barangayGoal =
+  "To build a united, safe, and self-reliant Barangay Maduya by improving public services, livelihood, health, and the environment for all residents.";
 export const barangayMission =
   "To deliver responsive, transparent, and inclusive public service that uplifts the lives of every resident of Barangay Maduya.";
 export const barangayVision =

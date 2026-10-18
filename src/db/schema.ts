@@ -26,7 +26,7 @@ import {
 import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
 import { BUSINESS_CATEGORIES, BUSINESS_STATUSES, type OperatingHours } from "@/schemas/business-schema";
 import { COURT_RESERVATION_STATUSES } from "@/schemas/court-reservation-schema";
-import { barangayMission, barangayVision, type ClearancePurposeFees } from "@/lib/data";
+import { barangayGoal, barangayMission, barangayVision, type ClearancePurposeFees } from "@/lib/data";
 import { KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS } from "@/lib/knowledge-base";
 
 export const newsCategoryEnum = pgEnum("news_category", ["Announcement", "Event", "Emergency"]);
@@ -368,6 +368,7 @@ export const barangaySettingsTable = pgTable("barangay_settings", {
   clearancePurposeFees: json().$type<ClearancePurposeFees>().notNull(),
   courtDayRate: integer().notNull(),
   courtNightRate: integer().notNull(),
+  goal: text().notNull().default(barangayGoal),
   mission: text().notNull().default(barangayMission),
   vision: text().notNull().default(barangayVision),
   updatedAt: timestamp().notNull().defaultNow(),

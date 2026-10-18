@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/db/config";
 import { barangaySettingsTable } from "@/db/schema";
 import {
+  barangayGoal,
   barangayMission,
   barangayVision,
   DEFAULT_CLEARANCE_PURPOSE_FEES,
@@ -20,6 +21,7 @@ export type BarangaySettingsValues = {
   clearancePurposeFees: ClearancePurposeFees;
   courtDayRate: number;
   courtNightRate: number;
+  goal: string;
   mission: string;
   vision: string;
 };
@@ -29,6 +31,7 @@ const DEFAULT_SETTINGS: BarangaySettingsValues = {
   clearancePurposeFees: DEFAULT_CLEARANCE_PURPOSE_FEES,
   courtDayRate: DEFAULT_COURT_DAY_RATE,
   courtNightRate: DEFAULT_COURT_NIGHT_RATE,
+  goal: barangayGoal,
   mission: barangayMission,
   vision: barangayVision,
 };
@@ -42,6 +45,7 @@ export async function getBarangaySettings(): Promise<BarangaySettingsValues> {
     clearancePurposeFees: settings.clearancePurposeFees,
     courtDayRate: settings.courtDayRate,
     courtNightRate: settings.courtNightRate,
+    goal: settings.goal,
     mission: settings.mission,
     vision: settings.vision,
   };
@@ -63,7 +67,8 @@ export async function updateBarangaySettings(data: Partial<BarangaySettingsValue
       set: { ...merged, updatedAt: new Date() },
     });
 
-  // The About Us pages render the mission and vision on the server.
+  // The landing and About Us pages render the goal, mission and vision on the server.
+  revalidatePath("/");
   revalidatePath("/about-us");
   revalidatePath("/portal/about-us");
 }

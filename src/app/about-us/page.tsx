@@ -1,14 +1,14 @@
 import AboutHero from "@/components/about-us/about-hero";
-import MissionVisionSection from "@/components/about-us/mission-vision-section";
+import GoalMissionVisionSection from "@/components/about-us/goal-mission-vision-section";
 import OfficialsCarousel from "@/components/about-us/officials-carousel";
 import { barangayName } from "@/lib/data";
 
 export default function AboutUsPage() {
   return (
-    <div className="container space-y-6 m-auto px-6 py-20">
+    <div className="container space-y-6 m-auto px-6 py-10">
       <AboutHero />
 
-      <MissionVisionSection />
+      <GoalMissionVisionSection />
 
       <OfficialsCarousel
         title="Barangay"

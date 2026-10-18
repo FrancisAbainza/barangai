@@ -44,7 +44,7 @@ export const PORTAL_NAVIGATION_TARGETS = {
   "about-us": {
     label: "About Us",
     href: "/portal/about-us",
-    description: "Learn about the barangay's officials, mission, and vision.",
+    description: "Learn about the barangay's officials, goal, mission, and vision.",
     audience: "all",
   },
   notifications: {
@@ -64,7 +64,7 @@ export const PORTAL_NAVIGATION_TARGETS = {
     label: "Barangay Settings",
     href: "/portal/barangay-settings",
     description:
-      "Manage document request pricing (GCash number and clearance fees), court reservation fees, the barangay mission and vision, and the barangay and SK officials.",
+      "Manage document request pricing (GCash number and clearance fees), court reservation fees, the barangay goal, mission and vision, and the barangay and SK officials.",
     audience: "admin",
   },
 } as const satisfies Record<
