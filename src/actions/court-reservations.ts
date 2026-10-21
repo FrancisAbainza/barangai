@@ -330,6 +330,7 @@ export async function deleteCourtReservation(id: number) {
     .where(eq(courtReservationsTable.id, id));
   if (!existing) throw new Error("Court reservation not found");
   if (existing.requesterId !== userId && !isAdmin) throw new Error("Forbidden");
+  if (existing.status !== "Pending" && !isAdmin) throw new Error("Only pending reservations can be deleted.");
 
   await db.delete(courtReservationsTable).where(eq(courtReservationsTable.id, id));
   await deleteNotificationsFor("court-reservation", id);

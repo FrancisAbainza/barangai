@@ -115,10 +115,12 @@ export default function ComplaintActionsMenu({
             </DropdownMenuSub>
           )}
 
-          <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
-            <Trash2 />
-            Delete complaint
-          </DropdownMenuItem>
+          {(isAdmin || complaint.status === "Pending") && (
+            <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
+              <Trash2 />
+              Delete complaint
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

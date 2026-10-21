@@ -39,8 +39,8 @@ export default function DeleteComplaintDialog({
       ];
       const keys = attachments.map((item) => item.key).filter(Boolean) as string[];
 
-      await Promise.all(keys.map((key) => deleteFile(key)));
       await deleteComplaint(complaint.id);
+      await Promise.all(keys.map((key) => deleteFile(key)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["complaints"] });

@@ -40,8 +40,8 @@ export default function DeleteDocumentRequestDialog({
       ];
       const keys = attachments.map((item) => item.key).filter(Boolean) as string[];
 
-      await Promise.all(keys.map((key) => deleteFile(key)));
       await deleteDocumentRequest(request.id);
+      await Promise.all(keys.map((key) => deleteFile(key)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["document-requests"] });

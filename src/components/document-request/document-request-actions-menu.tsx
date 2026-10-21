@@ -115,10 +115,12 @@ export default function DocumentRequestActionsMenu({
             </DropdownMenuSub>
           )}
 
-          <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
-            <Trash2 />
-            Delete request
-          </DropdownMenuItem>
+          {(isAdmin || request.status === "Pending") && (
+            <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
+              <Trash2 />
+              Delete request
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

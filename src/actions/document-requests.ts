@@ -236,6 +236,7 @@ export async function deleteDocumentRequest(id: number) {
     .where(eq(documentRequestsTable.id, id));
   if (!existing) throw new Error("Document request not found");
   if (existing.requesterId !== userId && !isAdmin) throw new Error("Forbidden");
+  if (existing.status !== "Pending" && !isAdmin) throw new Error("Only pending requests can be deleted.");
 
   await db.delete(documentRequestsTable).where(eq(documentRequestsTable.id, id));
   await deleteNotificationsFor("document-request", id);

@@ -37,8 +37,8 @@ export default function DeleteCourtReservationDialog({
       ];
       const keys = attachments.map((item) => item.key).filter(Boolean) as string[];
 
-      await Promise.all(keys.map((key) => deleteFile(key)));
       await deleteCourtReservation(reservation.id);
+      await Promise.all(keys.map((key) => deleteFile(key)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["court-reservations"] });

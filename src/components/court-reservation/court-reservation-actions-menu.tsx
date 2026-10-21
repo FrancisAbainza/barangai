@@ -105,10 +105,12 @@ export default function CourtReservationActionsMenu({
             </DropdownMenuSub>
           )}
 
-          <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
-            <Trash2 />
-            Delete reservation
-          </DropdownMenuItem>
+          {(isAdmin || reservation.status === "Pending") && (
+            <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
+              <Trash2 />
+              Delete reservation
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

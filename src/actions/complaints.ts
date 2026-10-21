@@ -328,6 +328,7 @@ export async function deleteComplaint(id: number) {
   const [existing] = await db.select().from(complaintsTable).where(eq(complaintsTable.id, id));
   if (!existing) throw new Error("Complaint not found");
   if (existing.complainantId !== userId && !isAdmin) throw new Error("Forbidden");
+  if (existing.status !== "Pending" && !isAdmin) throw new Error("Only pending complaints can be deleted.");
 
   await db.delete(complaintsTable).where(eq(complaintsTable.id, id));
   await deleteNotificationsFor("complaint", id);
