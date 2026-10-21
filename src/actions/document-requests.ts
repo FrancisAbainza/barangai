@@ -7,7 +7,7 @@ import { db } from "@/db/config";
 import { documentRequestsTable, type DocumentRequest } from "@/db/schema";
 import { and, asc, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
-import { PICKUP_DELIVERY_METHOD } from "@/lib/document-requests";
+import { ONLINE_SOFT_COPY_DELIVERY_METHOD, PICKUP_DELIVERY_METHOD } from "@/lib/document-requests";
 import type { MediaItem } from "@/components/file-uploader";
 
 export type CreateDocumentRequestInput = {
@@ -146,6 +146,7 @@ export async function getDocumentRequests({
   search,
   documentType,
   status,
+  receiveVia,
   dateFrom,
   dateTo,
   sortOrder = "newest",
@@ -155,6 +156,7 @@ export async function getDocumentRequests({
   search?: string;
   documentType?: string;
   status?: DocumentRequest["status"] | "all";
+  receiveVia?: string;
   dateFrom?: string;
   dateTo?: string;
   sortOrder?: "newest" | "oldest";
@@ -174,6 +176,9 @@ export async function getDocumentRequests({
   }
   if (status && status !== "all") {
     conditions.push(eq(documentRequestsTable.status, status));
+  }
+  if (receiveVia && receiveVia !== "all") {
+    conditions.push(eq(documentRequestsTable.receiveVia, receiveVia));
   }
   if (dateFrom) {
     conditions.push(gte(documentRequestsTable.createdAt, new Date(dateFrom)));
@@ -265,8 +270,11 @@ export async function setDocumentRequestStatus(
     .set({
       status,
       handlerId: status === "Pending" ? null : handlerId,
+      claimedAt: status === "Claimed" ? new Date() : null,
       updatedAt: new Date(),
-      ...(status === "Ready for Pickup"
+      // Claimed, and Ready for Pickup set back from Claimed (no details), keep the existing pickup
+      // message and attachments.
+      ...(status === "Ready for Pickup" || status === "Claimed"
         ? details
           ? { pickupMessage: details.message, pickupAttachments: details.attachments ?? [] }
           : {}
@@ -288,4 +296,23 @@ export async function setDocumentRequestStatus(
     previousStatus: existing.status,
     status,
   });
+}
+
+// Opening the Submission Info of a Ready for Pickup online soft copy is how the requester
+// receives it, so the dialog calls this to mark it Claimed. A no-op for any other request.
+export async function claimSoftCopyDocumentRequest(id: number) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  await db
+    .update(documentRequestsTable)
+    .set({ status: "Claimed", claimedAt: new Date(), updatedAt: new Date() })
+    .where(
+      and(
+        eq(documentRequestsTable.id, id),
+        eq(documentRequestsTable.requesterId, userId),
+        eq(documentRequestsTable.status, "Ready for Pickup"),
+        eq(documentRequestsTable.receiveVia, ONLINE_SOFT_COPY_DELIVERY_METHOD)
+      )
+    );
 }

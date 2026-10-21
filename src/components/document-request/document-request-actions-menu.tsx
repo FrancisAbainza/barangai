@@ -19,6 +19,7 @@ import {
 import { setDocumentRequestStatus, type DocumentRequestWithRequester } from "@/actions/document-requests";
 import { documentRequestStatusEnum, type DocumentRequest } from "@/db/schema";
 import { isAdminRole } from "@/lib/roles";
+import { PICKUP_DELIVERY_METHOD } from "@/lib/document-requests";
 import { deleteFile } from "@/lib/storage";
 import type { MediaItem } from "@/components/file-uploader";
 import ViewDocumentRequestDialog from "@/components/document-request/dialogs/view-document-request-dialog";
@@ -43,7 +44,9 @@ export default function DocumentRequestActionsMenu({
 
   const { mutate: changeStatus, isPending: isChangingStatus } = useMutation({
     mutationFn: async (status: DocumentRequest["status"]) => {
-      if (request.status === "Ready for Pickup" && status !== "Ready for Pickup") {
+      // Claimed keeps the pickup attachments, so only delete them when leaving both statuses.
+      const hasPickupAttachments = request.status === "Ready for Pickup" || request.status === "Claimed";
+      if (hasPickupAttachments && status !== "Ready for Pickup" && status !== "Claimed") {
         const pickupAttachments = request.pickupAttachments as MediaItem[];
         const keys = pickupAttachments.map((item) => item.key).filter(Boolean) as string[];
         await Promise.all(keys.map((key) => deleteFile(key)));
@@ -65,7 +68,8 @@ export default function DocumentRequestActionsMenu({
   });
 
   function handleStatusSelect(status: DocumentRequest["status"]) {
-    if (status === "Ready for Pickup") {
+    // Coming back from Claimed keeps the pickup details that were already filled in.
+    if (status === "Ready for Pickup" && request.status !== "Claimed") {
       setReadyForPickupOpen(true);
       return;
     }
@@ -101,15 +105,18 @@ export default function DocumentRequestActionsMenu({
               </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuSubContent>
-                  {documentRequestStatusEnum.enumValues.map((status) => (
-                    <DropdownMenuItem
-                      key={status}
-                      disabled={status === request.status || isChangingStatus}
-                      onSelect={() => handleStatusSelect(status)}
-                    >
-                      {status}
-                    </DropdownMenuItem>
-                  ))}
+                  {/* Online soft copies are claimed automatically when the requester opens them. */}
+                  {documentRequestStatusEnum.enumValues
+                    .filter((status) => status !== "Claimed" || request.receiveVia === PICKUP_DELIVERY_METHOD)
+                    .map((status) => (
+                      <DropdownMenuItem
+                        key={status}
+                        disabled={status === request.status || isChangingStatus}
+                        onSelect={() => handleStatusSelect(status)}
+                      >
+                        {status}
+                      </DropdownMenuItem>
+                    ))}
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>

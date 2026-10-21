@@ -128,6 +128,7 @@ export const documentRequestStatusEnum = pgEnum("document_request_status", [
   "Pending",
   "Processing",
   "Ready for Pickup",
+  "Claimed",
   "Rejected",
 ]);
 
@@ -149,11 +150,13 @@ export const documentRequestsTable = pgTable("document_requests", {
   pickupAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
   rejectionReason: text(),
   rejectionAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  // Only set while the status is "Claimed".
+  claimedAt: timestamp(),
   createdAt: timestamp().notNull().defaultNow(),
   updatedAt: timestamp().notNull().defaultNow(),
 });
 
-export type DocumentRequest = typeof documentRequestsTable.$inferSelect;
+export type DocumentRequest =typeof documentRequestsTable.$inferSelect;
 
 export const complaintCategoryEnum = pgEnum("complaint_category", COMPLAINT_CATEGORIES);
 export const complaintPriorityEnum = pgEnum("complaint_priority", COMPLAINT_PRIORITIES);

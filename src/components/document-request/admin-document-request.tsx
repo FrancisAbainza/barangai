@@ -41,7 +41,11 @@ import DocumentRequestActionsMenu from "@/components/document-request/document-r
 import ViewDocumentRequestDialog from "@/components/document-request/dialogs/view-document-request-dialog";
 import { useViewParam } from "@/hooks/use-view-param";
 import { getDocumentRequestById, getDocumentRequestStats, getDocumentRequests } from "@/actions/document-requests";
-import { statusBadgeVariant } from "@/lib/document-requests";
+import {
+  ONLINE_SOFT_COPY_DELIVERY_METHOD,
+  PICKUP_DELIVERY_METHOD,
+  statusBadgeVariant,
+} from "@/lib/document-requests";
 import { documentRequestStatusEnum, documentRequestTypeEnum, type DocumentRequest } from "@/db/schema";
 
 const DOCUMENT_TYPE_FILTERS = [
@@ -52,6 +56,11 @@ const DOCUMENT_TYPE_FILTERS = [
 const STATUS_FILTERS = [
   { value: "all", label: "All Statuses" },
   ...documentRequestStatusEnum.enumValues.map((status) => ({ value: status, label: status })),
+];
+
+const RECEIVE_VIA_FILTERS = [
+  { value: "all", label: "All Methods" },
+  ...[PICKUP_DELIVERY_METHOD, ONLINE_SOFT_COPY_DELIVERY_METHOD].map((method) => ({ value: method, label: method })),
 ];
 
 const SORT_OPTIONS = [
@@ -103,6 +112,7 @@ export default function AdminDocumentRequest() {
   const [search, setSearch] = useState("");
   const [documentType, setDocumentType] = useState("all");
   const [status, setStatus] = useState("all");
+  const [receiveVia, setReceiveVia] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
@@ -113,6 +123,7 @@ export default function AdminDocumentRequest() {
   const activeFilterCount = [
     documentType !== "all",
     status !== "all",
+    receiveVia !== "all",
     dateFrom !== "",
     dateTo !== "",
     handledByMe,
@@ -121,6 +132,7 @@ export default function AdminDocumentRequest() {
   function clearFilters() {
     setDocumentType("all");
     setStatus("all");
+    setReceiveVia("all");
     setDateFrom("");
     setDateTo("");
     setHandledByMe(false);
@@ -144,7 +156,7 @@ export default function AdminDocumentRequest() {
     queryKey: [
       "document-requests",
       "admin",
-      { search: debouncedSearch, documentType, status, dateFrom, dateTo, sortOrder, handledByMe },
+      { search: debouncedSearch, documentType, status, receiveVia, dateFrom, dateTo, sortOrder, handledByMe },
     ],
     queryFn: ({ pageParam }) =>
       getDocumentRequests({
@@ -152,6 +164,7 @@ export default function AdminDocumentRequest() {
         search: debouncedSearch,
         documentType,
         status: status as DocumentRequest["status"] | "all",
+        receiveVia,
         dateFrom,
         dateTo,
         sortOrder,
@@ -225,7 +238,7 @@ export default function AdminDocumentRequest() {
               <DialogHeader>
                 <DialogTitle>Filter Requests</DialogTitle>
                 <DialogDescription>
-                  Narrow down document requests by type, status, or date range.
+                  Narrow down document requests by type, status, receiving method, or date range.
                 </DialogDescription>
               </DialogHeader>
 
@@ -254,6 +267,22 @@ export default function AdminDocumentRequest() {
                     </SelectTrigger>
                     <SelectContent>
                       {STATUS_FILTERS.map((filter) => (
+                        <SelectItem key={filter.value} value={filter.value}>
+                          {filter.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Receive Document Via</Label>
+                  <Select value={receiveVia} onValueChange={setReceiveVia}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RECEIVE_VIA_FILTERS.map((filter) => (
                         <SelectItem key={filter.value} value={filter.value}>
                           {filter.label}
                         </SelectItem>

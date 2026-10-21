@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
-import { useQuery } from "@tanstack/react-query";
+import { useUser } from "@clerk/nextjs";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, FileText, IdCard, PackageCheck, UserCog } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,9 +13,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MediaLightbox from "@/components/media-lightbox";
 import MediaPreviewList from "@/components/media-preview-list";
 import { fetchFile } from "@/lib/storage";
-import { statusBadgeVariant, handlerLabel, formatDate, formatDateTime } from "@/lib/document-requests";
+import {
+  statusBadgeVariant,
+  handlerLabel,
+  formatDate,
+  formatDateTime,
+  ONLINE_SOFT_COPY_DELIVERY_METHOD,
+} from "@/lib/document-requests";
 import { getResidentProfile } from "@/actions/resident-profile";
-import type { DocumentRequestWithRequester } from "@/actions/document-requests";
+import { claimSoftCopyDocumentRequest, type DocumentRequestWithRequester } from "@/actions/document-requests";
 import type { MediaItem } from "@/components/file-uploader";
 
 interface ViewDocumentRequestDialogProps {
@@ -53,6 +61,23 @@ export default function ViewDocumentRequestDialog({
     queryFn: () => getResidentProfile(request.requesterId),
     enabled: open,
   });
+
+  // An online soft copy counts as claimed once its requester opens it while it's Ready for Pickup.
+  const { user } = useUser();
+  const queryClient = useQueryClient();
+  const { mutate: claimSoftCopy } = useMutation({
+    mutationFn: () => claimSoftCopyDocumentRequest(request.id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["document-requests"] }),
+  });
+  const shouldClaimSoftCopy =
+    open &&
+    request.requesterId === user?.id &&
+    request.status === "Ready for Pickup" &&
+    request.receiveVia === ONLINE_SOFT_COPY_DELIVERY_METHOD;
+
+  useEffect(() => {
+    if (shouldClaimSoftCopy) claimSoftCopy();
+  }, [shouldClaimSoftCopy, claimSoftCopy]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -134,6 +159,13 @@ export default function ViewDocumentRequestDialog({
               <FieldLabel>Submission Date</FieldLabel>
               <p className="text-sm">{formatDate(request.createdAt)}</p>
             </Field>
+
+            {request.claimedAt && (
+              <Field>
+                <FieldLabel>Claimed On</FieldLabel>
+                <p className="text-sm">{formatDateTime(request.claimedAt)}</p>
+              </Field>
+            )}
 
             {(request.pickupMessage || pickupAttachments.length > 0) && (
               <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
