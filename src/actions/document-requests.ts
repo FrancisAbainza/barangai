@@ -5,9 +5,13 @@ import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { documentRequestsTable, type DocumentRequest } from "@/db/schema";
-import { and, asc, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, like, lte, or, sql } from "drizzle-orm";
 import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
-import { ONLINE_SOFT_COPY_DELIVERY_METHOD, PICKUP_DELIVERY_METHOD } from "@/lib/document-requests";
+import {
+  ONLINE_SOFT_COPY_DELIVERY_METHOD,
+  PICKUP_DELIVERY_METHOD,
+  referenceNumberSearchPattern,
+} from "@/lib/document-requests";
 import type { MediaItem } from "@/components/file-uploader";
 
 export type CreateDocumentRequestInput = {
@@ -192,16 +196,25 @@ export async function getDocumentRequests({
   const trimmedSearch = search?.trim();
   if (trimmedSearch) {
     // Requester name/email lives in Clerk, not the DB, so match it there and filter
-    // the DB query down to the matched requester IDs.
+    // the DB query down to the matched requester IDs. A reference number matches its request's id.
     const { data: matchedUsers } = await client.users.getUserList({ query: trimmedSearch, limit: 100 });
-    if (matchedUsers.length === 0) return { items: [], nextOffset: null };
+    const referencePattern = referenceNumberSearchPattern(trimmedSearch);
 
-    conditions.push(
-      inArray(
-        documentRequestsTable.requesterId,
-        matchedUsers.map((u) => u.id)
-      )
-    );
+    const searchConditions = [];
+    if (matchedUsers.length > 0) {
+      searchConditions.push(
+        inArray(
+          documentRequestsTable.requesterId,
+          matchedUsers.map((u) => u.id)
+        )
+      );
+    }
+    if (referencePattern !== null) {
+      searchConditions.push(like(sql`${documentRequestsTable.id}::text`, referencePattern));
+    }
+    if (searchConditions.length === 0) return { items: [], nextOffset: null };
+
+    conditions.push(or(...searchConditions));
   }
 
   const orderFn = sortOrder === "oldest" ? asc : desc;

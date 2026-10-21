@@ -42,6 +42,7 @@ import ViewDocumentRequestDialog from "@/components/document-request/dialogs/vie
 import { useViewParam } from "@/hooks/use-view-param";
 import { getDocumentRequestById, getDocumentRequestStats, getDocumentRequests } from "@/actions/document-requests";
 import {
+  formatReferenceNumber,
   ONLINE_SOFT_COPY_DELIVERY_METHOD,
   PICKUP_DELIVERY_METHOD,
   statusBadgeVariant,
@@ -86,6 +87,9 @@ function formatSubmittedDate(date: Date) {
 function RequestRowSkeleton() {
   return (
     <TableRow>
+      <TableCell>
+        <Skeleton className="h-4 w-20" />
+      </TableCell>
       <TableCell>
         <div className="space-y-1.5">
           <Skeleton className="h-3.5 w-32" />
@@ -202,7 +206,7 @@ export default function AdminDocumentRequest() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by requester…"
+            placeholder="Search by requester or reference no.…"
             className="pl-8"
           />
         </div>
@@ -339,6 +343,7 @@ export default function AdminDocumentRequest() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Reference No.</TableHead>
                 <TableHead>Requester</TableHead>
                 <TableHead>Document Type</TableHead>
                 <TableHead>Submission Date</TableHead>
@@ -357,6 +362,7 @@ export default function AdminDocumentRequest() {
                 <>
                   {requests.map((request) => (
                     <TableRow key={request.id}>
+                      <TableCell className="font-medium">{formatReferenceNumber(request.id)}</TableCell>
                       <TableCell>
                         <p className="font-medium truncate">{request.requesterName}</p>
                         <p className="text-xs text-muted-foreground truncate">{request.requesterEmail}</p>
@@ -374,7 +380,7 @@ export default function AdminDocumentRequest() {
                     </TableRow>
                   ))}
                   {hasNextPage && (
-                    <LoadMoreTrigger colSpan={5} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                    <LoadMoreTrigger colSpan={6}onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
                   )}
                   {isFetchingNextPage && <RequestRowSkeleton />}
                 </>
