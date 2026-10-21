@@ -16,7 +16,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { updateUserRole } from "@/actions/user-management";
-import { isSuperAdminRole } from "@/lib/roles";
+import { isAdminRole, isSuperAdminRole } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -50,6 +50,11 @@ export default function UserActionsMenu({
   const queryClient = useQueryClient();
   const { user } = useUser();
   const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
+  const isSelf = user?.id === userId;
+  // Only a super admin can ban (or unban) admins and super admins, and no one can
+  // ban or delete their own account.
+  const canBan = !isSelf && (isSuperAdmin || !isAdminRole(role));
+  const canDelete = !isSelf && isSuperAdmin;
 
   const { mutate: changeRole, isPending: isChangingRole } = useMutation({
     mutationFn: (newRole: "admin" | "superadmin" | null) => updateUserRole(userId, newRole),
@@ -113,20 +118,22 @@ export default function UserActionsMenu({
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
-              <DropdownMenuSeparator />
+              {(canBan || canDelete) && <DropdownMenuSeparator />}
             </>
           )}
-          <DropdownMenuItem
-            variant="destructive"
-            onSelect={(e) => {
-              e.preventDefault();
-              setBanDialogOpen(true);
-            }}
-          >
-            <Ban />
-            {isBanned ? "Unban User" : "Ban User"}
-          </DropdownMenuItem>
-          {isSuperAdmin && (
+          {canBan && (
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={(e) => {
+                e.preventDefault();
+                setBanDialogOpen(true);
+              }}
+            >
+              <Ban />
+              {isBanned ? "Unban User" : "Ban User"}
+            </DropdownMenuItem>
+          )}
+          {canDelete && (
             <DropdownMenuItem
               variant="destructive"
               onSelect={(e) => {

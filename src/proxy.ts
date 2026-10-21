@@ -5,7 +5,9 @@ import { isAdminRole } from '@/lib/roles'
 const isProtectedRoute = createRouteMatcher(['/portal(.*)'])
 const isAdminRoute = createRouteMatcher(["/portal/user-management(.*)", "/portal/barangay-settings(.*)"]);
 const isResidentOnlyRoute = createRouteMatcher(["/portal/notifications(.*)"]);
-const isPublicOnlyRoute = createRouteMatcher(['/'])
+// Pages with a /portal counterpart. The detail pages (/news/[id], /transparency/[id]) are left
+// out because share links point there and the portal has no equivalent.
+const isPublicOnlyRoute = createRouteMatcher(['/', '/news', '/about-us', '/transparency'])
 
 export default clerkMiddleware(async (auth, req) => {
   const { sessionClaims, userId } = await auth();
@@ -25,7 +27,8 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (userId && isPublicOnlyRoute(req)) {
-    return NextResponse.redirect(new URL('/portal', req.url))
+    const { pathname } = req.nextUrl
+    return NextResponse.redirect(new URL(pathname === '/' ? '/portal' : `/portal${pathname}`, req.url))
   }
 })
 

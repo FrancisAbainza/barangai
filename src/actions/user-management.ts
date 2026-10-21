@@ -19,7 +19,8 @@ import {
   transparencyProjectsTable,
   userSnapshotsTable,
 } from "@/db/schema";
-import { requireAdmin, requireSuperAdmin } from "@/lib/auth";
+import { getAuthRole, requireAdmin, requireSuperAdmin } from "@/lib/auth";
+import { isAdminRole } from "@/lib/roles";
 import { bucket, r2 } from "@/lib/r2";
 import type { MediaItem } from "@/components/file-uploader";
 
@@ -172,6 +173,14 @@ export async function setUserBanned(userId: string, banned: boolean) {
   if (authUserId === userId) throw new Error("You cannot ban your own account.");
 
   const client = await clerkClient();
+  const { isSuperAdmin } = await getAuthRole();
+  if (!isSuperAdmin) {
+    const target = await client.users.getUser(userId);
+    if (isAdminRole(target.publicMetadata?.role as string | undefined)) {
+      throw new Error("Only a Super Admin can ban or unban an admin.");
+    }
+  }
+
   if (banned) {
     await client.users.banUser(userId);
   } else {

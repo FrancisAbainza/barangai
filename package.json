@@ -2,6 +2,11 @@
   "name": "barangay-maduya-website",
   "version": "0.1.0",
   "private": true,
+  "author": {
+    "name": "Francis Rafael Abainza",
+    "email": "francisabainza714@gmail.com",
+    "url": "https://francis-abainza-portfolio.vercel.app/"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

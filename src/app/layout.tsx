@@ -40,6 +40,10 @@ export default function RootLayout({
     >
       <body className="flex flex-col">
         <ClerkProvider
+          // Modal sign-in/up otherwise returns to the current page. A fallback (not force)
+          // still lets a redirect_url from auth.protect() send deep links back where they started.
+          signInFallbackRedirectUrl="/portal"
+          signUpFallbackRedirectUrl="/portal"
           appearance={{
             elements: {
               userButtonPopoverRootBox: {
