@@ -10,7 +10,9 @@ import { cn, truncateName } from "@/lib/utils";
 import { fetchFile } from "@/lib/storage";
 import { Badge } from "@/components/ui/badge";
 
-const DEFAULT_MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
+const DEFAULT_MAX_IMAGE_SIZE = 15 * 1024 * 1024; // 15 MB
+const DEFAULT_MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100 MB
+const DEFAULT_MAX_DOCUMENT_SIZE = 15 * 1024 * 1024; // 15 MB
 
 export type FileKind = "images" | "videos" | "documents";
 
@@ -39,6 +41,12 @@ const KIND_LABEL: Record<FileKind, string> = {
   images: "images",
   videos: "videos",
   documents: "documents",
+};
+
+const KIND_OF_TYPE: Record<MediaItem["type"], FileKind> = {
+  image: "images",
+  video: "videos",
+  document: "documents",
 };
 
 export type MediaItem = {
@@ -112,7 +120,12 @@ interface FileUploaderProps {
   maxFiles?: number;
   /** Which kinds of files the dropzone accepts. Combine freely, e.g. ["images", "documents"]. */
   accept?: FileKind[];
-  maxFileSize?: number;
+  /** Max size per image in bytes. Defaults to 15 MB. */
+  maxImageSize?: number;
+  /** Max size per video in bytes. Defaults to 100 MB. */
+  maxVideoSize?: number;
+  /** Max size per document in bytes. Defaults to 15 MB. */
+  maxDocumentSize?: number;
 }
 
 export default function FileUploader({
@@ -120,8 +133,27 @@ export default function FileUploader({
   onFilesChange,
   maxFiles = 3,
   accept = ["images"],
-  maxFileSize = DEFAULT_MAX_FILE_SIZE,
+  maxImageSize = DEFAULT_MAX_IMAGE_SIZE,
+  maxVideoSize = DEFAULT_MAX_VIDEO_SIZE,
+  maxDocumentSize = DEFAULT_MAX_DOCUMENT_SIZE,
 }: FileUploaderProps) {
+  const sizeLimits: Record<FileKind, number> = {
+    images: maxImageSize,
+    videos: maxVideoSize,
+    documents: maxDocumentSize,
+  };
+
+  const validator = (file: File) => {
+    // Drag-over events pass DataTransferItems, which have no size yet.
+    if (typeof file.size !== "number") return null;
+    const limit = sizeLimits[KIND_OF_TYPE[classifyFile(file)]];
+    if (file.size <= limit) return null;
+    return {
+      code: "file-too-large",
+      message: `"${file.name}" exceeds the ${formatFileSize(limit)} limit.`,
+    };
+  };
+
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       const remaining = maxFiles - files.length;
@@ -150,7 +182,7 @@ export default function FileUploader({
       rejections.forEach(({ file, errors }) => {
         errors.forEach((error) => {
           if (error.code === "file-too-large") {
-            toast.error(`"${file.name}" exceeds the ${formatFileSize(maxFileSize)} limit.`);
+            toast.error(error.message);
           } else if (error.code === "file-invalid-type") {
             toast.error(`"${file.name}" is not a supported file type.`);
           } else {
@@ -159,7 +191,7 @@ export default function FileUploader({
         });
       });
     },
-    [maxFileSize]
+    []
   );
 
   const remove = (index: number) => {
@@ -178,11 +210,14 @@ export default function FileUploader({
     onDropRejected,
     accept: acceptMap,
     multiple: true,
-    maxSize: maxFileSize,
+    validator,
     disabled: atLimit,
   });
 
   const hint = accept.map((kind) => KIND_LABEL[kind]).join(" or ");
+  const sizeHint = accept
+    .map((kind) => `${formatFileSize(sizeLimits[kind])} per ${KIND_LABEL[kind].slice(0, -1)}`)
+    .join(", ");
 
   return (
     <div className="space-y-2">
@@ -206,7 +241,7 @@ export default function FileUploader({
                 Drag &amp; drop {hint} here, or click to select
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Max {formatFileSize(maxFileSize)} per file
+                Max {sizeHint}
               </p>
             </>
           )}
