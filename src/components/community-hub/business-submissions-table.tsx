@@ -53,6 +53,8 @@ interface BusinessSubmissionsTableProps {
   hasNextPage: boolean;
   fetchNextPage: () => void;
   isFetchingNextPage: boolean;
+  // Makes rows clickable, e.g. to open the business's Submission Info dialog.
+  onRowClick?: (business: BusinessWithOwner) => void;
 }
 
 export default function BusinessSubmissionsTable({
@@ -61,6 +63,7 @@ export default function BusinessSubmissionsTable({
   hasNextPage,
   fetchNextPage,
   isFetchingNextPage,
+  onRowClick,
 }: BusinessSubmissionsTableProps) {
   if (!isLoading && businesses.length === 0) {
     return (
@@ -95,7 +98,11 @@ export default function BusinessSubmissionsTable({
           ) : (
             <>
               {businesses.map((business) => (
-                <TableRow key={business.id}>
+                <TableRow
+                  key={business.id}
+                  className={onRowClick && "cursor-pointer"}
+                  onClick={() => onRowClick?.(business)}
+                >
                   <TableCell>
                     <p className="font-medium truncate">{business.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{business.ownerName}</p>
@@ -106,7 +113,8 @@ export default function BusinessSubmissionsTable({
                   <TableCell>
                     <Badge variant={statusBadgeVariant(business.status)}>{business.status}</Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  {/* Clicks in the menu (and its portaled dialogs) bubble to the row, which would open its dialog too. */}
+                  <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                     <BusinessActionsMenu business={business} />
                   </TableCell>
                 </TableRow>

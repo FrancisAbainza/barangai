@@ -127,10 +127,11 @@ export default function AdminCourtReservation() {
     setHandledByMe(false);
   }
 
-  // `?view=<id>` (e.g. from the home page's Needs Attention queue) opens that record's
-  // Submission Info dialog. It's fetched by id since it may not be in the loaded/filtered list.
+  // `?view=<id>` (set by clicking a row, or by links like the home page's Needs Attention queue)
+  // opens that record's Submission Info dialog. It's fetched by id since it may not be in the
+  // loaded/filtered list.
   const [viewId, setViewId] = useViewParam();
-  const { data: viewedReservation } = useQuery({
+  const { data: fetchedReservation } = useQuery({
     queryKey: ["court-reservations", "admin", "view", viewId],
     queryFn: () => getCourtReservationById(viewId!),
     enabled: viewId !== null,
@@ -162,6 +163,8 @@ export default function AdminCourtReservation() {
   });
 
   const reservations = data?.pages.flatMap((page) => page.items) ?? [];
+  // A clicked row is already loaded, so its dialog opens without waiting on that fetch.
+  const viewedReservation = reservations.find((reservation) => reservation.id === viewId) ?? fetchedReservation;
 
   return (
     <div className="space-y-4">
@@ -343,7 +346,7 @@ export default function AdminCourtReservation() {
               ) : (
                 <>
                   {reservations.map((reservation) => (
-                    <TableRow key={reservation.id}>
+                    <TableRow key={reservation.id} className="cursor-pointer" onClick={() => setViewId(reservation.id)}>
                       <TableCell>
                         <p className="font-medium truncate">{reservation.requesterName}</p>
                         <p className="text-xs text-muted-foreground truncate">{reservation.requesterEmail}</p>
@@ -358,7 +361,8 @@ export default function AdminCourtReservation() {
                       <TableCell>
                         <Badge variant={statusBadgeVariant(reservation.status)}>{reservation.status}</Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      {/* Clicks in the menu (and its portaled dialogs) bubble to the row, which would open its dialog too. */}
+                      <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                         <CourtReservationActionsMenu reservation={reservation} />
                       </TableCell>
                     </TableRow>

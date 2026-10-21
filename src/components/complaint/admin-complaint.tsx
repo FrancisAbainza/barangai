@@ -146,10 +146,11 @@ export default function AdminComplaint() {
     setHandledByMe(false);
   }
 
-  // `?view=<id>` (e.g. from the home page's Needs Attention queue) opens that record's
-  // Submission Info dialog. It's fetched by id since it may not be in the loaded/filtered list.
+  // `?view=<id>` (set by clicking a row, or by links like the home page's Needs Attention queue)
+  // opens that record's Submission Info dialog. It's fetched by id since it may not be in the
+  // loaded/filtered list.
   const [viewId, setViewId] = useViewParam();
-  const { data: viewedComplaint } = useQuery({
+  const { data: fetchedComplaint } = useQuery({
     queryKey: ["complaints", "admin", "view", viewId],
     queryFn: () => getComplaintById(viewId!),
     enabled: viewId !== null,
@@ -183,6 +184,8 @@ export default function AdminComplaint() {
   });
 
   const complaints = data?.pages.flatMap((page) => page.items) ?? [];
+  // A clicked row is already loaded, so its dialog opens without waiting on that fetch.
+  const viewedComplaint = complaints.find((complaint) => complaint.id === viewId) ?? fetchedComplaint;
 
   // The map should plot every matching complaint, not just the first page, so keep
   // paging through the same infinite query once the admin switches to the map tab.
@@ -388,7 +391,7 @@ export default function AdminComplaint() {
                   ) : (
                     <>
                       {complaints.map((complaint) => (
-                        <TableRow key={complaint.id}>
+                        <TableRow key={complaint.id} className="cursor-pointer" onClick={() => setViewId(complaint.id)}>
                           <TableCell>
                             <p className="font-medium truncate">{complaint.subject}</p>
                             <p className="text-xs text-muted-foreground truncate">
@@ -407,7 +410,8 @@ export default function AdminComplaint() {
                           <TableCell>
                             <Badge variant={statusBadgeVariant(complaint.status)}>{complaint.status}</Badge>
                           </TableCell>
-                          <TableCell className="text-right">
+                          {/* Clicks in the menu (and its portaled dialogs) bubble to the row, which would open its dialog too. */}
+                          <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                             <ComplaintActionsMenu complaint={complaint} />
                           </TableCell>
                         </TableRow>

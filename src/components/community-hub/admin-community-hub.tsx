@@ -96,10 +96,11 @@ export default function AdminCommunityHub() {
     setOwnedByMe(false);
   }
 
-  // `?view=<id>` (e.g. from the home page's Needs Attention queue) opens that record's
-  // Submission Info dialog. It's fetched by id since it may not be in the loaded/filtered list.
+  // `?view=<id>` (set by clicking a table row, or by links like the home page's Needs Attention
+  // queue) opens that record's Submission Info dialog. It's fetched by id since it may not be in
+  // the loaded/filtered list.
   const [viewId, setViewId] = useViewParam();
-  const { data: viewedBusiness } = useQuery({
+  const { data: fetchedBusiness } = useQuery({
     queryKey: ["businesses", "admin", "view", viewId],
     queryFn: () => getBusinessById(viewId!),
     enabled: viewId !== null,
@@ -135,6 +136,8 @@ export default function AdminCommunityHub() {
   });
 
   const businesses = data?.pages.flatMap((page) => page.items) ?? [];
+  // A clicked row is already loaded, so its dialog opens without waiting on that fetch.
+  const viewedBusiness = businesses.find((business) => business.id === viewId) ?? fetchedBusiness;
   const businessesWithLocation = businesses.filter(
     (business): business is typeof business & { location: LocationValue } => !!business.location
   );
@@ -317,6 +320,7 @@ export default function AdminCommunityHub() {
             hasNextPage={!!hasNextPage}
             fetchNextPage={fetchNextPage}
             isFetchingNextPage={isFetchingNextPage}
+            onRowClick={(business) => setViewId(business.id)}
           />
         </TabsContent>
 

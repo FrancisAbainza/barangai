@@ -142,10 +142,11 @@ export default function AdminDocumentRequest() {
     setHandledByMe(false);
   }
 
-  // `?view=<id>` (e.g. from the home page's Needs Attention queue) opens that record's
-  // Submission Info dialog. It's fetched by id since it may not be in the loaded/filtered list.
+  // `?view=<id>` (set by clicking a row, or by links like the home page's Needs Attention queue)
+  // opens that record's Submission Info dialog. It's fetched by id since it may not be in the
+  // loaded/filtered list.
   const [viewId, setViewId] = useViewParam();
-  const { data: viewedRequest } = useQuery({
+  const { data: fetchedRequest } = useQuery({
     queryKey: ["document-requests", "admin", "view", viewId],
     queryFn: () => getDocumentRequestById(viewId!),
     enabled: viewId !== null,
@@ -179,6 +180,8 @@ export default function AdminDocumentRequest() {
   });
 
   const requests = data?.pages.flatMap((page) => page.items) ?? [];
+  // A clicked row is already loaded, so its dialog opens without waiting on that fetch.
+  const viewedRequest = requests.find((request) => request.id === viewId) ?? fetchedRequest;
 
   return (
     <div className="space-y-4">
@@ -361,7 +364,7 @@ export default function AdminDocumentRequest() {
               ) : (
                 <>
                   {requests.map((request) => (
-                    <TableRow key={request.id}>
+                    <TableRow key={request.id} className="cursor-pointer" onClick={() => setViewId(request.id)}>
                       <TableCell className="font-medium">{formatReferenceNumber(request.id)}</TableCell>
                       <TableCell>
                         <p className="font-medium truncate">{request.requesterName}</p>
@@ -374,7 +377,8 @@ export default function AdminDocumentRequest() {
                       <TableCell>
                         <Badge variant={statusBadgeVariant(request.status)}>{request.status}</Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      {/* Clicks in the menu (and its portaled dialogs) bubble to the row, which would open its dialog too. */}
+                      <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                         <DocumentRequestActionsMenu request={request} />
                       </TableCell>
                     </TableRow>

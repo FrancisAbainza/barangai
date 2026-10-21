@@ -40,10 +40,10 @@ export default function ResidentCourtReservation() {
   const [isReserveDialogOpen, setIsReserveDialogOpen] = useDialogParam("court-reservation");
   const [isAvailabilityDialogOpen, setIsAvailabilityDialogOpen] = useState(false);
 
-  // `?view=<id>` (e.g. from a notification) opens that submission's Submission Info dialog.
-  // It's fetched by id since it may not be in the loaded list.
+  // `?view=<id>` (set by clicking a row, or by links like a notification) opens that submission's
+  // Submission Info dialog. It's fetched by id since it may not be in the loaded list.
   const [viewId, setViewId] = useViewParam();
-  const { data: viewedReservation } = useQuery({
+  const { data: fetchedReservation } = useQuery({
     queryKey: ["court-reservations", "view", viewId],
     queryFn: () => getCourtReservationById(viewId!),
     enabled: viewId !== null,
@@ -72,6 +72,8 @@ export default function ResidentCourtReservation() {
   });
 
   const myReservations = data?.pages.flatMap((page) => page.items) ?? [];
+  // A clicked row is already loaded, so its dialog opens without waiting on that fetch.
+  const viewedReservation = myReservations.find((reservation) => reservation.id === viewId) ?? fetchedReservation;
 
   return (
     <>
@@ -139,7 +141,7 @@ export default function ResidentCourtReservation() {
                 ) : (
                   <>
                     {myReservations.map((reservation) => (
-                      <TableRow key={reservation.id}>
+                      <TableRow key={reservation.id} className="cursor-pointer" onClick={() => setViewId(reservation.id)}>
                         <TableCell className="font-medium">
                           {formatReservationDate(reservation.date)}
                         </TableCell>
@@ -155,7 +157,8 @@ export default function ResidentCourtReservation() {
                             {reservation.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        {/* Clicks in the menu (and its portaled dialogs) bubble to the row, which would open its dialog too. */}
+                        <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                           <CourtReservationActionsMenu reservation={reservation} />
                         </TableCell>
                       </TableRow>

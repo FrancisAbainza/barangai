@@ -102,10 +102,10 @@ export default function ResidentDocumentRequest() {
   const [isMedicalAssistanceDialogOpen, setIsMedicalAssistanceDialogOpen] =
     useDialogParam("medical-assistance-request");
 
-  // `?view=<id>` (e.g. from a notification) opens that submission's Submission Info dialog.
-  // It's fetched by id since it may not be in the loaded list.
+  // `?view=<id>` (set by clicking a row, or by links like a notification) opens that submission's
+  // Submission Info dialog. It's fetched by id since it may not be in the loaded list.
   const [viewId, setViewId] = useViewParam();
-  const { data: viewedRequest } = useQuery({
+  const { data: fetchedRequest } = useQuery({
     queryKey: ["document-requests", "view", viewId],
     queryFn: () => getDocumentRequestById(viewId!),
     enabled: viewId !== null,
@@ -125,6 +125,8 @@ export default function ResidentDocumentRequest() {
   });
 
   const myRequests = data?.pages.flatMap((page) => page.items) ?? [];
+  // A clicked row is already loaded, so its dialog opens without waiting on that fetch.
+  const viewedRequest = myRequests.find((request) => request.id === viewId) ?? fetchedRequest;
 
   const { user } = useUser();
   const { data: residentProfile, isLoading: isResidentProfileLoading } = useQuery({
@@ -196,7 +198,7 @@ export default function ResidentDocumentRequest() {
                 ) : (
                   <>
                     {myRequests.map((request) => (
-                      <TableRow key={request.id}>
+                      <TableRow key={request.id} className="cursor-pointer" onClick={() => setViewId(request.id)}>
                         <TableCell className="font-medium">{request.documentType}</TableCell>
                         <TableCell className="text-muted-foreground">
                           {formatSubmittedDate(request.createdAt)}
@@ -204,7 +206,8 @@ export default function ResidentDocumentRequest() {
                         <TableCell>
                           <Badge variant={statusBadgeVariant(request.status)}>{request.status}</Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        {/* Clicks in the menu (and its portaled dialogs) bubble to the row, which would open its dialog too. */}
+                        <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                           <DocumentRequestActionsMenu request={request} />
                         </TableCell>
                       </TableRow>

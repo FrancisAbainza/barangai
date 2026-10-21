@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Map, MapPinOff, MessageSquareWarning, Table as TableIcon } from "lucide-react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -18,11 +18,23 @@ import EmptyState from "@/components/empty-state";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import ComplaintActionsMenu from "@/components/complaint/complaint-actions-menu";
 import ComplaintsMapView from "@/components/complaint/complaints-map-view";
-import { getMyComplaints } from "@/actions/complaints";
+import ViewComplaintDialog from "@/components/complaint/dialogs/view-complaint-dialog";
+import { useViewParam } from "@/hooks/use-view-param";
+import { getComplaintById, getMyComplaints } from "@/actions/complaints";
 import { statusBadgeVariant, priorityBadgeVariant, formatDate } from "@/lib/complaints";
 
 export default function MyComplaintsTable() {
   const [view, setView] = useState<"table" | "map">("table");
+
+  // `?view=<id>` (set by clicking a row, or by links like a notification) opens that submission's
+  // Submission Info dialog. It's fetched by id since it may not be in the loaded list.
+  const [viewId, setViewId] = useViewParam();
+  const { data: fetchedComplaint } = useQuery({
+    queryKey: ["complaints", "view", viewId],
+    queryFn: () => getComplaintById(viewId!),
+    enabled: viewId !== null,
+  });
+
   const {
     data,
     isLoading,
@@ -37,6 +49,8 @@ export default function MyComplaintsTable() {
   });
 
   const myComplaints = data?.pages.flatMap((page) => page.items) ?? [];
+  // A clicked row is already loaded, so its dialog opens without waiting on that fetch.
+  const viewedComplaint = myComplaints.find((complaint) => complaint.id === viewId) ?? fetchedComplaint;
 
   // The map should plot every complaint, not just the first page, so keep
   // paging through the same infinite query once the resident switches to the map tab.
@@ -92,7 +106,7 @@ export default function MyComplaintsTable() {
                   ) : (
                     <>
                       {myComplaints.map((complaint) => (
-                        <TableRow key={complaint.id}>
+                        <TableRow key={complaint.id} className="cursor-pointer" onClick={() => setViewId(complaint.id)}>
                           <TableCell className="font-medium">{complaint.subject}</TableCell>
                           <TableCell className="text-muted-foreground">{complaint.category}</TableCell>
                           <TableCell>
@@ -106,7 +120,8 @@ export default function MyComplaintsTable() {
                           <TableCell>
                             <Badge variant={statusBadgeVariant(complaint.status)}>{complaint.status}</Badge>
                           </TableCell>
-                          <TableCell className="text-right">
+                          {/* Clicks in the menu (and its portaled dialogs) bubble to the row, which would open its dialog too. */}
+                          <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                             <ComplaintActionsMenu complaint={complaint} />
                           </TableCell>
                         </TableRow>
@@ -148,6 +163,10 @@ export default function MyComplaintsTable() {
           )}
         </TabsContent>
       </Tabs>
+
+      {viewedComplaint && viewId !== null && (
+        <ViewComplaintDialog complaint={viewedComplaint} open onOpenChange={(open) => !open && setViewId(null)} />
+      )}
     </div>
   );
 }
