@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  CIVIL_STATUS_OPTIONS,
   residentProfileFormSchema,
   ResidentProfileFormValues,
   VALID_ID_TYPES,
@@ -159,11 +160,11 @@ export default function ResidentProfileForm({
                     <SelectValue placeholder="Select civil status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Single">Single</SelectItem>
-                    <SelectItem value="Married">Married</SelectItem>
-                    <SelectItem value="Widowed">Widowed</SelectItem>
-                    <SelectItem value="Separated">Separated</SelectItem>
-                    <SelectItem value="Divorced">Divorced</SelectItem>
+                    {CIVIL_STATUS_OPTIONS.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FieldError errors={[fieldState.error]} />
@@ -176,7 +177,9 @@ export default function ResidentProfileForm({
             <Input
               {...register("contactNumber")}
               id="contactNumber"
-              placeholder="09XX XXX XXXX"
+              inputMode="numeric"
+              maxLength={11}
+              placeholder="09XXXXXXXXX"
               aria-invalid={!!errors.contactNumber}
             />
             <FieldError errors={[errors.contactNumber]} />

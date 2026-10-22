@@ -2,14 +2,11 @@ import type { MediaItem } from "@/components/file-uploader";
 import z from "zod";
 
 export const VALID_ID_TYPES = [
-  "Philippine National ID (PhilSys)",
-  "Passport",
-  "Driver's License",
-  "UMID",
-  "Voter's ID",
-  "PhilHealth ID",
-  "SSS ID",
-  "Postal ID",
+  "National ID",
+  "TIN",
+  "Pag-IBIG",
+  "Police Clearance",
+  "NBI Clearance",
 ] as const;
 
 export const SEX_OPTIONS = ["Male", "Female"] as const;
@@ -17,9 +14,10 @@ export const SEX_OPTIONS = ["Male", "Female"] as const;
 export const CIVIL_STATUS_OPTIONS = [
   "Single",
   "Married",
+  "Live-in",
   "Widowed",
+  "Annulled",
   "Separated",
-  "Divorced",
 ] as const;
 
 export const residentProfileFormSchema = z.object({
@@ -31,8 +29,7 @@ export const residentProfileFormSchema = z.object({
   civilStatus: z.enum(CIVIL_STATUS_OPTIONS),
   contactNumber: z
     .string()
-    .min(10, "Enter a valid contact number")
-    .max(13, "Enter a valid contact number"),
+    .regex(/^\d{11}$/, "Contact number must be exactly 11 digits"),
   address: z.string().min(5, "Address must be at least 5 characters"),
   validIdType: z.enum(VALID_ID_TYPES),
   validIdFront: z
