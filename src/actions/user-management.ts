@@ -7,6 +7,7 @@ import { and, desc, eq, ilike, isNotNull, or } from "drizzle-orm";
 import { db } from "@/db/config";
 import {
   businessesTable,
+  complaintFollowersTable,
   complaintsTable,
   courtReservationsTable,
   documentRequestsTable,
@@ -335,6 +336,7 @@ export async function deleteAllUserData(userId: string) {
     db.delete(residentProfilesTable).where(eq(residentProfilesTable.userId, userId)),
     db.delete(documentRequestsTable).where(eq(documentRequestsTable.requesterId, userId)),
     db.delete(complaintsTable).where(eq(complaintsTable.complainantId, userId)),
+    db.delete(complaintFollowersTable).where(eq(complaintFollowersTable.userId, userId)),
     db.delete(transparencyProjectsTable).where(eq(transparencyProjectsTable.authorId, userId)),
     db.delete(transparencyProjectReactionsTable).where(eq(transparencyProjectReactionsTable.userId, userId)),
     db.delete(transparencyProjectCommentsTable).where(eq(transparencyProjectCommentsTable.userId, userId)),

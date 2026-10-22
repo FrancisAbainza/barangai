@@ -4,6 +4,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { db } from "@/db/config";
 import { residentProfilesTable, type ResidentProfile } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getAuthRole } from "@/lib/auth";
 import type { ResidentProfileFormValues } from "@/schemas/resident-profile-schema";
 import type { MediaItem } from "@/components/file-uploader";
 
@@ -12,7 +13,12 @@ type SaveResidentProfileInput = Omit<ResidentProfileFormValues, "validIdFront" |
   validIdBack: Omit<MediaItem, "file">[];
 };
 
+// A profile holds the resident's contact details and valid ID, so only they and admins can read it.
 export async function getResidentProfile(userId: string): Promise<ResidentProfile | null> {
+  const { userId: authUserId, isAdmin } = await getAuthRole();
+  if (!authUserId) throw new Error("Unauthorized");
+  if (authUserId !== userId && !isAdmin) throw new Error("Forbidden");
+
   const [profile] = await db
     .select()
     .from(residentProfilesTable)

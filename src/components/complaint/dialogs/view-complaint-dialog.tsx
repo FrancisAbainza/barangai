@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, CheckCircle2, IdCard, MapPin, MessageSquareWarning, Sparkles, UserCog } from "lucide-react";
+import { Ban, CheckCircle2, IdCard, MapPin, MessageSquareWarning, Sparkles, UserCog, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
   publicSafetyRiskBadgeVariant,
   handlerLabel,
   formatDate,
+  otherResidentsLabel,
 } from "@/lib/complaints";
 import { getResidentProfile } from "@/actions/resident-profile";
 import { generateComplaintInsight, type ComplaintWithComplainant } from "@/actions/complaints";
@@ -65,7 +66,8 @@ export default function ViewComplaintDialog({
   const { data: profile, isLoading: isProfileLoading } = useQuery({
     queryKey: ["resident-profile", complaint.complainantId],
     queryFn: () => getResidentProfile(complaint.complainantId),
-    enabled: open,
+    // A followed complaint comes back without its complainant, so there's no profile to show.
+    enabled: open && !complaint.isFollowing,
   });
 
   const {
@@ -105,10 +107,12 @@ export default function ViewComplaintDialog({
               <MessageSquareWarning />
               <span className="hidden sm:inline">Complaint Info</span>
             </TabsTrigger>
-            <TabsTrigger value="complainant" className="flex-1" aria-label="Complainant Info">
-              <IdCard />
-              <span className="hidden sm:inline">Complainant Info</span>
-            </TabsTrigger>
+            {!complaint.isFollowing && (
+              <TabsTrigger value="complainant" className="flex-1" aria-label="Complainant Info">
+                <IdCard />
+                <span className="hidden sm:inline">Complainant Info</span>
+              </TabsTrigger>
+            )}
             {isAdmin && (
               <TabsTrigger value="ai-insight" className="flex-1" aria-label="AI Insight">
                 <Sparkles />
@@ -132,6 +136,26 @@ export default function ViewComplaintDialog({
                   {handlerLabel(complaint.status)} <span className="font-semibold">{complaint.handlerName}</span>
                 </p>
               </div>
+            )}
+
+            {complaint.isFollowing ? (
+              <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
+                <Users className="size-4 shrink-0 text-primary" />
+                <p className="text-sm">
+                  Reported by another resident. You&apos;re following it, so you&apos;ll be notified when its status
+                  changes.
+                </p>
+              </div>
+            ) : (
+              complaint.followerCount > 0 && (
+                <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
+                  <Users className="size-4 shrink-0 text-primary" />
+                  <p className="text-sm">
+                    Also reported by{" "}
+                    <span className="font-semibold">{otherResidentsLabel(complaint.followerCount)}</span>
+                  </p>
+                </div>
+              )
             )}
 
             <Field>
@@ -212,7 +236,7 @@ export default function ViewComplaintDialog({
           </TabsContent>
 
           <TabsContent value="complainant" className="space-y-4 pt-2">
-            {isProfileLoading ? (
+            {complaint.isFollowing ? null : isProfileLoading ? (
               <div className="space-y-3">
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-full" />

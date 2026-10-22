@@ -13,6 +13,11 @@ export function handlerLabel(status: Complaint["status"]) {
   return "Being handled by";
 }
 
+// For a complaint's followers, e.g. "Also reported by 2 other residents".
+export function otherResidentsLabel(count: number) {
+  return `${count} other resident${count === 1 ? "" : "s"}`;
+}
+
 export function priorityBadgeVariant(priority: Complaint["priority"]) {
   if (priority === "Urgent") return "destructive";
   if (priority === "High") return "default";

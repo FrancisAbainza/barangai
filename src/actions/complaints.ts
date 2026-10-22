@@ -3,12 +3,12 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { and, asc, count, desc, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, lte, ne, notInArray, or } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
-import { complaintsTable, type Complaint } from "@/db/schema";
+import { complaintFollowersTable, complaintsTable, type Complaint } from "@/db/schema";
 import {
   complaintAiInsightSchema,
   complaintInsightsSchema,
@@ -104,6 +104,10 @@ export type ComplaintWithComplainant = Complaint & {
   complainantName: string;
   complainantEmail: string;
   handlerName: string | null;
+  // Other residents who confirmed it's the same issue as theirs (see `followComplaint`).
+  followerCount: number;
+  // Filed by another resident and followed by the viewer, so the complainant fields are blank.
+  isFollowing: boolean;
 };
 
 export type MyComplaintsPage = {
@@ -122,7 +126,10 @@ async function fetchComplaintsPage(
   conditions: Parameters<typeof and>,
   offset: number,
   pageSize: number,
-  orderFn: typeof asc | typeof desc = desc
+  orderFn: typeof asc | typeof desc = desc,
+  // Set for residents. Complaints not filed by them (the ones they follow) come back with the
+  // complainant's details blanked, which the UI can't be trusted to hide.
+  viewerId?: string
 ): Promise<ComplaintsPage> {
   const complaints = await db
     .select()
@@ -134,27 +141,68 @@ async function fetchComplaintsPage(
 
   if (complaints.length === 0) return { items: [], nextOffset: null };
 
+  const isFollowed = (complaint: Complaint) => viewerId !== undefined && complaint.complainantId !== viewerId;
+
   // Complainant/handler display info lives in Clerk, not the DB, so batch-fetch and join in memory.
   // Also tolerates a since-deleted Clerk user when every row shares one complainant id.
-  const uniqueComplainantIds = [...new Set(complaints.map((c) => c.complainantId))];
+  const uniqueComplainantIds = [
+    ...new Set(complaints.filter((c) => !isFollowed(c)).map((c) => c.complainantId)),
+  ];
   const uniqueHandlerIds = [...new Set(complaints.map((c) => c.handlerId).filter((id) => id !== null))];
-  const displayMap = await getUserDisplayInfoMap([...uniqueComplainantIds, ...uniqueHandlerIds]);
+  const [displayMap, followerCounts] = await Promise.all([
+    getUserDisplayInfoMap([...uniqueComplainantIds, ...uniqueHandlerIds]),
+    db
+      .select({ complaintId: complaintFollowersTable.complaintId, count: count() })
+      .from(complaintFollowersTable)
+      .where(inArray(complaintFollowersTable.complaintId, complaints.map((c) => c.id)))
+      .groupBy(complaintFollowersTable.complaintId),
+  ]);
+  const followerCountMap = new Map(followerCounts.map((row) => [row.complaintId, row.count]));
 
   return {
     items: complaints.map((complaint) => {
-      const info = displayMap.get(complaint.complainantId) ?? DELETED_USER_DISPLAY_INFO;
       const handlerName = complaint.handlerId
         ? (displayMap.get(complaint.handlerId)?.fullName ?? DELETED_USER_DISPLAY_INFO.fullName)
         : null;
+      const followerCount = followerCountMap.get(complaint.id) ?? 0;
+
+      if (isFollowed(complaint)) {
+        return {
+          ...complaint,
+          complainantId: "",
+          complainantName: "",
+          complainantEmail: "",
+          aiInsight: null,
+          handlerName,
+          followerCount,
+          isFollowing: true,
+        };
+      }
+
+      const info = displayMap.get(complaint.complainantId) ?? DELETED_USER_DISPLAY_INFO;
       return {
         ...complaint,
         complainantName: info.fullName,
         complainantEmail: info.email,
         handlerName,
+        followerCount,
+        isFollowing: false,
       };
     }),
     nextOffset: complaints.length < pageSize ? null : offset + complaints.length,
   };
+}
+
+function followedComplaintIds(userId: string) {
+  return db
+    .select({ id: complaintFollowersTable.complaintId })
+    .from(complaintFollowersTable)
+    .where(eq(complaintFollowersTable.userId, userId));
+}
+
+// A resident's My Complaints: the complaints they filed plus the ones they follow.
+function filedOrFollowedBy(userId: string) {
+  return or(eq(complaintsTable.complainantId, userId), inArray(complaintsTable.id, followedComplaintIds(userId)))!;
 }
 
 export async function getMyComplaints({
@@ -163,7 +211,7 @@ export async function getMyComplaints({
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  return fetchComplaintsPage([eq(complaintsTable.complainantId, userId)], offset, MY_COMPLAINTS_PAGE_SIZE);
+  return fetchComplaintsPage([filedOrFollowedBy(userId)], offset, MY_COMPLAINTS_PAGE_SIZE, desc, userId);
 }
 
 export async function getComplaintsByUser(
@@ -178,16 +226,114 @@ export async function getComplaintsByUser(
 }
 
 // Backs the `?view=<id>` deep link: the admin page's (e.g. from the home page's Needs Attention
-// queue) and the resident page's (from a notification), so residents only get their own.
+// queue) and the resident page's (from a notification), so residents only get their own and the
+// ones they follow.
 export async function getComplaintById(id: number): Promise<ComplaintWithComplainant | null> {
   const { userId, isAdmin } = await getAuthRole();
   if (!userId) throw new Error("Unauthorized");
 
   const conditions = [eq(complaintsTable.id, id)];
-  if (!isAdmin) conditions.push(eq(complaintsTable.complainantId, userId));
+  if (!isAdmin) conditions.push(filedOrFollowedBy(userId));
 
-  const { items } = await fetchComplaintsPage(conditions, 0, 1);
+  const { items } = await fetchComplaintsPage(conditions, 0, 1, desc, isAdmin ? undefined : userId);
   return items[0] ?? null;
+}
+
+// Matching shows a complaint to other residents who report something nearby. These categories
+// are usually about a specific person or household, so they're never matched: otherwise filing
+// one at your own address would reveal what a neighbor reported about you.
+const PRIVATE_COMPLAINT_CATEGORIES: Complaint["category"][] = ["Noise", "Domestic", "Others"];
+const OPEN_COMPLAINT_STATUSES: Complaint["status"][] = ["Pending", "In Progress"];
+const SIMILAR_COMPLAINT_RADIUS_METERS = 150;
+const MAX_SIMILAR_COMPLAINTS = 3;
+
+// Open complaints filed by someone other than `userId`, in a category that's safe to show them.
+function matchableBy(userId: string) {
+  return [
+    inArray(complaintsTable.status, OPEN_COMPLAINT_STATUSES),
+    notInArray(complaintsTable.category, PRIVATE_COMPLAINT_CATEGORIES),
+    ne(complaintsTable.complainantId, userId),
+  ];
+}
+
+const EARTH_RADIUS_METERS = 6_371_000;
+
+// Haversine distance.
+function distanceInMeters(from: LocationValue["coordinates"], to: LocationValue["coordinates"]) {
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const deltaLat = toRadians(to.lat - from.lat);
+  const deltaLng = toRadians(to.lng - from.lng);
+  const h =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(toRadians(from.lat)) * Math.cos(toRadians(to.lat)) * Math.sin(deltaLng / 2) ** 2;
+  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(h));
+}
+
+// What a resident sees of another resident's complaint while filing; never who filed it.
+export type SimilarComplaint = Pick<
+  Complaint,
+  "id" | "subject" | "description" | "category" | "status" | "createdAt"
+> & {
+  address: string;
+  distanceMeters: number;
+};
+
+// Runs when a resident submits a complaint, before it's created, so they can follow an existing
+// complaint about the same issue instead of filing a duplicate. Matches on distance, not
+// category: the AI may label the same clogged drain Sanitation once and Environment the next
+// time, and the resident confirms the match anyway.
+export async function findSimilarComplaints(location: LocationValue): Promise<SimilarComplaint[]> {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  // A barangay only has so many open complaints, so distances are computed in memory.
+  const candidates = await db
+    .select({
+      id: complaintsTable.id,
+      subject: complaintsTable.subject,
+      description: complaintsTable.description,
+      category: complaintsTable.category,
+      status: complaintsTable.status,
+      location: complaintsTable.location,
+      createdAt: complaintsTable.createdAt,
+    })
+    .from(complaintsTable)
+    .where(and(...matchableBy(userId), notInArray(complaintsTable.id, followedComplaintIds(userId))));
+
+  return candidates
+    .map(({ location: candidateLocation, ...candidate }) => ({
+      ...candidate,
+      address: candidateLocation.address,
+      distanceMeters: distanceInMeters(location.coordinates, candidateLocation.coordinates),
+    }))
+    .filter((candidate) => candidate.distanceMeters <= SIMILAR_COMPLAINT_RADIUS_METERS)
+    .sort((a, b) => a.distanceMeters - b.distanceMeters)
+    .slice(0, MAX_SIMILAR_COMPLAINTS);
+}
+
+// Adds another resident's complaint to the caller's My Complaints, read-only, and subscribes them
+// to its status notifications.
+export async function followComplaint(id: number) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const [complaint] = await db
+    .select({ id: complaintsTable.id })
+    .from(complaintsTable)
+    .where(and(eq(complaintsTable.id, id), ...matchableBy(userId)));
+  if (!complaint) throw new Error("This complaint can no longer be followed.");
+
+  await db.insert(complaintFollowersTable).values({ complaintId: id, userId }).onConflictDoNothing();
+}
+
+export async function unfollowComplaint(id: number) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  await db
+    .delete(complaintFollowersTable)
+    .where(and(eq(complaintFollowersTable.complaintId, id), eq(complaintFollowersTable.userId, userId)));
+  await deleteNotificationsFor("complaint", id, userId);
 }
 
 export async function getComplaints({
@@ -310,8 +456,14 @@ export async function setComplaintStatus(
     })
     .where(eq(complaintsTable.id, id));
 
+  const followers = await db
+    .select({ userId: complaintFollowersTable.userId })
+    .from(complaintFollowersTable)
+    .where(eq(complaintFollowersTable.complaintId, id));
+
   await notifyStatusChange({
     userId: existing.complainantId,
+    followerIds: followers.map((follower) => follower.userId),
     actorId: handlerId,
     type: "complaint",
     referenceId: id,
@@ -330,6 +482,16 @@ export async function deleteComplaint(id: number) {
   if (existing.complainantId !== userId && !isAdmin) throw new Error("Forbidden");
   if (existing.status !== "Pending" && !isAdmin) throw new Error("Only pending complaints can be deleted.");
 
+  // Deleting it would silently take it out of its followers' My Complaints too.
+  if (!isAdmin) {
+    const [{ followerCount }] = await db
+      .select({ followerCount: count() })
+      .from(complaintFollowersTable)
+      .where(eq(complaintFollowersTable.complaintId, id));
+    if (followerCount > 0) throw new Error("Other residents are following this complaint, so it can't be deleted.");
+  }
+
+  // Its follower rows cascade.
   await db.delete(complaintsTable).where(eq(complaintsTable.id, id));
   await deleteNotificationsFor("complaint", id);
 }

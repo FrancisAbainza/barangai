@@ -53,7 +53,7 @@ import ComplaintsMapView from "@/components/complaint/complaints-map-view";
 import ViewComplaintDialog from "@/components/complaint/dialogs/view-complaint-dialog";
 import { useViewParam } from "@/hooks/use-view-param";
 import { getComplaintById, getComplaintStats, getComplaints } from "@/actions/complaints";
-import { statusBadgeVariant, priorityBadgeVariant, formatDate } from "@/lib/complaints";
+import { statusBadgeVariant, priorityBadgeVariant, formatDate, otherResidentsLabel } from "@/lib/complaints";
 import { complaintCategoryEnum, complaintPriorityEnum, complaintStatusEnum, type Complaint } from "@/db/schema";
 
 const CATEGORY_FILTERS = [
@@ -396,6 +396,7 @@ export default function AdminComplaint() {
                             <p className="font-medium truncate">{complaint.subject}</p>
                             <p className="text-xs text-muted-foreground truncate">
                               {complaint.complainantName}
+                              {complaint.followerCount > 0 && ` and ${otherResidentsLabel(complaint.followerCount)}`}
                             </p>
                           </TableCell>
                           <TableCell>{complaint.category}</TableCell>

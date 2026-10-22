@@ -184,6 +184,24 @@ export const complaintsTable = pgTable("complaints", {
 
 export type Complaint = typeof complaintsTable.$inferSelect;
 
+// Residents who confirmed, while filing, that an existing complaint is the same issue. The
+// complaint shows up in their My Complaints (read-only, without the complainant's details) and
+// they're notified of its status changes alongside the complainant.
+export const complaintFollowersTable = pgTable(
+  "complaint_followers",
+  {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    complaintId: integer()
+      .notNull()
+      .references(() => complaintsTable.id, { onDelete: "cascade" }),
+    userId: varchar({ length: 255 }).notNull(),
+    createdAt: timestamp().notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("complaint_followers_complaint_id_user_id_idx").on(table.complaintId, table.userId),
+  ]
+);
+
 export const transparencyCategoryEnum = pgEnum("transparency_category", TRANSPARENCY_CATEGORIES);
 
 export const transparencyProjectsTable = pgTable("transparency_projects", {

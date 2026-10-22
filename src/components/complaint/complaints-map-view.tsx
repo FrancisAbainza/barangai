@@ -140,7 +140,7 @@ export default function ComplaintsMapView({ complaints }: { complaints: Complain
                   </p>
                   <p>
                     <strong className="font-medium text-foreground">Complainant:</strong>{" "}
-                    {activeComplaint.complainantName}
+                    {activeComplaint.isFollowing ? "Another resident" : activeComplaint.complainantName}
                   </p>
                   <p>
                     <strong className="font-medium text-foreground">Filed:</strong>{" "}

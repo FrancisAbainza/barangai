@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Eye, ListChecks, MoreHorizontal, Trash2 } from "lucide-react";
+import { Eye, ListChecks, ListX, MoreHorizontal, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,7 +16,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { setComplaintStatus, type ComplaintWithComplainant } from "@/actions/complaints";
+import { setComplaintStatus, unfollowComplaint, type ComplaintWithComplainant } from "@/actions/complaints";
 import { complaintStatusEnum, type Complaint } from "@/db/schema";
 import { isAdminRole } from "@/lib/roles";
 import { deleteFile } from "@/lib/storage";
@@ -64,6 +64,17 @@ export default function ComplaintActionsMenu({
     },
   });
 
+  const { mutate: unfollow, isPending: isUnfollowing } = useMutation({
+    mutationFn: () => unfollowComplaint(complaint.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["complaints"] });
+      toast.success("Complaint removed from My Complaints.");
+    },
+    onError: () => {
+      toast.error("Failed to remove the complaint. Please try again.");
+    },
+  });
+
   function handleStatusSelect(status: Complaint["status"]) {
     if (status === "Resolved") {
       setResolveOpen(true);
@@ -76,7 +87,7 @@ export default function ComplaintActionsMenu({
     changeStatus(status);
   }
 
-  if (!isAdmin && !isOwnComplaint) return null;
+  if (!isAdmin && !isOwnComplaint && !complaint.isFollowing) return null;
 
   return (
     <>
@@ -115,10 +126,18 @@ export default function ComplaintActionsMenu({
             </DropdownMenuSub>
           )}
 
-          {(isAdmin || complaint.status === "Pending") && (
+          {/* Residents can't delete a complaint others follow, since it'd vanish from their My Complaints. */}
+          {(isAdmin || (isOwnComplaint && complaint.status === "Pending" && complaint.followerCount === 0)) && (
             <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
               <Trash2 />
               Delete complaint
+            </DropdownMenuItem>
+          )}
+
+          {complaint.isFollowing && (
+            <DropdownMenuItem variant="destructive" disabled={isUnfollowing} onSelect={() => unfollow()}>
+              <ListX />
+              Remove from My Complaints
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>

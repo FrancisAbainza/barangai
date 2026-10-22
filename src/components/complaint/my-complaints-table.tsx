@@ -21,7 +21,7 @@ import ComplaintsMapView from "@/components/complaint/complaints-map-view";
 import ViewComplaintDialog from "@/components/complaint/dialogs/view-complaint-dialog";
 import { useViewParam } from "@/hooks/use-view-param";
 import { getComplaintById, getMyComplaints } from "@/actions/complaints";
-import { statusBadgeVariant, priorityBadgeVariant, formatDate } from "@/lib/complaints";
+import { statusBadgeVariant, priorityBadgeVariant, formatDate, otherResidentsLabel } from "@/lib/complaints";
 
 export default function MyComplaintsTable() {
   const [view, setView] = useState<"table" | "map">("table");
@@ -81,7 +81,7 @@ export default function MyComplaintsTable() {
             <EmptyState
               icon={MessageSquareWarning}
               title="No complaints filed yet"
-              description="Complaints you file will appear here."
+              description="Complaints you file or follow will appear here."
             />
           ) : (
             <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
@@ -107,7 +107,18 @@ export default function MyComplaintsTable() {
                     <>
                       {myComplaints.map((complaint) => (
                         <TableRow key={complaint.id} className="cursor-pointer" onClick={() => setViewId(complaint.id)}>
-                          <TableCell className="font-medium">{complaint.subject}</TableCell>
+                          <TableCell>
+                            <p className="font-medium">{complaint.subject}</p>
+                            {complaint.isFollowing ? (
+                              <p className="text-xs text-muted-foreground">Reported by another resident</p>
+                            ) : (
+                              complaint.followerCount > 0 && (
+                                <p className="text-xs text-muted-foreground">
+                                  Also reported by {otherResidentsLabel(complaint.followerCount)}
+                                </p>
+                              )
+                            )}
+                          </TableCell>
                           <TableCell className="text-muted-foreground">{complaint.category}</TableCell>
                           <TableCell>
                             <Badge variant={priorityBadgeVariant(complaint.priority)}>
