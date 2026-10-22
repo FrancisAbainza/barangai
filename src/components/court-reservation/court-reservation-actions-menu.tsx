@@ -41,12 +41,15 @@ export default function CourtReservationActionsMenu({
 
   const { mutate: changeStatus, isPending: isChangingStatus } = useMutation({
     mutationFn: async (status: CourtReservation["status"]) => {
+      const result = await setCourtReservationStatus(reservation.id, status);
+      if (result?.error) throw new Error(result.error);
+
+      // Only once the status change went through, since a refused approval keeps the rejection.
       if (reservation.status === "Rejected" && status !== "Rejected") {
         const rejectionAttachments = reservation.rejectionAttachments as MediaItem[];
         const keys = rejectionAttachments.map((item) => item.key).filter(Boolean) as string[];
         await Promise.all(keys.map((key) => deleteFile(key)));
       }
-      await setCourtReservationStatus(reservation.id, status);
     },
     onSuccess: (_data, status) => {
       queryClient.invalidateQueries({ queryKey: ["court-reservations"] });

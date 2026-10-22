@@ -6,7 +6,7 @@ import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { courtReservationsTable, type CourtReservation } from "@/db/schema";
-import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, ne } from "drizzle-orm";
 import type { MediaItem } from "@/components/file-uploader";
 import {
   calculateCourtFee,
@@ -41,6 +41,8 @@ export type CreateCourtReservationInput = {
   gcashPayment: Omit<MediaItem, "file">[];
 };
 
+// Messages the user should read are returned as `{ error }` instead of thrown, because production
+// builds replace a thrown server action error's message with a generic one.
 export async function createCourtReservation(data: CreateCourtReservationInput) {
   const { userId, isAdmin } = await getAuthRole();
   if (!userId) throw new Error("Unauthorized");
@@ -52,13 +54,13 @@ export async function createCourtReservation(data: CreateCourtReservationInput) 
     data.durationHours < 1 ||
     data.startTime + data.durationHours * 60 > MINUTES_PER_DAY
   ) {
-    throw new Error("Invalid reservation time. Reservations must end by midnight.");
+    return { error: "Invalid reservation time. Reservations must end by midnight." };
   }
 
   const range = getReservationRange(data);
   const takenRanges = await getTakenTimeRanges(data.date);
   if (takenRanges.some((taken) => rangesOverlap(range, taken))) {
-    throw new Error("The selected time overlaps an existing reservation.");
+    return { error: "The selected time overlaps an existing reservation." };
   }
 
   const settings = await getBarangaySettings();
@@ -186,7 +188,6 @@ export async function getCourtReservations({
   offset = 0,
   search,
   date,
-  hour,
   status,
   sortOrder = "newest",
   handledByMe = false,
@@ -194,7 +195,6 @@ export async function getCourtReservations({
   offset?: number;
   search?: string;
   date?: string;
-  hour?: number | "all";
   status?: CourtReservation["status"] | "all";
   sortOrder?: "newest" | "oldest";
   handledByMe?: boolean;
@@ -210,13 +210,6 @@ export async function getCourtReservations({
 
   if (date) {
     conditions.push(eq(courtReservationsTable.date, date));
-  }
-  if (hour !== undefined && hour !== "all") {
-    // Any reservation overlapping the hour window [hour:00, hour+1:00).
-    conditions.push(
-      sql`${courtReservationsTable.startTime} < ${(hour + 1) * 60}`,
-      sql`${courtReservationsTable.startTime} + ${courtReservationsTable.durationHours} * 60 > ${hour * 60}`
-    );
   }
   if (status && status !== "all") {
     conditions.push(eq(courtReservationsTable.status, status));
@@ -286,7 +279,8 @@ export async function setCourtReservationStatus(
     const range = getReservationRange(reservation);
     const takenRanges = await getTakenTimeRanges(reservation.date, id);
     if (takenRanges.some((taken) => rangesOverlap(range, taken))) {
-      throw new Error("This reservation's time overlaps another approved reservation.");
+      // Returned, not thrown, so the message survives production builds (see createCourtReservation).
+      return { error: "This reservation's time overlaps another approved reservation." };
     }
   }
 

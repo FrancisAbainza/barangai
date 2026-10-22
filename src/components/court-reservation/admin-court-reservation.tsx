@@ -44,18 +44,8 @@ import { useDialogParam } from "@/hooks/use-dialog-param";
 import ViewCourtReservationDialog from "@/components/court-reservation/dialogs/view-court-reservation-dialog";
 import { useViewParam } from "@/hooks/use-view-param";
 import { getCourtReservationById, getCourtReservations, getCourtReservationStats } from "@/actions/court-reservations";
-import {
-  COURT_HOUR_WINDOWS,
-  statusBadgeVariant,
-  formatReservationTime,
-  formatReservationDate,
-} from "@/lib/court-reservations";
+import { statusBadgeVariant, formatReservationTime, formatReservationDate } from "@/lib/court-reservations";
 import { courtReservationStatusEnum, type CourtReservation } from "@/db/schema";
-
-const HOUR_FILTERS = [
-  { value: "all", label: "All Times" },
-  ...COURT_HOUR_WINDOWS.map((window) => ({ value: String(window.hour), label: window.label })),
-];
 
 const STATUS_FILTERS = [
   { value: "all", label: "All Statuses" },
@@ -109,7 +99,6 @@ function ReservationRowSkeleton() {
 export default function AdminCourtReservation() {
   const [search, setSearch] = useState("");
   const [date, setDate] = useState("");
-  const [hour, setHour] = useState("all");
   const [status, setStatus] = useState("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [handledByMe, setHandledByMe] = useState(false);
@@ -118,11 +107,10 @@ export default function AdminCourtReservation() {
   const [reserveOpen, setReserveOpen] = useDialogParam("court-reservation");
   const debouncedSearch = useDebouncedValue(search, 300);
 
-  const activeFilterCount = [date !== "", hour !== "all", status !== "all", handledByMe].filter(Boolean).length;
+  const activeFilterCount = [date !== "", status !== "all", handledByMe].filter(Boolean).length;
 
   function clearFilters() {
     setDate("");
-    setHour("all");
     setStatus("all");
     setHandledByMe(false);
   }
@@ -146,14 +134,13 @@ export default function AdminCourtReservation() {
     queryKey: [
       "court-reservations",
       "admin",
-      { search: debouncedSearch, date, hour, status, sortOrder, handledByMe },
+      { search: debouncedSearch, date, status, sortOrder, handledByMe },
     ],
     queryFn: ({ pageParam }) =>
       getCourtReservations({
         offset: pageParam,
         search: debouncedSearch,
         date,
-        hour: hour === "all" ? "all" : Number(hour),
         status: status as CourtReservation["status"] | "all",
         sortOrder,
         handledByMe,
@@ -250,7 +237,7 @@ export default function AdminCourtReservation() {
               <DialogHeader>
                 <DialogTitle>Filter Reservations</DialogTitle>
                 <DialogDescription>
-                  Narrow down court reservations by reservation date, time, or status.
+                  Narrow down court reservations by reservation date or status.
                 </DialogDescription>
               </DialogHeader>
 
@@ -258,22 +245,6 @@ export default function AdminCourtReservation() {
                 <div className="space-y-1.5">
                   <Label htmlFor="reservation-date">Reservation Date</Label>
                   <DatePicker id="reservation-date" value={date} onChange={setDate} />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>Time</Label>
-                  <Select value={hour} onValueChange={setHour}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {HOUR_FILTERS.map((filter) => (
-                        <SelectItem key={filter.value} value={filter.value}>
-                          {filter.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 <div className="space-y-1.5">

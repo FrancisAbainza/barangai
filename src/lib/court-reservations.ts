@@ -112,12 +112,6 @@ export function getFreeRanges(taken: CourtTimeRange[]): CourtTimeRange[] {
   return free;
 }
 
-// Hour-long windows used by the admin "Time" filter, which matches reservations overlapping it.
-export const COURT_HOUR_WINDOWS = Array.from({ length: 24 }, (_, hour) => ({
-  hour,
-  label: formatTimeRange({ start: hour * 60, end: (hour + 1) * 60 }),
-}));
-
 export function formatFee(amount: number): string {
   return `₱${amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
 }

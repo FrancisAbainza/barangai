@@ -30,7 +30,7 @@ export default function CourtReservationDialog({
         })
       );
 
-      await createCourtReservation({
+      const result = await createCourtReservation({
         date: data.date,
         purpose: data.purpose,
         // The schema already validated the "HH:MM" format.
@@ -38,6 +38,7 @@ export default function CourtReservationDialog({
         durationHours: data.durationHours,
         gcashPayment,
       });
+      if (result?.error) throw new Error(result.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["court-reservations"] });
