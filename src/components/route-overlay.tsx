@@ -47,12 +47,12 @@ export default function RouteOverlay({
 
       {/* Below the Map/Satellite control. A top-center card collides with it and the fullscreen button on phones. */}
       <MapControl position={ControlPosition.INLINE_START_BLOCK_START}>
-        <div className="light m-2.5 flex max-w-72 items-center gap-2.5 rounded-lg border bg-background py-1.5 pr-1.5 pl-3 text-foreground shadow-md sm:max-w-sm">
-          <Navigation className="size-4 shrink-0 text-blue-600" />
-          <div className="min-w-0 text-xs">
-            <p className="truncate font-semibold">Route to {destinationName}</p>
-            {summary && <p className="text-muted-foreground">{summary}</p>}
-          </div>
+        <div
+          title={`Route to ${destinationName}`}
+          className="light m-2.5 flex items-center gap-1.5 rounded-lg border bg-background py-0.5 pr-0.5 pl-2.5 text-foreground shadow-md"
+        >
+          <Navigation className="size-3.5 shrink-0 text-blue-600" />
+          <p className="text-xs font-semibold whitespace-nowrap">{summary || "Route"}</p>
           <div className="flex shrink-0">
             <Button
               type="button"
