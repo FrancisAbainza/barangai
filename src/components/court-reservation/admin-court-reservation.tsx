@@ -44,7 +44,12 @@ import { useDialogParam } from "@/hooks/use-dialog-param";
 import ViewCourtReservationDialog from "@/components/court-reservation/dialogs/view-court-reservation-dialog";
 import { useViewParam } from "@/hooks/use-view-param";
 import { getCourtReservationById, getCourtReservations, getCourtReservationStats } from "@/actions/court-reservations";
-import { statusBadgeVariant, formatReservationTime, formatReservationDate } from "@/lib/court-reservations";
+import {
+  statusBadgeVariant,
+  formatReferenceNumber,
+  formatReservationTime,
+  formatReservationDate,
+} from "@/lib/court-reservations";
 import { courtReservationStatusEnum, type CourtReservation } from "@/db/schema";
 
 const STATUS_FILTERS = [
@@ -71,6 +76,9 @@ function useDebouncedValue<T>(value: T, delayMs: number) {
 function ReservationRowSkeleton() {
   return (
     <TableRow>
+      <TableCell>
+        <Skeleton className="h-4 w-20" />
+      </TableCell>
       <TableCell>
         <div className="space-y-1.5">
           <Skeleton className="h-3.5 w-32" />
@@ -201,7 +209,7 @@ export default function AdminCourtReservation() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by requester…"
+            placeholder="Search by requester or reference no.…"
             className="pl-8"
           />
         </div>
@@ -300,6 +308,7 @@ export default function AdminCourtReservation() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Reference No.</TableHead>
                 <TableHead>Requester</TableHead>
                 <TableHead>Schedule</TableHead>
                 <TableHead>Purpose</TableHead>
@@ -318,6 +327,7 @@ export default function AdminCourtReservation() {
                 <>
                   {reservations.map((reservation) => (
                     <TableRow key={reservation.id} className="cursor-pointer" onClick={() => setViewId(reservation.id)}>
+                      <TableCell className="font-medium">{formatReferenceNumber(reservation.id)}</TableCell>
                       <TableCell>
                         <p className="font-medium truncate">{reservation.requesterName}</p>
                         <p className="text-xs text-muted-foreground truncate">{reservation.requesterEmail}</p>
@@ -339,7 +349,7 @@ export default function AdminCourtReservation() {
                     </TableRow>
                   ))}
                   {hasNextPage && (
-                    <LoadMoreTrigger colSpan={5} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                    <LoadMoreTrigger colSpan={6} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
                   )}
                   {isFetchingNextPage && <ReservationRowSkeleton />}
                 </>

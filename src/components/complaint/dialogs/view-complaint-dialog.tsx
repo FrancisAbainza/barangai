@@ -22,6 +22,7 @@ import {
   publicSafetyRiskBadgeVariant,
   handlerLabel,
   formatDate,
+  formatReferenceNumber,
   otherResidentsLabel,
 } from "@/lib/complaints";
 import { getResidentProfile } from "@/actions/resident-profile";
@@ -122,12 +123,18 @@ export default function ViewComplaintDialog({
           </TabsList>
 
           <TabsContent value="complaint" className="space-y-4 pt-2">
-            <Field>
-              <FieldLabel>Status</FieldLabel>
-              <div>
-                <Badge variant={statusBadgeVariant(complaint.status)}>{complaint.status}</Badge>
-              </div>
-            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field>
+                <FieldLabel>Reference No.</FieldLabel>
+                <p className="text-sm font-medium">{formatReferenceNumber(complaint.id)}</p>
+              </Field>
+              <Field>
+                <FieldLabel>Status</FieldLabel>
+                <div>
+                  <Badge variant={statusBadgeVariant(complaint.status)}>{complaint.status}</Badge>
+                </div>
+              </Field>
+            </div>
 
             {complaint.handlerName && (
               <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3">

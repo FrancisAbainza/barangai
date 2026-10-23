@@ -53,7 +53,13 @@ import ComplaintsMapView from "@/components/complaint/complaints-map-view";
 import ViewComplaintDialog from "@/components/complaint/dialogs/view-complaint-dialog";
 import { useViewParam } from "@/hooks/use-view-param";
 import { getComplaintById, getComplaintStats, getComplaints } from "@/actions/complaints";
-import { statusBadgeVariant, priorityBadgeVariant, formatDate, otherResidentsLabel } from "@/lib/complaints";
+import {
+  statusBadgeVariant,
+  priorityBadgeVariant,
+  formatDate,
+  formatReferenceNumber,
+  otherResidentsLabel,
+} from "@/lib/complaints";
 import { complaintCategoryEnum, complaintPriorityEnum, complaintStatusEnum, type Complaint } from "@/db/schema";
 
 const CATEGORY_FILTERS = [
@@ -90,6 +96,9 @@ function useDebouncedValue<T>(value: T, delayMs: number) {
 function ComplaintRowSkeleton() {
   return (
     <TableRow>
+      <TableCell>
+        <Skeleton className="h-4 w-20" />
+      </TableCell>
       <TableCell>
         <div className="space-y-1.5">
           <Skeleton className="h-3.5 w-32" />
@@ -233,7 +242,7 @@ export default function AdminComplaint() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by subject or complainant…"
+              placeholder="Search by subject, complainant or reference no.…"
               className="pl-8"
             />
           </div>
@@ -373,6 +382,7 @@ export default function AdminComplaint() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Reference No.</TableHead>
                     <TableHead>Subject</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Priority</TableHead>
@@ -392,6 +402,7 @@ export default function AdminComplaint() {
                     <>
                       {complaints.map((complaint) => (
                         <TableRow key={complaint.id} className="cursor-pointer" onClick={() => setViewId(complaint.id)}>
+                          <TableCell className="font-medium">{formatReferenceNumber(complaint.id)}</TableCell>
                           <TableCell>
                             <p className="font-medium truncate">{complaint.subject}</p>
                             <p className="text-xs text-muted-foreground truncate">
@@ -418,7 +429,7 @@ export default function AdminComplaint() {
                         </TableRow>
                       ))}
                       {hasNextPage && (
-                        <LoadMoreTrigger colSpan={6} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                        <LoadMoreTrigger colSpan={7} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
                       )}
                       {isFetchingNextPage && <ComplaintRowSkeleton />}
                     </>

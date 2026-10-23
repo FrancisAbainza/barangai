@@ -194,7 +194,7 @@ export default function AdminCommunityHub() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by business name…"
+              placeholder="Search by business name or reference no.…"
               className="pl-8"
             />
           </div>

@@ -1,5 +1,6 @@
 import type { Business } from "@/db/schema";
 import type { OperatingHours } from "@/schemas/business-schema";
+import { createReferenceNumbers } from "@/lib/reference-numbers";
 
 export function statusBadgeVariant(status: Business["status"]) {
   if (status === "Verified") return "default";
@@ -13,6 +14,9 @@ export function handlerLabel(status: Business["status"]) {
   if (status === "Rejected") return "Rejected by";
   return "Being processed by";
 }
+
+// For Community Hub submissions, e.g. 123 → "CH-123"
+export const { formatReferenceNumber, referenceNumberSearchPattern } = createReferenceNumbers("CH");
 
 export function formatDate(date: Date | string) {
   return new Date(date).toLocaleDateString("en-US", {

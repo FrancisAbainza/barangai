@@ -3,10 +3,11 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { and, asc, count, desc, eq, gte, ilike, inArray, lte, ne, notInArray, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, like, lte, ne, notInArray, or, sql } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
+import { referenceNumberSearchPattern } from "@/lib/complaints";
 import { db } from "@/db/config";
 import { complaintFollowersTable, complaintsTable, type Complaint } from "@/db/schema";
 import {
@@ -387,15 +388,19 @@ export async function getComplaints({
   const trimmedSearch = search?.trim();
   if (trimmedSearch) {
     // Complainant name/email lives in Clerk, not the DB, so match it there and combine
-    // with a subject search on the DB side.
+    // with a subject search on the DB side. A reference number matches its complaint's id.
     const { data: matchedUsers } = await client.users.getUserList({ query: trimmedSearch, limit: 100 });
-    const subjectMatch = ilike(complaintsTable.subject, `%${trimmedSearch}%`);
+    const referencePattern = referenceNumberSearchPattern(trimmedSearch);
 
-    conditions.push(
-      matchedUsers.length === 0
-        ? subjectMatch
-        : or(subjectMatch, inArray(complaintsTable.complainantId, matchedUsers.map((u) => u.id)))!
-    );
+    const searchConditions = [ilike(complaintsTable.subject, `%${trimmedSearch}%`)];
+    if (matchedUsers.length > 0) {
+      searchConditions.push(inArray(complaintsTable.complainantId, matchedUsers.map((u) => u.id)));
+    }
+    if (referencePattern !== null) {
+      searchConditions.push(like(sql`${complaintsTable.id}::text`, referencePattern));
+    }
+
+    conditions.push(or(...searchConditions)!);
   }
 
   const orderFn = sortOrder === "oldest" ? asc : desc;

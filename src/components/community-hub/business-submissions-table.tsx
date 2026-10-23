@@ -14,14 +14,17 @@ import {
 import EmptyState from "@/components/empty-state";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import BusinessActionsMenu from "@/components/community-hub/business-actions-menu";
-import { statusBadgeVariant, formatDate } from "@/lib/business";
+import { statusBadgeVariant, formatDate, formatReferenceNumber } from "@/lib/business";
 import type { BusinessWithOwner } from "@/actions/business";
 
-const COLUMN_COUNT = 6;
+const COLUMN_COUNT = 7;
 
 function SubmissionRowSkeleton() {
   return (
     <TableRow>
+      <TableCell>
+        <Skeleton className="h-4 w-20" />
+      </TableCell>
       <TableCell>
         <div className="space-y-1.5">
           <Skeleton className="h-3.5 w-32" />
@@ -80,6 +83,7 @@ export default function BusinessSubmissionsTable({
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Reference No.</TableHead>
             <TableHead>Business</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Contact</TableHead>
@@ -103,6 +107,7 @@ export default function BusinessSubmissionsTable({
                   className={onRowClick && "cursor-pointer"}
                   onClick={() => onRowClick?.(business)}
                 >
+                  <TableCell className="font-medium">{formatReferenceNumber(business.id)}</TableCell>
                   <TableCell>
                     <p className="font-medium truncate">{business.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{business.ownerName}</p>

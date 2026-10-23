@@ -1,4 +1,5 @@
 import type { DocumentRequest } from "@/db/schema";
+import { createReferenceNumbers } from "@/lib/reference-numbers";
 
 export function statusBadgeVariant(status: DocumentRequest["status"]) {
   if (status === "Ready for Pickup") return "default";
@@ -14,22 +15,8 @@ export function handlerLabel(status: DocumentRequest["status"]) {
   return "Being processed by";
 }
 
-// The reference number is derived from the id (e.g. 123 → "DR-123"), so it isn't stored.
-const REFERENCE_NUMBER_PREFIX = "DR-";
-
-export function formatReferenceNumber(id: number) {
-  return `${REFERENCE_NUMBER_PREFIX}${id}`;
-}
-
-// Matches a search term against reference numbers as text: "DR-12" finds the ones starting with
-// it, and bare digits ("12") the ones containing them. Returns a LIKE pattern for the id's digits,
-// or null if the term isn't part of a reference number.
-export function referenceNumberSearchPattern(search: string) {
-  const match = search.trim().match(/^(DR-?)?(\d+)$/i);
-  if (!match) return null;
-  const [, prefix, digits] = match;
-  return prefix ? `${digits}%` : `%${digits}%`;
-}
+// e.g. 123 → "DR-123"
+export const { formatReferenceNumber, referenceNumberSearchPattern } = createReferenceNumbers("DR");
 
 export function formatDate(date: Date | string) {
   return new Date(date).toLocaleDateString("en-US", {

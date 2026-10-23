@@ -1,4 +1,5 @@
 import type { CourtReservation } from "@/db/schema";
+import { createReferenceNumbers } from "@/lib/reference-numbers";
 
 export function statusBadgeVariant(status: CourtReservation["status"]) {
   if (status === "Approved") return "default";
@@ -11,6 +12,9 @@ export function handlerLabel(status: CourtReservation["status"]) {
   if (status === "Rejected") return "Rejected by";
   return "Being processed by";
 }
+
+// e.g. 123 → "CR-123"
+export const { formatReferenceNumber, referenceNumberSearchPattern } = createReferenceNumbers("CR");
 
 // Reservation times are stored as minutes after midnight. A reservation lasts a whole
 // number of hours but can start at any minute, and must end by midnight of its date.

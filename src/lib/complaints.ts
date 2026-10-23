@@ -1,5 +1,6 @@
 import type { Complaint } from "@/db/schema";
 import type { PUBLIC_SAFETY_RISK_LEVELS } from "@/schemas/complaint-schema";
+import { createReferenceNumbers } from "@/lib/reference-numbers";
 
 export function statusBadgeVariant(status: Complaint["status"]) {
   if (status === "Resolved") return "default";
@@ -12,6 +13,9 @@ export function handlerLabel(status: Complaint["status"]) {
   if (status === "Dismissed") return "Dismissed by";
   return "Being handled by";
 }
+
+// e.g. 123 → "CP-123"
+export const { formatReferenceNumber, referenceNumberSearchPattern } = createReferenceNumbers("CP");
 
 // For a complaint's followers, e.g. "Also reported by 2 other residents".
 export function otherResidentsLabel(count: number) {

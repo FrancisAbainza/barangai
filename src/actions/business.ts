@@ -1,10 +1,11 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { and, asc, count, desc, eq, gte, ilike, lte, ne, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, like, lte, ne, or, sql, type SQL } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
+import { referenceNumberSearchPattern } from "@/lib/business";
 import { db } from "@/db/config";
 import { businessesTable, type Business } from "@/db/schema";
 import type { BusinessFormValues } from "@/schemas/business-schema";
@@ -141,7 +142,15 @@ export async function getBusinesses({
 
   const trimmedSearch = search?.trim();
   if (trimmedSearch) {
-    conditions.push(ilike(businessesTable.name, `%${trimmedSearch}%`));
+    // A reference number matches its business's id.
+    const referencePattern = referenceNumberSearchPattern(trimmedSearch);
+    const nameMatch = ilike(businessesTable.name, `%${trimmedSearch}%`);
+
+    conditions.push(
+      referencePattern === null
+        ? nameMatch
+        : or(nameMatch, like(sql`${businessesTable.id}::text`, referencePattern))!
+    );
   }
 
   const orderFn = sortOrder === "oldest" ? asc : desc;

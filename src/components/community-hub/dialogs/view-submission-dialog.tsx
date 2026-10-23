@@ -12,7 +12,13 @@ import MediaLightbox from "@/components/media-lightbox";
 import MediaPreviewList from "@/components/media-preview-list";
 import MapView from "@/components/map-view";
 import { fetchFile } from "@/lib/storage";
-import { statusBadgeVariant, handlerLabel, formatDate, formatOperatingHours } from "@/lib/business";
+import {
+  statusBadgeVariant,
+  handlerLabel,
+  formatDate,
+  formatOperatingHours,
+  formatReferenceNumber,
+} from "@/lib/business";
 import { getResidentProfile } from "@/actions/resident-profile";
 import type { BusinessWithOwner } from "@/actions/business";
 import type { MediaItem } from "@/components/file-uploader";
@@ -73,12 +79,18 @@ export default function ViewSubmissionDialog({
           </TabsList>
 
           <TabsContent value="business" className="space-y-4 pt-2">
-            <Field>
-              <FieldLabel>Status</FieldLabel>
-              <div>
-                <Badge variant={statusBadgeVariant(business.status)}>{business.status}</Badge>
-              </div>
-            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field>
+                <FieldLabel>Reference No.</FieldLabel>
+                <p className="text-sm font-medium">{formatReferenceNumber(business.id)}</p>
+              </Field>
+              <Field>
+                <FieldLabel>Status</FieldLabel>
+                <div>
+                  <Badge variant={statusBadgeVariant(business.status)}>{business.status}</Badge>
+                </div>
+              </Field>
+            </div>
 
             {business.handlerName && (
               <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
