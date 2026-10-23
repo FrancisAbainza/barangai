@@ -80,6 +80,7 @@ export default function ClearanceDocumentRequestForm({
 
   return (
     <form
+      className="min-w-0"
       onSubmit={handleSubmit((data) =>
         // Drop a receipt uploaded before switching to a free purpose.
         onSubmit(isFree ? { ...data, paymentReceipt: [] } : data)

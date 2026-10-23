@@ -51,7 +51,7 @@ export default function SoloParentDocumentRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Request Solo Parent Certification</DialogTitle>
         </DialogHeader>

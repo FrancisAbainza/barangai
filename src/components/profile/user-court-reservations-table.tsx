@@ -14,7 +14,13 @@ import {
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import CourtReservationActionsMenu from "@/components/court-reservation/court-reservation-actions-menu";
 import { getCourtReservationsByUser } from "@/actions/court-reservations";
-import { statusBadgeVariant, formatReservationTime, formatFee, formatReservationDate } from "@/lib/court-reservations";
+import {
+  statusBadgeVariant,
+  formatReferenceNumber,
+  formatReservationTime,
+  formatFee,
+  formatReservationDate,
+} from "@/lib/court-reservations";
 
 export default function UserCourtReservationsTable({ userId }: { userId: string }) {
   const {
@@ -37,6 +43,7 @@ export default function UserCourtReservationsTable({ userId }: { userId: string 
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Reference No.</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Time Slots</TableHead>
             <TableHead>Purpose</TableHead>
@@ -48,13 +55,13 @@ export default function UserCourtReservationsTable({ userId }: { userId: string 
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={6}>
+              <TableCell colSpan={7}>
                 <Skeleton className="h-5 w-full" />
               </TableCell>
             </TableRow>
           ) : reservations.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
+              <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
                 No reservations yet.
               </TableCell>
             </TableRow>
@@ -62,6 +69,7 @@ export default function UserCourtReservationsTable({ userId }: { userId: string 
             <>
               {reservations.map((reservation) => (
                 <TableRow key={reservation.id}>
+                  <TableCell className="font-medium">{formatReferenceNumber(reservation.id)}</TableCell>
                   <TableCell className="font-medium">
                     {formatReservationDate(reservation.date)}
                   </TableCell>
@@ -81,11 +89,11 @@ export default function UserCourtReservationsTable({ userId }: { userId: string 
                 </TableRow>
               ))}
               {hasNextPage && (
-                <LoadMoreTrigger colSpan={6} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                <LoadMoreTrigger colSpan={7} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
               )}
               {isFetchingNextPage && (
                 <TableRow>
-                  <TableCell colSpan={6}>
+                  <TableCell colSpan={7}>
                     <Skeleton className="h-5 w-full" />
                   </TableCell>
                 </TableRow>

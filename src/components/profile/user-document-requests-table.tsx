@@ -14,7 +14,7 @@ import {
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import DocumentRequestActionsMenu from "@/components/document-request/document-request-actions-menu";
 import { getDocumentRequestsByUser } from "@/actions/document-requests";
-import { statusBadgeVariant, formatDate } from "@/lib/document-requests";
+import { statusBadgeVariant, formatDate, formatReferenceNumber } from "@/lib/document-requests";
 
 export default function UserDocumentRequestsTable({ userId }: { userId: string }) {
   const {
@@ -37,6 +37,7 @@ export default function UserDocumentRequestsTable({ userId }: { userId: string }
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Reference No.</TableHead>
             <TableHead>Document Type</TableHead>
             <TableHead>Submission Date</TableHead>
             <TableHead>Status</TableHead>
@@ -46,13 +47,13 @@ export default function UserDocumentRequestsTable({ userId }: { userId: string }
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={4}>
+              <TableCell colSpan={5}>
                 <Skeleton className="h-5 w-full" />
               </TableCell>
             </TableRow>
           ) : requests.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-8">
+              <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
                 No requests yet.
               </TableCell>
             </TableRow>
@@ -60,6 +61,7 @@ export default function UserDocumentRequestsTable({ userId }: { userId: string }
             <>
               {requests.map((request) => (
                 <TableRow key={request.id}>
+                  <TableCell className="font-medium">{formatReferenceNumber(request.id)}</TableCell>
                   <TableCell className="font-medium">{request.documentType}</TableCell>
                   <TableCell className="text-muted-foreground">{formatDate(request.createdAt)}</TableCell>
                   <TableCell>
@@ -71,11 +73,11 @@ export default function UserDocumentRequestsTable({ userId }: { userId: string }
                 </TableRow>
               ))}
               {hasNextPage && (
-                <LoadMoreTrigger colSpan={4} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                <LoadMoreTrigger colSpan={5} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
               )}
               {isFetchingNextPage && (
                 <TableRow>
-                  <TableCell colSpan={4}>
+                  <TableCell colSpan={5}>
                     <Skeleton className="h-5 w-full" />
                   </TableCell>
                 </TableRow>

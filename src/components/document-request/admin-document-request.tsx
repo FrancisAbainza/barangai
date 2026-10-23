@@ -241,7 +241,7 @@ export default function AdminDocumentRequest() {
                 )}
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Filter Requests</DialogTitle>
                 <DialogDescription>

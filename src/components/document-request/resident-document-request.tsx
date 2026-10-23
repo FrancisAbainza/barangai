@@ -28,7 +28,7 @@ import { getDocumentRequestById, getMyDocumentRequests } from "@/actions/documen
 import { getResidentProfile } from "@/actions/resident-profile";
 import { useDialogParam } from "@/hooks/use-dialog-param";
 import { useViewParam } from "@/hooks/use-view-param";
-import { statusBadgeVariant } from "@/lib/document-requests";
+import { formatReferenceNumber, statusBadgeVariant } from "@/lib/document-requests";
 import {
   FileText,
   FileUser,
@@ -182,6 +182,7 @@ export default function ResidentDocumentRequest() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Reference No.</TableHead>
                   <TableHead>Document Type</TableHead>
                   <TableHead>Submission Date</TableHead>
                   <TableHead>Status</TableHead>
@@ -191,7 +192,7 @@ export default function ResidentDocumentRequest() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={5}>
                       <Skeleton className="h-5 w-full" />
                     </TableCell>
                   </TableRow>
@@ -199,6 +200,7 @@ export default function ResidentDocumentRequest() {
                   <>
                     {myRequests.map((request) => (
                       <TableRow key={request.id} className="cursor-pointer" onClick={() => setViewId(request.id)}>
+                        <TableCell className="font-medium">{formatReferenceNumber(request.id)}</TableCell>
                         <TableCell className="font-medium">{request.documentType}</TableCell>
                         <TableCell className="text-muted-foreground">
                           {formatSubmittedDate(request.createdAt)}
@@ -214,14 +216,14 @@ export default function ResidentDocumentRequest() {
                     ))}
                     {hasNextPage && (
                       <LoadMoreTrigger
-                        colSpan={4}
+                        colSpan={5}
                         onIntersect={fetchNextPage}
                         disabled={isFetchingNextPage}
                       />
                     )}
                     {isFetchingNextPage && (
                       <TableRow>
-                        <TableCell colSpan={4}>
+                        <TableCell colSpan={5}>
                           <Skeleton className="h-5 w-full" />
                         </TableCell>
                       </TableRow>

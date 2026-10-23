@@ -55,7 +55,7 @@ export default function NoObjectionDocumentRequestForm({
   const receiveVia = watch("receiveVia");
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form className="min-w-0" onSubmit={handleSubmit(onSubmit)}>
       <fieldset disabled={isSubmitting} className="space-y-4">
         <Controller
           name="purpose"

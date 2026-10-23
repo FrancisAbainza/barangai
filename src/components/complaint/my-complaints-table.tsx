@@ -21,7 +21,13 @@ import ComplaintsMapView from "@/components/complaint/complaints-map-view";
 import ViewComplaintDialog from "@/components/complaint/dialogs/view-complaint-dialog";
 import { useViewParam } from "@/hooks/use-view-param";
 import { getComplaintById, getMyComplaints } from "@/actions/complaints";
-import { statusBadgeVariant, priorityBadgeVariant, formatDate, otherResidentsLabel } from "@/lib/complaints";
+import {
+  statusBadgeVariant,
+  priorityBadgeVariant,
+  formatDate,
+  formatReferenceNumber,
+  otherResidentsLabel,
+} from "@/lib/complaints";
 
 export default function MyComplaintsTable() {
   const [view, setView] = useState<"table" | "map">("table");
@@ -88,6 +94,7 @@ export default function MyComplaintsTable() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Reference No.</TableHead>
                     <TableHead>Subject</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Priority</TableHead>
@@ -99,7 +106,7 @@ export default function MyComplaintsTable() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6}>
+                      <TableCell colSpan={7}>
                         <Skeleton className="h-5 w-full" />
                       </TableCell>
                     </TableRow>
@@ -107,6 +114,7 @@ export default function MyComplaintsTable() {
                     <>
                       {myComplaints.map((complaint) => (
                         <TableRow key={complaint.id} className="cursor-pointer" onClick={() => setViewId(complaint.id)}>
+                          <TableCell className="font-medium">{formatReferenceNumber(complaint.id)}</TableCell>
                           <TableCell>
                             <p className="font-medium">{complaint.subject}</p>
                             {complaint.isFollowing ? (
@@ -139,14 +147,14 @@ export default function MyComplaintsTable() {
                       ))}
                       {hasNextPage && (
                         <LoadMoreTrigger
-                          colSpan={6}
+                          colSpan={7}
                           onIntersect={fetchNextPage}
                           disabled={isFetchingNextPage}
                         />
                       )}
                       {isFetchingNextPage && (
                         <TableRow>
-                          <TableCell colSpan={6}>
+                          <TableCell colSpan={7}>
                             <Skeleton className="h-5 w-full" />
                           </TableCell>
                         </TableRow>

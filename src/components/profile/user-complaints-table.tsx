@@ -14,7 +14,7 @@ import {
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import ComplaintActionsMenu from "@/components/complaint/complaint-actions-menu";
 import { getComplaintsByUser } from "@/actions/complaints";
-import { statusBadgeVariant, priorityBadgeVariant, formatDate } from "@/lib/complaints";
+import { statusBadgeVariant, priorityBadgeVariant, formatDate, formatReferenceNumber } from "@/lib/complaints";
 
 export default function UserComplaintsTable({ userId }: { userId: string }) {
   const {
@@ -37,6 +37,7 @@ export default function UserComplaintsTable({ userId }: { userId: string }) {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Reference No.</TableHead>
             <TableHead>Subject</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Priority</TableHead>
@@ -48,13 +49,13 @@ export default function UserComplaintsTable({ userId }: { userId: string }) {
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={6}>
+              <TableCell colSpan={7}>
                 <Skeleton className="h-5 w-full" />
               </TableCell>
             </TableRow>
           ) : complaints.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
+              <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
                 No complaints filed yet.
               </TableCell>
             </TableRow>
@@ -62,6 +63,7 @@ export default function UserComplaintsTable({ userId }: { userId: string }) {
             <>
               {complaints.map((complaint) => (
                 <TableRow key={complaint.id}>
+                  <TableCell className="font-medium">{formatReferenceNumber(complaint.id)}</TableCell>
                   <TableCell className="font-medium">{complaint.subject}</TableCell>
                   <TableCell className="text-muted-foreground">{complaint.category}</TableCell>
                   <TableCell>
@@ -77,11 +79,11 @@ export default function UserComplaintsTable({ userId }: { userId: string }) {
                 </TableRow>
               ))}
               {hasNextPage && (
-                <LoadMoreTrigger colSpan={6} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                <LoadMoreTrigger colSpan={7} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
               )}
               {isFetchingNextPage && (
                 <TableRow>
-                  <TableCell colSpan={6}>
+                  <TableCell colSpan={7}>
                     <Skeleton className="h-5 w-full" />
                   </TableCell>
                 </TableRow>

@@ -25,7 +25,7 @@ import { getResidentProfile } from "@/actions/resident-profile";
 import { useDialogParam } from "@/hooks/use-dialog-param";
 import { useViewParam } from "@/hooks/use-view-param";
 import { getCourtReservationById, getMyCourtReservations } from "@/actions/court-reservations";
-import { statusBadgeVariant, formatReservationTime, formatFee } from "@/lib/court-reservations";
+import { statusBadgeVariant, formatReferenceNumber, formatReservationTime, formatFee } from "@/lib/court-reservations";
 import { CalendarCheck, Clock, SportShoe } from "lucide-react";
 
 function formatReservationDate(date: string) {
@@ -123,6 +123,7 @@ export default function ResidentCourtReservation() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Reference No.</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Purpose</TableHead>
@@ -134,7 +135,7 @@ export default function ResidentCourtReservation() {
               <TableBody>
                 {isReservationsLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={7}>
                       <Skeleton className="h-5 w-full" />
                     </TableCell>
                   </TableRow>
@@ -142,6 +143,7 @@ export default function ResidentCourtReservation() {
                   <>
                     {myReservations.map((reservation) => (
                       <TableRow key={reservation.id} className="cursor-pointer" onClick={() => setViewId(reservation.id)}>
+                        <TableCell className="font-medium">{formatReferenceNumber(reservation.id)}</TableCell>
                         <TableCell className="font-medium">
                           {formatReservationDate(reservation.date)}
                         </TableCell>
@@ -165,14 +167,14 @@ export default function ResidentCourtReservation() {
                     ))}
                     {hasNextPage && (
                       <LoadMoreTrigger
-                        colSpan={6}
+                        colSpan={7}
                         onIntersect={fetchNextPage}
                         disabled={isFetchingNextPage}
                       />
                     )}
                     {isFetchingNextPage && (
                       <TableRow>
-                        <TableCell colSpan={6}>
+                        <TableCell colSpan={7}>
                           <Skeleton className="h-5 w-full" />
                         </TableCell>
                       </TableRow>
