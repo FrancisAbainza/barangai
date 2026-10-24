@@ -1,10 +1,11 @@
 "use client";
 
-import { Landmark, ReceiptText, SportShoe, Target, Users } from "lucide-react";
+import { Landmark, Phone, ReceiptText, SportShoe, Target, Users } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import ContactInformationForm from "@/components/barangay-settings/forms/contact-information-form";
 import CourtFeesForm from "@/components/barangay-settings/forms/court-fees-form";
 import DocumentPricingForm from "@/components/barangay-settings/forms/document-pricing-form";
 import GoalMissionVisionForm from "@/components/barangay-settings/forms/goal-mission-vision-form";
@@ -54,6 +55,12 @@ export default function BarangaySettings() {
     goal: settings.goal,
     mission: settings.mission,
     vision: settings.vision,
+  };
+  const contactInformation = settings && {
+    hotline1: settings.hotline1,
+    hotline2: settings.hotline2,
+    email: settings.email,
+    address: settings.address,
   };
 
   return (
@@ -128,6 +135,34 @@ export default function BarangaySettings() {
             <GoalMissionVisionForm
               key={JSON.stringify(goalMissionVision)}
               defaultValues={goalMissionVision}
+              onSubmit={async (data) => {
+                await saveSettings(data);
+              }}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex-row items-center gap-3 space-y-0">
+          <div className="rounded-lg bg-primary/10 p-2 text-primary [&_svg]:size-5">
+            <Phone />
+          </div>
+          <div>
+            <CardTitle className="text-lg">Contact Information</CardTitle>
+            <CardDescription>
+              The hotlines and email shown at the top of the public pages, and the address shown in the
+              landing page footer with them.
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading || !contactInformation ? (
+            <FormSkeleton fields={3} />
+          ) : (
+            <ContactInformationForm
+              key={JSON.stringify(contactInformation)}
+              defaultValues={contactInformation}
               onSubmit={async (data) => {
                 await saveSettings(data);
               }}

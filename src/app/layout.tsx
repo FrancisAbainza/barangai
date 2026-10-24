@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/query-provider";
+import LandingHotlineBar from "@/components/landing-hotline-bar";
 import LandingPageHeader from "@/components/landing-page-header";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -58,7 +59,9 @@ export default function RootLayout({
           <ThemeProvider>
             <TooltipProvider>
               <QueryProvider>
+                {/* Show is a server component, so the hotline bar's settings query only runs when signed out. */}
                 <Show when="signed-out">
+                  <LandingHotlineBar />
                   <LandingPageHeader />
                 </Show>
                 {children}

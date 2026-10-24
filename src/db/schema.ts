@@ -26,7 +26,16 @@ import {
 import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
 import { BUSINESS_CATEGORIES, BUSINESS_STATUSES, type OperatingHours } from "@/schemas/business-schema";
 import { COURT_RESERVATION_STATUSES } from "@/schemas/court-reservation-schema";
-import { barangayGoal, barangayMission, barangayVision, type ClearancePurposeFees } from "@/lib/data";
+import {
+  barangayAddress,
+  barangayEmail,
+  barangayGoal,
+  barangayHotline1,
+  barangayHotline2,
+  barangayMission,
+  barangayVision,
+  type ClearancePurposeFees,
+} from "@/lib/data";
 import { KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS } from "@/lib/knowledge-base";
 
 export const newsCategoryEnum = pgEnum("news_category", ["Announcement", "Event", "Emergency"]);
@@ -392,6 +401,11 @@ export const barangaySettingsTable = pgTable("barangay_settings", {
   goal: text().notNull().default(barangayGoal),
   mission: text().notNull().default(barangayMission),
   vision: text().notNull().default(barangayVision),
+  hotline1: varchar({ length: 20 }).notNull().default(barangayHotline1),
+  // Empty when the barangay has only one hotline.
+  hotline2: varchar({ length: 20 }).notNull().default(barangayHotline2),
+  email: varchar({ length: 255 }).notNull().default(barangayEmail),
+  address: text().notNull().default(barangayAddress),
   updatedAt: timestamp().notNull().defaultNow(),
 });
 

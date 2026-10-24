@@ -26,8 +26,8 @@ import { Float, ReducedMotionConfig, Reveal, RevealGroup, RevealItem } from "@/c
 import NewsCarousel from "@/components/landing/news-carousel";
 import OfficialsShowcase from "@/components/landing/officials-showcase";
 import SectionIntro from "@/components/landing/section-intro";
-import { barangayCity, barangayEmail, barangayHotlines, barangayLogoSrc, barangayName } from "@/lib/data";
-import { cn } from "@/lib/utils";
+import { barangayCity, barangayLogoSrc, barangayName } from "@/lib/data";
+import { cn, toTelHref } from "@/lib/utils";
 
 type Service = {
   icon: LucideIcon;
@@ -189,7 +189,8 @@ function TechCard({
 }
 
 export default async function Home() {
-  const { goal, mission, vision } = await getBarangaySettings();
+  const { goal, mission, vision, hotline1, hotline2, email, address } = await getBarangaySettings();
+  const hotlines = [hotline1, hotline2].filter(Boolean);
   const statements = [
     { icon: Flag, label: "Goal", statement: goal },
     { icon: Target, label: "Mission", statement: mission },
@@ -242,8 +243,8 @@ export default async function Home() {
               <RevealItem>
                 <p className="text-[0.9375rem] text-primary-foreground/80">
                   Emergency? Call the barangay hotline at{" "}
-                  <a href={`tel:${barangayHotlines[0].tel}`} className="font-semibold whitespace-nowrap text-primary-foreground underline">
-                    {barangayHotlines[0].label}
+                  <a href={toTelHref(hotline1)} className="font-semibold whitespace-nowrap text-primary-foreground underline">
+                    {hotline1}
                   </a>
                 </p>
               </RevealItem>
@@ -411,22 +412,18 @@ export default async function Home() {
                   <Image src={barangayLogoSrc} alt="" width={56} height={56} />
                   <span className="text-[1.375rem] font-bold text-primary-foreground">{barangayName}</span>
                 </div>
-                <p className="leading-relaxed">
-                  Barangay Hall, Maduya
-                  <br />
-                  {barangayCity}
-                </p>
+                <p className="leading-relaxed">{address}</p>
               </div>
 
               <div className="flex min-w-0 flex-[1_1_12rem] flex-col gap-2.5">
                 <h2 className="text-sm font-bold tracking-wider text-primary-foreground uppercase">Contact</h2>
-                {barangayHotlines.map((hotline) => (
-                  <a key={hotline.tel} href={`tel:${hotline.tel}`} className="self-start hover:text-primary-foreground">
-                    {hotline.label}
+                {hotlines.map((hotline) => (
+                  <a key={hotline} href={toTelHref(hotline)} className="self-start hover:text-primary-foreground">
+                    {hotline}
                   </a>
                 ))}
-                <a href={`mailto:${barangayEmail}`} className="self-start break-all hover:text-primary-foreground">
-                  {barangayEmail}
+                <a href={`mailto:${email}`} className="self-start break-all hover:text-primary-foreground">
+                  {email}
                 </a>
               </div>
 

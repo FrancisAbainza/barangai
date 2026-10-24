@@ -18,6 +18,11 @@ export function parseDateValue(value: string): Date {
   return new Date(year, month - 1, day);
 }
 
+// "(046) 412 4977" → "tel:0464124977", keeping only the characters a dialer reads.
+export function toTelHref(phone: string): string {
+  return `tel:${phone.replace(/[^\d+]/g, "")}`;
+}
+
 export function truncateName(name: string, max = 20): string {
   return name.length > max ? name.slice(0, max) + "..." : name;
 }

@@ -28,3 +28,23 @@ export const goalMissionVisionFormSchema = z.object({
 });
 
 export type GoalMissionVisionFormValues = z.infer<typeof goalMissionVisionFormSchema>;
+
+// Digits with optional spaces, dashes, parentheses and +, e.g. "(046) 412 4977".
+const PHONE_NUMBER_PATTERN = /^[\d\s()+-]{7,20}$/;
+
+export const contactInformationFormSchema = z.object({
+  hotline1: z
+    .string()
+    .trim()
+    .min(1, "Hotline 1 is required")
+    .regex(PHONE_NUMBER_PATTERN, "Enter a valid phone number"),
+  // Optional, for when the barangay has only one hotline.
+  hotline2: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || PHONE_NUMBER_PATTERN.test(value), "Enter a valid phone number"),
+  email: z.email("Enter a valid email address").max(255, "Email is too long"),
+  address: z.string().trim().min(1, "Address is required").max(255, "Address is too long"),
+});
+
+export type ContactInformationFormValues = z.infer<typeof contactInformationFormSchema>;

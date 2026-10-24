@@ -6,7 +6,11 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/db/config";
 import { barangaySettingsTable } from "@/db/schema";
 import {
+  barangayAddress,
+  barangayEmail,
   barangayGoal,
+  barangayHotline1,
+  barangayHotline2,
   barangayMission,
   barangayVision,
   DEFAULT_CLEARANCE_PURPOSE_FEES,
@@ -24,6 +28,10 @@ export type BarangaySettingsValues = {
   goal: string;
   mission: string;
   vision: string;
+  hotline1: string;
+  hotline2: string;
+  email: string;
+  address: string;
 };
 
 const DEFAULT_SETTINGS: BarangaySettingsValues = {
@@ -34,6 +42,10 @@ const DEFAULT_SETTINGS: BarangaySettingsValues = {
   goal: barangayGoal,
   mission: barangayMission,
   vision: barangayVision,
+  hotline1: barangayHotline1,
+  hotline2: barangayHotline2,
+  email: barangayEmail,
+  address: barangayAddress,
 };
 
 export async function getBarangaySettings(): Promise<BarangaySettingsValues> {
@@ -48,6 +60,10 @@ export async function getBarangaySettings(): Promise<BarangaySettingsValues> {
     goal: settings.goal,
     mission: settings.mission,
     vision: settings.vision,
+    hotline1: settings.hotline1,
+    hotline2: settings.hotline2,
+    email: settings.email,
+    address: settings.address,
   };
 }
 
@@ -67,8 +83,7 @@ export async function updateBarangaySettings(data: Partial<BarangaySettingsValue
       set: { ...merged, updatedAt: new Date() },
     });
 
-  // The landing and About Us pages render the goal, mission and vision on the server.
-  revalidatePath("/");
-  revalidatePath("/about-us");
-  revalidatePath("/portal/about-us");
+  // Every public page's hotline bar, plus the landing and About Us pages, renders these
+  // settings on the server.
+  revalidatePath("/", "layout");
 }
