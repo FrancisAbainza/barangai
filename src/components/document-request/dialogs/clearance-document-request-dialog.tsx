@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { ClearanceDocumentRequestFormValues } from "@/schemas/clearance-document-request-schema";
 import ClearanceDocumentRequestForm from "../forms/clearance-document-request-form";
+import { useDialogPrefill } from "@/hooks/use-dialog-param";
 import { uploadFile } from "@/lib/storage";
 import { createDocumentRequest } from "@/actions/document-requests";
 
@@ -20,6 +21,7 @@ export default function ClearanceDocumentRequestDialog({
   onOpenChange,
 }: ClearanceDocumentRequestDialogProps) {
   const queryClient = useQueryClient();
+  const prefill = useDialogPrefill("clearance-request");
 
   const { mutateAsync: submitRequest } = useMutation({
     mutationFn: async (data: ClearanceDocumentRequestFormValues) => {
@@ -56,7 +58,11 @@ export default function ClearanceDocumentRequestDialog({
           <DialogTitle>Request {documentName}</DialogTitle>
         </DialogHeader>
 
-        <ClearanceDocumentRequestForm onSubmit={submitRequest} onCancel={() => onOpenChange(false)} />
+        <ClearanceDocumentRequestForm
+          defaultValues={prefill as Partial<ClearanceDocumentRequestFormValues>}
+          onSubmit={submitRequest}
+          onCancel={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -24,7 +24,7 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { VoiceInputButton } from "@/components/ai-assistant/voice-input-button";
 import { Button } from "@/components/ui/button";
-import { getPortalDialogHref, PORTAL_DIALOG_TARGETS, type PortalDialogTargetId } from "@/lib/portal-dialogs";
+import { PORTAL_DIALOG_TARGETS, type PortalDialogTargetId } from "@/lib/portal-dialogs";
 import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/portal-navigation";
 
 function getMessageText(message: UIMessage): string {
@@ -34,23 +34,26 @@ function getMessageText(message: UIMessage): string {
     .join("");
 }
 
+type DialogTarget = { dialog: PortalDialogTargetId; href: string };
+
 // Forms the assistant offered to open (openFormDialog tool results), deduplicated.
-function getDialogTargets(message: UIMessage): PortalDialogTargetId[] {
-  const dialogs = new Set<PortalDialogTargetId>();
+// The tool's `href` includes the `?prefill=` values the assistant filled in.
+function getDialogTargets(message: UIMessage): DialogTarget[] {
+  const targets = new Map<PortalDialogTargetId, string>();
   for (const part of message.parts) {
     if (part.type === "tool-openFormDialog" && part.state === "output-available") {
-      const { dialog } = part.input as { dialog: PortalDialogTargetId };
-      if (dialog in PORTAL_DIALOG_TARGETS) dialogs.add(dialog);
+      const { dialog, href } = part.output as DialogTarget;
+      if (dialog in PORTAL_DIALOG_TARGETS) targets.set(dialog, href);
     }
   }
-  return [...dialogs];
+  return [...targets].map(([dialog, href]) => ({ dialog, href }));
 }
 
 // Pages the assistant offered to take the user to (navigateToPage tool results), deduplicated.
 // Pages already reached by one of the message's form buttons are skipped, so the model
 // calling both tools for one intent doesn't show two buttons to the same place.
-function getNavigationTargets(message: UIMessage, dialogs: PortalDialogTargetId[]): PortalNavigationTargetId[] {
-  const dialogPages = new Set<PortalNavigationTargetId>(dialogs.map((dialog) => PORTAL_DIALOG_TARGETS[dialog].page));
+function getNavigationTargets(message: UIMessage, dialogs: DialogTarget[]): PortalNavigationTargetId[] {
+  const dialogPages = new Set<PortalNavigationTargetId>(dialogs.map(({ dialog }) => PORTAL_DIALOG_TARGETS[dialog].page));
   const pages = new Set<PortalNavigationTargetId>();
   for (const part of message.parts) {
     if (part.type === "tool-navigateToPage" && part.state === "output-available") {
@@ -106,9 +109,9 @@ export function ChatPanel({ messages, sendMessage, status, stop, onNavigate }: C
                     <MessageResponse>{getMessageText(message)}</MessageResponse>
                     {(dialogTargets.length > 0 || navigationTargets.length > 0) && (
                       <div className="flex flex-wrap gap-2">
-                        {dialogTargets.map((dialog) => (
+                        {dialogTargets.map(({ dialog, href }) => (
                           <Button asChild key={dialog} size="sm">
-                            <Link href={getPortalDialogHref(dialog)} onClick={onNavigate}>
+                            <Link href={href} onClick={onNavigate}>
                               <SquarePenIcon />
                               {PORTAL_DIALOG_TARGETS[dialog].label}
                             </Link>

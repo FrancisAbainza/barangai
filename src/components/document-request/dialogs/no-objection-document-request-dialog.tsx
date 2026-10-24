@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { NoObjectionDocumentRequestFormValues } from "@/schemas/no-objection-document-request-schema";
 import NoObjectionDocumentRequestForm from "../forms/no-objection-document-request-form";
+import { useDialogPrefill } from "@/hooks/use-dialog-param";
 import { createDocumentRequest } from "@/actions/document-requests";
 
 interface NoObjectionDocumentRequestDialogProps {
@@ -17,6 +18,7 @@ export default function NoObjectionDocumentRequestDialog({
   onOpenChange,
 }: NoObjectionDocumentRequestDialogProps) {
   const queryClient = useQueryClient();
+  const prefill = useDialogPrefill("no-objection-request");
 
   const { mutateAsync: submitRequest } = useMutation({
     mutationFn: async (data: NoObjectionDocumentRequestFormValues) => {
@@ -45,7 +47,11 @@ export default function NoObjectionDocumentRequestDialog({
           <DialogTitle>Request Certificate of No Objection</DialogTitle>
         </DialogHeader>
 
-        <NoObjectionDocumentRequestForm onSubmit={submitRequest} onCancel={() => onOpenChange(false)} />
+        <NoObjectionDocumentRequestForm
+          defaultValues={prefill as Partial<NoObjectionDocumentRequestFormValues>}
+          onSubmit={submitRequest}
+          onCancel={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );

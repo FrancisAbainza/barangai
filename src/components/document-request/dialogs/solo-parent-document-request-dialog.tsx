@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { SoloParentDocumentRequestFormValues } from "@/schemas/solo-parent-document-request-schema";
 import SoloParentDocumentRequestForm from "../forms/solo-parent-document-request-form";
+import { useDialogPrefill } from "@/hooks/use-dialog-param";
 import { uploadFile } from "@/lib/storage";
 import { createDocumentRequest } from "@/actions/document-requests";
 
@@ -18,6 +19,7 @@ export default function SoloParentDocumentRequestDialog({
   onOpenChange,
 }: SoloParentDocumentRequestDialogProps) {
   const queryClient = useQueryClient();
+  const prefill = useDialogPrefill("solo-parent-request");
 
   const { mutateAsync: submitRequest } = useMutation({
     mutationFn: async (data: SoloParentDocumentRequestFormValues) => {
@@ -56,7 +58,11 @@ export default function SoloParentDocumentRequestDialog({
           <DialogTitle>Request Solo Parent Certification</DialogTitle>
         </DialogHeader>
 
-        <SoloParentDocumentRequestForm onSubmit={submitRequest} onCancel={() => onOpenChange(false)} />
+        <SoloParentDocumentRequestForm
+          defaultValues={prefill as Partial<SoloParentDocumentRequestFormValues>}
+          onSubmit={submitRequest}
+          onCancel={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );

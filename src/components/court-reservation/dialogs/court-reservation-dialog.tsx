@@ -7,6 +7,7 @@ import type { CourtReservationFormValues } from "@/schemas/court-reservation-sch
 import { createCourtReservation } from "@/actions/court-reservations";
 import { uploadFile } from "@/lib/storage";
 import { parseTimeInput } from "@/lib/court-reservations";
+import { useDialogPrefill } from "@/hooks/use-dialog-param";
 import CourtReservationForm from "../forms/court-reservation-form";
 
 interface CourtReservationDialogProps {
@@ -19,6 +20,7 @@ export default function CourtReservationDialog({
   onOpenChange,
 }: CourtReservationDialogProps) {
   const queryClient = useQueryClient();
+  const prefill = useDialogPrefill("court-reservation");
 
   const { mutateAsync: submitReservation } = useMutation({
     mutationFn: async (data: CourtReservationFormValues) => {
@@ -60,7 +62,11 @@ export default function CourtReservationDialog({
           <DialogTitle>Reserve the Court</DialogTitle>
         </DialogHeader>
 
-        <CourtReservationForm onSubmit={submitReservation} onCancel={() => onOpenChange(false)} />
+        <CourtReservationForm
+          defaultValues={prefill as Partial<CourtReservationFormValues>}
+          onSubmit={submitReservation}
+          onCancel={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { MedicalAssistanceDocumentRequestFormValues } from "@/schemas/medical-assistance-document-request-schema";
 import MedicalAssistanceDocumentRequestForm from "../forms/medical-assistance-document-request-form";
+import { useDialogPrefill } from "@/hooks/use-dialog-param";
 import { uploadFile } from "@/lib/storage";
 import { createDocumentRequest } from "@/actions/document-requests";
 
@@ -18,6 +19,7 @@ export default function MedicalAssistanceDocumentRequestDialog({
   onOpenChange,
 }: MedicalAssistanceDocumentRequestDialogProps) {
   const queryClient = useQueryClient();
+  const prefill = useDialogPrefill("medical-assistance-request");
 
   const { mutateAsync: submitRequest } = useMutation({
     mutationFn: async (data: MedicalAssistanceDocumentRequestFormValues) => {
@@ -56,7 +58,11 @@ export default function MedicalAssistanceDocumentRequestDialog({
           <DialogTitle>Request Medical / Lab Assistance</DialogTitle>
         </DialogHeader>
 
-        <MedicalAssistanceDocumentRequestForm onSubmit={submitRequest} onCancel={() => onOpenChange(false)} />
+        <MedicalAssistanceDocumentRequestForm
+          defaultValues={prefill as Partial<MedicalAssistanceDocumentRequestFormValues>}
+          onSubmit={submitRequest}
+          onCancel={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );

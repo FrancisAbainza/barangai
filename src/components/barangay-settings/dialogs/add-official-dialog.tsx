@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import type { OfficialFormValues } from "@/schemas/about-us-schema";
 import type { MediaItem } from "@/components/file-uploader";
 import { uploadFile } from "@/lib/storage";
-import { useDialogParam } from "@/hooks/use-dialog-param";
+import { useDialogParam, useDialogPrefill } from "@/hooks/use-dialog-param";
 import { createOfficial, type OfficialSection } from "@/actions/officials";
 import OfficialForm from "@/components/barangay-settings/forms/official-form";
 
@@ -21,7 +21,9 @@ interface AddOfficialDialogProps {
 }
 
 export default function AddOfficialDialog({ title, addLabel, section }: AddOfficialDialogProps) {
-  const [open, setOpen] = useDialogParam(section === "barangay" ? "add-barangay-official" : "add-sk-official");
+  const dialog = section === "barangay" ? "add-barangay-official" : "add-sk-official";
+  const [open, setOpen] = useDialogParam(dialog);
+  const prefill = useDialogPrefill(dialog);
   const queryClient = useQueryClient();
 
   const { mutateAsync: submitOfficial } = useMutation({
@@ -61,7 +63,7 @@ export default function AddOfficialDialog({ title, addLabel, section }: AddOffic
         </DialogHeader>
 
         <OfficialForm
-          defaultValues={EMPTY_VALUES}
+          defaultValues={{ ...EMPTY_VALUES, ...(prefill as Partial<OfficialFormValues>) }}
           submitLabel="Add Official"
           onSubmit={submitOfficial}
           onCancel={() => setOpen(false)}

@@ -9,10 +9,11 @@ import TransparencyProjectForm from "./transparency-project-form";
 import { toast } from "sonner";
 import { uploadFile } from "@/lib/storage";
 import { createTransparencyProject } from "@/actions/transparency";
-import { useDialogParam } from "@/hooks/use-dialog-param";
+import { useDialogParam, useDialogPrefill } from "@/hooks/use-dialog-param";
 
 export default function CreateTransparencyProjectDialog() {
   const [open, setOpen] = useDialogParam("create-transparency-project");
+  const prefill = useDialogPrefill("create-transparency-project");
 
   const queryClient = useQueryClient();
 
@@ -66,6 +67,7 @@ export default function CreateTransparencyProjectDialog() {
 
         <TransparencyProjectForm
           mode="create"
+          defaultValues={prefill as Partial<TransparencyProjectFormValues>}
           onSubmit={submitProject}
           onCancel={() => setOpen(false)}
         />

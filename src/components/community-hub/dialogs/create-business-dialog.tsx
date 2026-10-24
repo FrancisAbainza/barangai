@@ -12,10 +12,11 @@ import { toast } from "sonner";
 import { uploadFile } from "@/lib/storage";
 import { createBusiness } from "@/actions/business";
 import { getResidentProfile } from "@/actions/resident-profile";
-import { useDialogParam } from "@/hooks/use-dialog-param";
+import { useDialogParam, useDialogPrefill } from "@/hooks/use-dialog-param";
 
 export default function CreateBusinessDialog() {
   const [open, setOpen] = useDialogParam("submit-business");
+  const prefill = useDialogPrefill("submit-business");
 
   const { user } = useUser();
   const { data: residentProfile, isLoading: isResidentProfileLoading } = useQuery({
@@ -86,7 +87,11 @@ export default function CreateBusinessDialog() {
           <DialogTitle>Submit Your Business</DialogTitle>
         </DialogHeader>
 
-        <BusinessForm onSubmit={submitBusiness} onCancel={() => setOpen(false)} />
+        <BusinessForm
+          defaultValues={prefill as Partial<BusinessFormValues>}
+          onSubmit={submitBusiness}
+          onCancel={() => setOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );

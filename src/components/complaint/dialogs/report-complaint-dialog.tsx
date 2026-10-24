@@ -17,6 +17,7 @@ import {
 } from "@/actions/complaints";
 import { uploadFile } from "@/lib/storage";
 import { formatDate, statusBadgeVariant } from "@/lib/complaints";
+import { useDialogPrefill } from "@/hooks/use-dialog-param";
 import ComplaintForm from "../forms/complaint-form";
 
 interface ReportComplaintDialogProps {
@@ -54,6 +55,7 @@ async function createWithEvidence(data: ComplaintFormValues, insights: Complaint
 
 export default function ReportComplaintDialog({ open, onOpenChange }: ReportComplaintDialogProps) {
   const queryClient = useQueryClient();
+  const prefill = useDialogPrefill("report-complaint");
   const [pending, setPending] = useState<PendingSubmission | null>(null);
 
   function handleOpenChange(nextOpen: boolean) {
@@ -131,6 +133,7 @@ export default function ReportComplaintDialog({ open, onOpenChange }: ReportComp
         {/* Stays mounted while the matches are shown, so going back keeps what the resident entered. */}
         <div className={pending ? "hidden" : undefined}>
           <ComplaintForm
+            defaultValues={prefill as Partial<ComplaintFormValues>}
             onSubmit={async (data) => {
               await submitComplaint(data);
             }}

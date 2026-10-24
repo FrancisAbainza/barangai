@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { IndigencyDocumentRequestFormValues } from "@/schemas/indigency-document-request-schema";
 import IndigencyDocumentRequestForm from "../forms/indigency-document-request-form";
+import { useDialogPrefill } from "@/hooks/use-dialog-param";
 import { uploadFile } from "@/lib/storage";
 import { createDocumentRequest } from "@/actions/document-requests";
 
@@ -18,6 +19,7 @@ export default function IndigencyDocumentRequestDialog({
   onOpenChange,
 }: IndigencyDocumentRequestDialogProps) {
   const queryClient = useQueryClient();
+  const prefill = useDialogPrefill("indigency-request");
 
   const { mutateAsync: submitRequest } = useMutation({
     mutationFn: async (data: IndigencyDocumentRequestFormValues) => {
@@ -56,7 +58,11 @@ export default function IndigencyDocumentRequestDialog({
           <DialogTitle>Request Certificate of Indigency</DialogTitle>
         </DialogHeader>
 
-        <IndigencyDocumentRequestForm onSubmit={submitRequest} onCancel={() => onOpenChange(false)} />
+        <IndigencyDocumentRequestForm
+          defaultValues={prefill as Partial<IndigencyDocumentRequestFormValues>}
+          onSubmit={submitRequest}
+          onCancel={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );

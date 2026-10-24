@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { ResidencyDocumentRequestFormValues } from "@/schemas/residency-document-request-schema";
 import ResidencyDocumentRequestForm from "../forms/residency-document-request-form";
+import { useDialogPrefill } from "@/hooks/use-dialog-param";
 import { createDocumentRequest } from "@/actions/document-requests";
 
 interface ResidencyDocumentRequestDialogProps {
@@ -17,6 +18,7 @@ export default function ResidencyDocumentRequestDialog({
   onOpenChange,
 }: ResidencyDocumentRequestDialogProps) {
   const queryClient = useQueryClient();
+  const prefill = useDialogPrefill("residency-request");
 
   const { mutateAsync: submitRequest } = useMutation({
     mutationFn: async (data: ResidencyDocumentRequestFormValues) => {
@@ -45,7 +47,11 @@ export default function ResidencyDocumentRequestDialog({
           <DialogTitle>Request Certificate of Residency</DialogTitle>
         </DialogHeader>
 
-        <ResidencyDocumentRequestForm onSubmit={submitRequest} onCancel={() => onOpenChange(false)} />
+        <ResidencyDocumentRequestForm
+          defaultValues={prefill as Partial<ResidencyDocumentRequestFormValues>}
+          onSubmit={submitRequest}
+          onCancel={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -3,7 +3,7 @@
 A floating chat widget in the portal. It answers questions from the uploaded PDF (RAG) and can call **tools**. It has two tools, and each one puts a button under the assistant's reply:
 
 - `navigateToPage`: a "Go to X" button that takes the user to a portal page.
-- `openFormDialog`: a button like "File a Complaint" that takes the user to the form's page and opens the form there.
+- `openFormDialog`: a button like "File a Complaint" that takes the user to the form's page and opens the form there, with any details the user already gave in the chat filled in.
 
 ## Files
 
@@ -14,8 +14,8 @@ A floating chat widget in the portal. It answers questions from the uploaded PDF
 | `src/app/api/chat/route.ts` | The endpoint. Auth, then calls the helpers below and streams. Sets `stopWhen: stepCountIs(2)` so the model can reply after a tool runs. |
 | `src/lib/ai-assistant.ts` | Server-only helpers in three sections: **tools**, **knowledge base** (embedding and pgvector search), **system prompt**. |
 | `src/lib/portal-navigation.ts` | Pages the assistant can navigate to. Used by both the server tool and the chat panel's buttons. |
-| `src/lib/portal-dialogs.ts` | Forms the assistant can open, each with its `page` and `audience` (`resident`, `admin` or `all`). Also exports `getPortalDialogHref` (the page plus `?dialog=<id>`). Used by the server tool, the chat panel and the components that host the forms. |
-| `src/hooks/use-dialog-param.ts` | `useDialogParam(id)`: a `useState`-like `[open, setOpen]` that stores a form's open state in the URL as `?dialog=<id>`. |
+| `src/lib/portal-dialogs.ts` | Forms the assistant can open, each with its `page`, `audience` (`resident`, `admin` or `all`) and `prefill` schema (the fields the assistant may fill in). Also exports `getPortalDialogHref` (the page plus `?dialog=<id>`, and `&prefill=<json>` when there are values) and `parseDialogPrefill`. Used by the server tool, the chat panel and the components that host the forms. |
+| `src/hooks/use-dialog-param.ts` | `useDialogParam(id)`: a `useState`-like `[open, setOpen]` that stores a form's open state in the URL as `?dialog=<id>`. `useDialogPrefill(id)`: the `?prefill=` values for that form, to spread into its `defaultValues`. |
 
 ## Flow
 
@@ -38,6 +38,17 @@ The page's own buttons use the same `setOpen`, so a form opened any way shows up
 
 Forms that need a resident profile also check it on `open`, e.g. `open={isReportDialogOpen && hasResidentProfile}`. Without that, a resident with no profile could open the form just by visiting the link.
 
+## Prefilling a form
+
+The assistant doesn't collect form details in the chat. The system prompt tells it to call `openFormDialog` as soon as it knows which form the user needs, and to pass anything the user already said (a business name, what a complaint is about, a purpose) as `prefill`. It never asks for fields it can't fill, like uploads, map locations or dates.
+
+1. Each `PORTAL_DIALOG_TARGETS` entry has a `prefill` zod object listing the fields the assistant may fill. The tool description lists them per form (`describePrefillFields`), including the options of enum fields.
+2. The model sends `prefill` as a list of `{ field, value }` pairs. `execute` drops empty values, turns the list into an object and returns `getPortalDialogHref(dialog, values)`, e.g. `/portal/community-hub?dialog=submit-business&prefill={"name":"Bakery",...}`. The chat button links to that `href`.
+3. The dialog component calls `useDialogPrefill(id)` and passes the result as the form's `defaultValues`. That runs `parseDialogPrefill`, which checks each field against the `prefill` schema and drops anything else (a made-up category, a broken link), and `z.coerce.number()` turns `"3"` into `3`.
+4. `setOpen` removes `prefill` along with `dialog`, so reopening the form from the page's own button starts blank. The form reads `defaultValues` only when it mounts, which happens each time the dialog opens.
+
+Free-text fields in a `prefill` schema are plain `z.string()` rather than the form's own rules (like `min(10)`). A short description still gets filled in, and the form flags it on submit.
+
 ## navigateToPage vs openFormDialog
 
 Both tools can point at the same page, so they're kept from overlapping in two places:
@@ -46,6 +57,10 @@ Both tools can point at the same page, so they're kept from overlapping in two p
 - **Chat panel:** if the model calls both anyway, `getNavigationTargets` drops any page that a form button in the same message already goes to.
 
 Each tool only offers what the user's role can use. `navigateToPage` filters on `adminOnly`, and `openFormDialog` filters on `audience` (`isPortalDialogAvailable`). For example, admins aren't offered the document request forms, because the admin view doesn't have them.
+
+## Staying on topic
+
+Only the system prompt keeps the assistant to barangay topics; there's no separate filter. `SYSTEM_PROMPT` lists what's in scope (barangay services and information, using the portal, how barangays work in general, and concerns residents bring to the barangay). It tells the model to refuse anything else in a sentence or two and to answer only the barangay part of a mixed message. Barangay-specific facts come only from the knowledge base excerpts. Retrieval uses a low similarity cutoff (0.2), so excerpts show up even for unrelated questions, and the prompt tells the model to ignore excerpts that don't fit. To widen or narrow the scope, edit that list. If you add a new kind of page or form, add it there too, or the model may treat questions about it as out of scope.
 
 ## Streaming and re-renders
 
@@ -57,8 +72,9 @@ Each streamed chunk updates `messages`, which re-renders `ChatPanel` and re-runs
 
 ## Adding a form the assistant can open
 
-1. Register it in `PORTAL_DIALOG_TARGETS` (`src/lib/portal-dialogs.ts`) with a `label`, `page`, `description` and `audience`. Only "create" forms belong here; dialogs that act on an existing record (edit, delete, reject) need a specific row.
+1. Register it in `PORTAL_DIALOG_TARGETS` (`src/lib/portal-dialogs.ts`) with a `label`, `page`, `description`, `audience` and `prefill`. Only "create" forms belong here; dialogs that act on an existing record (edit, delete, reject) need a specific row. Put the text, choice and number fields the user could state in a sentence in `prefill`, not uploads, map locations or dates.
 2. In the component that owns the form, replace its `useState(false)` with `useDialogParam("<id>")`. Add `&& hasResidentProfile` to `open` if the form needs a resident profile.
+3. In the component that renders the form, pass `useDialogPrefill("<id>")` into its `defaultValues` (cast to `Partial<...FormValues>`).
 
 The tool's input schema, its description for the model and the chat button all come from the registry, so there's nothing else to change.
 
@@ -72,6 +88,8 @@ The tool's input schema, its description for the model and the chat button all c
 - The tool name must be the same string in `buildAssistantTools` and the chat panel (`tool-navigateToPage`, `tool-openFormDialog`). If it's not, the panel never finds the result and no button shows.
 - Every tool needs an `execute`. A call without a result leaves the chat history incomplete, and the model's next request fails.
 - `stopWhen` defaults to one step. Without `stepCountIs(2)`, the stream ends at the tool call and the reply has no text.
+- Don't use `z.record()` in a tool's input schema. The AI SDK sends every object to OpenAI with `additionalProperties: false`, so a record reaches the model as "an object with no keys". That's why `prefill` is a list of `{ field, value }` pairs.
+- Keep tool inputs lenient. If the model's arguments fail the input schema (e.g. a number where only a string is allowed), it retries in its second step and the reply ends up with no text. That's why a prefill `value` accepts a string or a number, and the real checks happen in `parseDialogPrefill`.
 - Authorization belongs on the server. Anything admin-only has to be checked from `isAdmin` in the tool builder. Opening a form is only a UI convenience; the form's server action still checks permissions.
 - `useDialogParam` uses `useSearchParams`, which needs a Suspense boundary on statically prerendered pages. `src/app/portal/layout.tsx` wraps the page content in `<Suspense>` for this. A form hosted outside `/portal` needs its own boundary unless that page is dynamic.
 - `src/lib/ai-assistant.ts` imports the DB, so never import it from a component (an `import type` is fine).

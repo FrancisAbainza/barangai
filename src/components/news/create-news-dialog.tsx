@@ -9,10 +9,11 @@ import NewsForm from "./news-form";
 import { toast } from "sonner";
 import { uploadFile } from "@/lib/storage";
 import { createNews } from "@/actions/news";
-import { useDialogParam } from "@/hooks/use-dialog-param";
+import { useDialogParam, useDialogPrefill } from "@/hooks/use-dialog-param";
 
 export default function CreateNewsDialog() {
   const [open, setOpen] = useDialogParam("create-news");
+  const prefill = useDialogPrefill("create-news");
 
   const queryClient = useQueryClient();
 
@@ -62,6 +63,7 @@ export default function CreateNewsDialog() {
 
         <NewsForm
           mode="create"
+          defaultValues={prefill as Partial<NewsFormValues>}
           onSubmit={submitNews}
           onCancel={() => setOpen(false)}
         />
