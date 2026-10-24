@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useChat } from "@ai-sdk/react";
+import { lastAssistantMessageIsCompleteWithToolCalls, type UIMessage } from "ai";
 import { BotIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,32 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChatPanel } from "@/components/ai-assistant/chat-panel";
 import { KnowledgeBaseManager } from "@/components/knowledge-base-manager";
+import { getCurrentLocation } from "@/lib/geolocation";
 import { isAdminRole } from "@/lib/roles";
+
+// Some browsers never answer when the permission prompt is closed without a choice, and a GPS fix
+// can take a while. Past this, the assistant is told the location isn't available and replies anyway.
+const LOCATION_TIMEOUT_MS = 30_000;
+
+function getLocationForAssistant() {
+  return Promise.race([
+    getCurrentLocation(),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Timed out waiting for the user's location.")), LOCATION_TIMEOUT_MS),
+    ),
+  ]);
+}
+
+// True once the browser has answered the getUserLocation call that ended the last response,
+// so the chat goes back to the server and the assistant carries on with the location.
+function hasAnsweredLocationRequest({ messages }: { messages: UIMessage[] }) {
+  const parts = messages.at(-1)?.parts ?? [];
+  const lastStep = parts.slice(parts.findLastIndex((part) => part.type === "step-start") + 1);
+  return (
+    lastAssistantMessageIsCompleteWithToolCalls({ messages }) &&
+    lastStep.some((part) => part.type === "tool-getUserLocation")
+  );
+}
 
 export function AiAssistantWidget() {
   const { user } = useUser();
@@ -29,8 +55,20 @@ export function AiAssistantWidget() {
 
   // Lifted above the Dialog (which unmounts its content on close) so chat
   // history survives closing/reopening — it only resets on refresh/navigation.
-  const { messages, sendMessage, status, stop } = useChat({
+  const { messages, sendMessage, status, stop, addToolOutput } = useChat({
     onError: (error) => toast.error(error.message || "Something went wrong."),
+    // getUserLocation is answered here rather than on the server (see lib/ai-assistant/tools/get-user-location.ts).
+    // Not awaited: the stream waits for onToolCall, and addToolOutput waits for the stream.
+    onToolCall: ({ toolCall }) => {
+      if (toolCall.toolName !== "getUserLocation") return;
+      const { toolCallId } = toolCall;
+      getLocationForAssistant().then(
+        (location) => addToolOutput({ tool: "getUserLocation", toolCallId, output: location }),
+        (error: Error) =>
+          addToolOutput({ tool: "getUserLocation", toolCallId, state: "output-error", errorText: error.message }),
+      );
+    },
+    sendAutomaticallyWhen: hasAnsweredLocationRequest,
   });
 
   const chatPanel = (

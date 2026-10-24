@@ -64,7 +64,7 @@ export function buildCalculateCourtFeeTool({ courtDayRate, courtNightRate }: Bar
         // Without this the reply sometimes says "tap the button below" with no button.
         buttonShown: false,
         instruction:
-          "Give the total and the breakdown. No button was shown, so if the user may want to reserve, ask whether they'd like the reservation form instead of mentioning a button.",
+          "Give the total and the breakdown. If the user already said they want to reserve, call openFormDialog for the court reservation form now. Otherwise no button was shown, so if they may want to reserve, ask whether they'd like the reservation form instead of mentioning a button.",
       };
     },
   });

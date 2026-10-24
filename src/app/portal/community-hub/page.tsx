@@ -2,6 +2,7 @@
 
 import { useUser } from "@clerk/nextjs";
 import CreateBusinessDialog from "@/components/community-hub/dialogs/create-business-dialog";
+import LinkedBusinessDialog from "@/components/community-hub/dialogs/linked-business-dialog";
 import AdminCommunityHub from "@/components/community-hub/admin-community-hub";
 import ResidentCommunityHub from "@/components/community-hub/resident-community-hub";
 import PageHeader from "@/components/page-header";
@@ -23,6 +24,7 @@ export default function CommunityHubPage() {
       </PageHeader>
 
       {isAdmin ? <AdminCommunityHub /> : <ResidentCommunityHub />}
+      <LinkedBusinessDialog />
     </div>
   );
 }

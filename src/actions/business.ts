@@ -182,6 +182,20 @@ export async function getBusinessById(id: number): Promise<BusinessWithOwner | n
   return items[0] ?? null;
 }
 
+// Backs the `?business=<id>` link (the AI assistant's business buttons), which opens a business's
+// details. Anyone signed in can see the same businesses as in the Community Hub list: verified
+// ones and their own. Admins see any.
+export async function getVerifiedBusinessById(id: number): Promise<BusinessWithOwner | null> {
+  const { userId, isAdmin } = await getAuthRole();
+  if (!userId) throw new Error("Unauthorized");
+
+  const conditions = [eq(businessesTable.id, id)];
+  if (!isAdmin) conditions.push(or(eq(businessesTable.ownerId, userId), eq(businessesTable.status, "Verified"))!);
+
+  const { items } = await fetchBusinessesPage(conditions, 0);
+  return items[0] ?? null;
+}
+
 export async function getVerifiedBusinesses({
   offset = 0,
   search,

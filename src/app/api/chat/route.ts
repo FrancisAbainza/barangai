@@ -1,9 +1,11 @@
 import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { getOfficials } from "@/actions/officials";
 import { getBarangaySettings } from "@/actions/settings";
 import { getLastUserText, getRelevantContext } from "@/lib/ai-assistant/knowledge-base-search";
 import { buildSystemPrompt } from "@/lib/ai-assistant/system-prompt";
 import { buildAssistantTools } from "@/lib/ai-assistant/tools";
+import { getSharedUserLocation } from "@/lib/ai-assistant/tools/get-user-location";
 import { getAuthRole } from "@/lib/auth";
 
 // Embedding the query and streaming the completion can take a few seconds combined.
@@ -17,20 +19,31 @@ export async function POST(req: Request) {
 
   const { messages }: { messages: UIMessage[] } = await req.json();
 
-  const [context, settings] = await Promise.all([
+  const [context, settings, barangayOfficials, skOfficials] = await Promise.all([
     getRelevantContext(getLastUserText(messages)),
     getBarangaySettings(),
+    getOfficials("barangay"),
+    getOfficials("sk"),
   ]);
-  const tools = buildAssistantTools(isAdmin, settings);
+  const tools = buildAssistantTools(isAdmin, settings, getSharedUserLocation(messages));
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
-    system: buildSystemPrompt(context, settings, isAdmin),
-    messages: await convertToModelMessages(messages, { tools }),
+    // Low, because replies repeat exact details from the tools and settings. At OpenAI's default
+    // of 1, the model now and then miscopies one, e.g. a business's "83C7+WRC" address as "81C7+WRC".
+    temperature: 0.2,
+    system: buildSystemPrompt(context, settings, { barangay: barangayOfficials, sk: skOfficials }, isAdmin),
+    // Skips a getUserLocation call the browser never answered, e.g. when the user sent another
+    // message instead of responding to the permission prompt. OpenAI rejects a call with no result.
+    messages: await convertToModelMessages(messages, { tools, ignoreIncompleteToolCalls: true }),
     tools,
-    // Room for a lookup (calculateCourtFee), a button tool and the reply, e.g. "how much is
-    // 4:30 - 7:30 PM? I'd like to reserve" when the model makes the two calls one after the other.
+    // Room for a lookup (calculateCourtFee, findBusinesses), a button tool and the reply, e.g. "how
+    // much is 4:30 - 7:30 PM? I'd like to reserve". A getUserLocation call ends the stream early,
+    // and the browser's follow-up request gets its own three steps.
     stopWhen: stepCountIs(3),
+    // One tool call per step. With parallel calls, the model sometimes made stray calls alongside
+    // the one it needed, e.g. calculateCourtFee or getUserLocation next to a clearance form.
+    providerOptions: { openai: { parallelToolCalls: false } },
   });
 
   return result.toUIMessageStreamResponse();

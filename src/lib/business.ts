@@ -15,6 +15,10 @@ export function handlerLabel(status: Business["status"]) {
   return "Being processed by";
 }
 
+// `?business=<id>` on the Community Hub opens that business's details, the dialog its card opens
+// (LinkedBusinessDialog). The AI assistant's business buttons link to it.
+export const BUSINESS_SEARCH_PARAM = "business";
+
 // For Community Hub submissions, e.g. 123 → "CH-123"
 export const { formatReferenceNumber, referenceNumberSearchPattern } = createReferenceNumbers("CH");
 

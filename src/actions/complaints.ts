@@ -8,6 +8,7 @@ import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { referenceNumberSearchPattern } from "@/lib/complaints";
+import { distanceInMeters } from "@/lib/geolocation";
 import { db } from "@/db/config";
 import { complaintFollowersTable, complaintsTable, type Complaint } from "@/db/schema";
 import {
@@ -255,19 +256,6 @@ function matchableBy(userId: string) {
     notInArray(complaintsTable.category, PRIVATE_COMPLAINT_CATEGORIES),
     ne(complaintsTable.complainantId, userId),
   ];
-}
-
-const EARTH_RADIUS_METERS = 6_371_000;
-
-// Haversine distance.
-function distanceInMeters(from: LocationValue["coordinates"], to: LocationValue["coordinates"]) {
-  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
-  const deltaLat = toRadians(to.lat - from.lat);
-  const deltaLng = toRadians(to.lng - from.lng);
-  const h =
-    Math.sin(deltaLat / 2) ** 2 +
-    Math.cos(toRadians(from.lat)) * Math.cos(toRadians(to.lat)) * Math.sin(deltaLng / 2) ** 2;
-  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(h));
 }
 
 // What a resident sees of another resident's complaint while filing; never who filed it.

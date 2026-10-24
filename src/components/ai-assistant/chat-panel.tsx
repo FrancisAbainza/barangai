@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
-import { ArrowRightIcon, BotIcon, SquarePenIcon } from "lucide-react";
+import { ArrowRightIcon, BotIcon, SquarePenIcon, StoreIcon } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -50,16 +50,36 @@ function getDialogTargets(message: UIMessage): DialogTarget[] {
   return [...targets].map(([dialog, href]) => ({ dialog, href }));
 }
 
+type BusinessTarget = { id: number; name: string; href: string };
+
+// Businesses whose details the assistant offered to open (openBusinessDetails tool results),
+// deduplicated. Each `href` opens the business's details on the Community Hub.
+function getBusinessTargets(message: UIMessage): BusinessTarget[] {
+  const targets = new Map<number, BusinessTarget>();
+  for (const part of message.parts) {
+    if (part.type === "tool-openBusinessDetails" && part.state === "output-available") {
+      const { businesses = [], buttonShown } = part.output as { businesses?: BusinessTarget[]; buttonShown: boolean };
+      if (buttonShown) for (const business of businesses) targets.set(business.id, business);
+    }
+  }
+  return [...targets.values()];
+}
+
 // Pages the assistant offered to take the user to (navigateToPage tool results), deduplicated.
-// Pages already reached by one of the message's form buttons are skipped, so the model
-// calling both tools for one intent doesn't show two buttons to the same place.
-function getNavigationTargets(message: UIMessage, dialogs: DialogTarget[]): PortalNavigationTargetId[] {
-  const dialogPages = new Set<PortalNavigationTargetId>(dialogs.map(({ dialog }) => PORTAL_DIALOG_TARGETS[dialog].page));
+// Pages already reached by one of the message's form or business buttons are skipped, so the
+// model calling two tools for one intent doesn't show two buttons to the same place.
+function getNavigationTargets(
+  message: UIMessage,
+  dialogs: DialogTarget[],
+  businesses: BusinessTarget[],
+): PortalNavigationTargetId[] {
+  const coveredPages = new Set<PortalNavigationTargetId>(dialogs.map(({ dialog }) => PORTAL_DIALOG_TARGETS[dialog].page));
+  if (businesses.length > 0) coveredPages.add("community-hub");
   const pages = new Set<PortalNavigationTargetId>();
   for (const part of message.parts) {
     if (part.type === "tool-navigateToPage" && part.state === "output-available") {
       const { page, buttonShown } = part.output as { page: PortalNavigationTargetId; buttonShown: boolean };
-      if (buttonShown && page in PORTAL_NAVIGATION_TARGETS && !dialogPages.has(page)) pages.add(page);
+      if (buttonShown && page in PORTAL_NAVIGATION_TARGETS && !coveredPages.has(page)) pages.add(page);
     }
   }
   return [...pages];
@@ -102,19 +122,28 @@ export function ChatPanel({ messages, sendMessage, status, stop, onNavigate }: C
               // Hold action buttons back until the whole reply has finished streaming.
               const isStreaming = isResponding && index === messages.length - 1;
               const dialogTargets = isStreaming ? [] : getDialogTargets(message);
-              const navigationTargets = isStreaming ? [] : getNavigationTargets(message, dialogTargets);
+              const businessTargets = isStreaming ? [] : getBusinessTargets(message);
+              const navigationTargets = isStreaming ? [] : getNavigationTargets(message, dialogTargets, businessTargets);
 
               return (
                 <Message from={message.role} key={message.id}>
                   <MessageContent>
                     <MessageResponse>{getMessageText(message)}</MessageResponse>
-                    {(dialogTargets.length > 0 || navigationTargets.length > 0) && (
+                    {(dialogTargets.length > 0 || businessTargets.length > 0 || navigationTargets.length > 0) && (
                       <div className="flex flex-wrap gap-2">
                         {dialogTargets.map(({ dialog, href }) => (
                           <Button asChild key={dialog} size="sm">
                             <Link href={href} onClick={onNavigate}>
                               <SquarePenIcon />
                               {PORTAL_DIALOG_TARGETS[dialog].label}
+                            </Link>
+                          </Button>
+                        ))}
+                        {businessTargets.map(({ id, name, href }) => (
+                          <Button asChild className="max-w-full" key={id} size="sm">
+                            <Link href={href} onClick={onNavigate}>
+                              <StoreIcon />
+                              <span className="truncate">View {name}</span>
                             </Link>
                           </Button>
                         ))}
