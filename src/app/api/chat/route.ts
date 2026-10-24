@@ -1,12 +1,10 @@
 import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { getBarangaySettings } from "@/actions/settings";
+import { getLastUserText, getRelevantContext } from "@/lib/ai-assistant/knowledge-base-search";
+import { buildSystemPrompt } from "@/lib/ai-assistant/system-prompt";
+import { buildAssistantTools } from "@/lib/ai-assistant/tools";
 import { getAuthRole } from "@/lib/auth";
-import {
-  buildAssistantTools,
-  buildSystemPrompt,
-  getLastUserText,
-  getRelevantContext,
-} from "@/lib/ai-assistant";
 
 // Embedding the query and streaming the completion can take a few seconds combined.
 export const maxDuration = 30;
@@ -19,16 +17,20 @@ export async function POST(req: Request) {
 
   const { messages }: { messages: UIMessage[] } = await req.json();
 
-  const context = await getRelevantContext(getLastUserText(messages));
-  const tools = buildAssistantTools({ isAdmin });
+  const [context, settings] = await Promise.all([
+    getRelevantContext(getLastUserText(messages)),
+    getBarangaySettings(),
+  ]);
+  const tools = buildAssistantTools(isAdmin, settings);
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
-    system: buildSystemPrompt(context, { isAdmin }),
+    system: buildSystemPrompt(context, settings, isAdmin),
     messages: await convertToModelMessages(messages, { tools }),
     tools,
-    // One step for the tool call, one for the short reply pointing at the button it renders.
-    stopWhen: stepCountIs(2),
+    // Room for a lookup (calculateCourtFee), a button tool and the reply, e.g. "how much is
+    // 4:30 - 7:30 PM? I'd like to reserve" when the model makes the two calls one after the other.
+    stopWhen: stepCountIs(3),
   });
 
   return result.toUIMessageStreamResponse();

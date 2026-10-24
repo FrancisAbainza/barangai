@@ -1,5 +1,5 @@
 import z from "zod";
-import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/portal-navigation";
+import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
 import { BUSINESS_CATEGORIES } from "@/schemas/business-schema";
 import { CLEARANCE_DELIVERY_METHODS, CLEARANCE_PURPOSES } from "@/schemas/clearance-document-request-schema";
 import { INDIGENCY_DELIVERY_METHODS, INDIGENCY_REQUEST_PURPOSES } from "@/schemas/indigency-document-request-schema";
@@ -20,7 +20,7 @@ import {
 import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
 
 // Form dialogs the AI assistant can open. Shared between the openFormDialog tool
-// (src/lib/ai-assistant.ts, for its input schema/description), the button the chat
+// (tools/open-form-dialog.ts, for its input schema/description), the button the chat
 // panel renders for its result (src/components/ai-assistant/chat-panel.tsx), and the
 // components hosting each dialog, whose open state lives in the URL (`?dialog=<id>`,
 // via useDialogParam in src/hooks/use-dialog-param.ts).

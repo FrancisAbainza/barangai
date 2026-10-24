@@ -11,7 +11,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { formatFileSize } from "@/components/file-uploader";
 import { fetchFile, uploadFile } from "@/lib/storage";
 import { getKnowledgeBaseDocument, replaceKnowledgeBaseDocument } from "@/actions/knowledge-base";
-import { MAX_KNOWLEDGE_BASE_FILE_SIZE } from "@/lib/knowledge-base";
+import { MAX_KNOWLEDGE_BASE_FILE_SIZE } from "@/lib/ai-assistant/knowledge-base";
 
 const KNOWLEDGE_BASE_QUERY_KEY = ["knowledge-base-document"];
 

@@ -36,7 +36,7 @@ import {
   barangayVision,
   type ClearancePurposeFees,
 } from "@/lib/data";
-import { KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS } from "@/lib/knowledge-base";
+import { KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS } from "@/lib/ai-assistant/knowledge-base";
 
 export const newsCategoryEnum = pgEnum("news_category", ["Announcement", "Event", "Emergency"]);
 export const newsReactionTypeEnum = pgEnum("news_reaction_type", ["like", "dislike"]);

@@ -1,7 +1,7 @@
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
-// Shared between the ingestion action (src/actions/knowledge-base.ts) and the chat
-// route (src/app/api/chat/route.ts) so both agree on the embedding model/dimensions.
+// Shared between the ingestion action (src/actions/knowledge-base.ts) and the chat's
+// search (knowledge-base-search.ts) so both agree on the embedding model/dimensions.
 export const KNOWLEDGE_BASE_EMBEDDING_MODEL = "text-embedding-3-small";
 export const KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS = 1536;
 

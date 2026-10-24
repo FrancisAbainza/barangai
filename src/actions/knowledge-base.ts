@@ -10,7 +10,7 @@ import { getUserDisplayInfo } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { knowledgeBaseChunksTable, knowledgeBaseDocumentsTable } from "@/db/schema";
 import { bucket, r2 } from "@/lib/r2";
-import { chunkText, KNOWLEDGE_BASE_EMBEDDING_MODEL } from "@/lib/knowledge-base";
+import { chunkText, KNOWLEDGE_BASE_EMBEDDING_MODEL } from "@/lib/ai-assistant/knowledge-base";
 
 export type KnowledgeBaseDocumentInfo = {
   id: number;

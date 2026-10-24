@@ -1,6 +1,6 @@
 import type { Notification } from "@/db/schema";
 import { VIEW_SEARCH_PARAM } from "@/hooks/use-view-param";
-import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/portal-navigation";
+import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
 
 export const NOTIFICATION_TYPE_CONFIG = {
   "document-request": { label: "Document Request", page: "document-request" },

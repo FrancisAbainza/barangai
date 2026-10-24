@@ -24,8 +24,8 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { VoiceInputButton } from "@/components/ai-assistant/voice-input-button";
 import { Button } from "@/components/ui/button";
-import { PORTAL_DIALOG_TARGETS, type PortalDialogTargetId } from "@/lib/portal-dialogs";
-import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/portal-navigation";
+import { PORTAL_DIALOG_TARGETS, type PortalDialogTargetId } from "@/lib/ai-assistant/portal-dialogs";
+import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
 
 function getMessageText(message: UIMessage): string {
   return message.parts

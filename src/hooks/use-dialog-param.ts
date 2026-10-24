@@ -6,7 +6,7 @@ import {
   parseDialogPrefill,
   PREFILL_SEARCH_PARAM,
   type PortalDialogTargetId,
-} from "@/lib/portal-dialogs";
+} from "@/lib/ai-assistant/portal-dialogs";
 
 /**
  * `useState`-like open state for a form dialog, stored in the URL as `?dialog=<id>`.

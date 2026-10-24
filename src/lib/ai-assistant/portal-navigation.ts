@@ -1,4 +1,4 @@
-// Shared between the AI assistant's navigateToPage tool (src/lib/ai-assistant.ts,
+// Shared between the AI assistant's navigateToPage tool (tools/navigate-to-page.ts,
 // which needs it for the tool's input schema/description) and the navigation
 // button the chat panel renders for its result (src/components/ai-assistant/chat-panel.tsx).
 //
