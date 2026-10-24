@@ -37,13 +37,14 @@ function getMessageText(message: UIMessage): string {
 type DialogTarget = { dialog: PortalDialogTargetId; href: string };
 
 // Forms the assistant offered to open (openFormDialog tool results), deduplicated.
-// The tool's `href` includes the `?prefill=` values the assistant filled in.
+// The tool's `href` includes the `?prefill=` values the assistant filled in. Results with
+// `buttonShown: false` are forms the user's role can't use, so they get no button.
 function getDialogTargets(message: UIMessage): DialogTarget[] {
   const targets = new Map<PortalDialogTargetId, string>();
   for (const part of message.parts) {
     if (part.type === "tool-openFormDialog" && part.state === "output-available") {
-      const { dialog, href } = part.output as DialogTarget;
-      if (dialog in PORTAL_DIALOG_TARGETS) targets.set(dialog, href);
+      const { dialog, href, buttonShown } = part.output as DialogTarget & { buttonShown: boolean };
+      if (buttonShown && dialog in PORTAL_DIALOG_TARGETS) targets.set(dialog, href);
     }
   }
   return [...targets].map(([dialog, href]) => ({ dialog, href }));
@@ -57,8 +58,8 @@ function getNavigationTargets(message: UIMessage, dialogs: DialogTarget[]): Port
   const pages = new Set<PortalNavigationTargetId>();
   for (const part of message.parts) {
     if (part.type === "tool-navigateToPage" && part.state === "output-available") {
-      const { page } = part.input as { page: PortalNavigationTargetId };
-      if (page in PORTAL_NAVIGATION_TARGETS && !dialogPages.has(page)) pages.add(page);
+      const { page, buttonShown } = part.output as { page: PortalNavigationTargetId; buttonShown: boolean };
+      if (buttonShown && page in PORTAL_NAVIGATION_TARGETS && !dialogPages.has(page)) pages.add(page);
     }
   }
   return [...pages];

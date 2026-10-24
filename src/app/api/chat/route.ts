@@ -24,7 +24,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
-    system: buildSystemPrompt(context),
+    system: buildSystemPrompt(context, { isAdmin }),
     messages: await convertToModelMessages(messages, { tools }),
     tools,
     // One step for the tool call, one for the short reply pointing at the button it renders.

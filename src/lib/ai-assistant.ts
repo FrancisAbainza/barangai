@@ -26,31 +26,45 @@ import {
 // Neither tool acts by itself: each output is rendered as a button in the chat panel
 // (components/ai-assistant/chat-panel.tsx) that the user clicks — navigateToPage's goes
 // to a page, openFormDialog's goes to the form's page with `?dialog=<id>`, which opens it.
+//
+// Both tools list every target, including the ones the user's role can't use, marked
+// "(residents only)" / "(admins only)". Left out, a request for one gets the closest
+// target that is listed (an admin asking for a Certificate of Indigency got "Submit a
+// Business"). For those, `execute` returns `buttonShown: false` with what to tell the
+// user instead, and the chat panel shows no button.
+
+const AUDIENCE_NOTES = { resident: " (residents only)", admin: " (admins only)", all: "" } as const;
 
 function buildNavigateToPageTool(isAdmin: boolean) {
-  const availableTargets = (
-    Object.entries(PORTAL_NAVIGATION_TARGETS) as [
-      PortalNavigationTargetId,
-      (typeof PORTAL_NAVIGATION_TARGETS)[PortalNavigationTargetId],
-    ][]
-  ).filter(([id]) => isPortalNavigationTargetAvailable(id, isAdmin));
-
-  const pageIds = availableTargets.map(([id]) => id) as [
-    PortalNavigationTargetId,
-    ...PortalNavigationTargetId[],
-  ];
+  const pageIds = Object.keys(PORTAL_NAVIGATION_TARGETS) as [PortalNavigationTargetId, ...PortalNavigationTargetId[]];
 
   return tool({
     description:
-      "Navigate the resident to a specific page of the portal so they can perform an action there. Available pages:\n" +
-      availableTargets.map(([id, target]) => `- ${id}: ${target.label} — ${target.description}`).join("\n"),
+      "Navigate the user to a specific page of the portal so they can perform an action there. Pages:\n" +
+      pageIds
+        .map((id) => {
+          const { label, description, audience } = PORTAL_NAVIGATION_TARGETS[id];
+          return `- ${id}: ${label}${AUDIENCE_NOTES[audience]} — ${description}`;
+        })
+        .join("\n"),
     inputSchema: z.object({
       page: z.enum(pageIds).describe("The portal page to navigate to."),
       reason: z
         .string()
-        .describe('A short, resident-facing reason for the navigation, e.g. "to request a barangay clearance".'),
+        .describe('A short, user-facing reason for the navigation, e.g. "to request a barangay clearance".'),
     }),
-    execute: async ({ page }) => ({ page, href: PORTAL_NAVIGATION_TARGETS[page].href, buttonShown: true }),
+    execute: async ({ page }) => {
+      if (!isPortalNavigationTargetAvailable(page, isAdmin)) {
+        return {
+          page,
+          buttonShown: false,
+          instruction: isAdmin
+            ? "This page is only for residents, so admin accounts don't have it and no button was shown. Tell the user that in a sentence. Don't call another tool."
+            : "This page is only for barangay admins, so no button was shown. Tell the user in a sentence that only barangay admins can use it. Don't call another tool.",
+        };
+      }
+      return { page, href: PORTAL_NAVIGATION_TARGETS[page].href, buttonShown: true };
+    },
   });
 }
 
@@ -67,20 +81,20 @@ function describePrefillFields(id: PortalDialogTargetId): string {
 }
 
 function buildOpenFormDialogTool(isAdmin: boolean) {
-  const dialogIds = (Object.keys(PORTAL_DIALOG_TARGETS) as PortalDialogTargetId[]).filter((id) =>
-    isPortalDialogAvailable(id, isAdmin),
-  ) as [PortalDialogTargetId, ...PortalDialogTargetId[]];
+  const dialogIds = Object.keys(PORTAL_DIALOG_TARGETS) as [PortalDialogTargetId, ...PortalDialogTargetId[]];
 
   return tool({
     description:
       "Open a specific form so the user can fill it out right away. Prefer this over navigateToPage whenever " +
-      "the user's intent matches one of these forms. Available forms, with the fields you can prefill:\n" +
+      "the user's intent matches one of these forms. A form marked residents only or admins only may not be " +
+      "available to this user: still pick the form that matches, never a different one, and the result says " +
+      "whether they can use it. Forms, with the fields you can prefill:\n" +
       dialogIds
-        .map(
-          (id) =>
-            `- ${id}: ${PORTAL_DIALOG_TARGETS[id].label} — ${PORTAL_DIALOG_TARGETS[id].description} ` +
-            `Prefill fields: ${describePrefillFields(id)}.`,
-        )
+        .map((id) => {
+          const { label, description, audience } = PORTAL_DIALOG_TARGETS[id];
+          const line = `- ${id}: ${label}${AUDIENCE_NOTES[audience]} — ${description}`;
+          return isPortalDialogAvailable(id, isAdmin) ? `${line} Prefill fields: ${describePrefillFields(id)}.` : line;
+        })
         .join("\n"),
     inputSchema: z.object({
       dialog: z.enum(dialogIds).describe("The form to open."),
@@ -104,6 +118,16 @@ function buildOpenFormDialogTool(isAdmin: boolean) {
         ),
     }),
     execute: async ({ dialog, prefill = [] }) => {
+      if (!isPortalDialogAvailable(dialog, isAdmin)) {
+        const pageLabel = PORTAL_NAVIGATION_TARGETS[PORTAL_DIALOG_TARGETS[dialog].page].label;
+        return {
+          dialog,
+          buttonShown: false,
+          instruction: isAdmin
+            ? `This form is only for residents, so no button was shown. In a sentence or two, tell the user that residents submit this from their own accounts, so admin accounts can't, and that they can review residents' submissions on the ${pageLabel} page. Don't call another tool.`
+            : "This form is only for barangay admins, so no button was shown. Tell the user in a sentence that only barangay admins can do this. Don't call another tool.",
+        };
+      }
       const values = Object.fromEntries(
         prefill.filter(({ value }) => value !== "").map(({ field, value }) => [field, value]),
       );
@@ -172,12 +196,14 @@ For facts specific to ${barangayName} (fees, schedules, requirements, officials,
 You have two kinds of requests to handle:
 - Questions ("what is the barangay hotline?") — answer directly, within the scope above.
 - Action intents — use a tool instead of describing where to click. Neither tool acts on its own: the interface shows the user a button beneath your reply. Call the tool directly once their intent is clear, then reply with one short sentence pointing them to the button below, e.g. "Tap the button below to open the form." Don't paste links or URLs, and since the button is what opens the form, don't say you've opened or submitted anything. Pick exactly one tool per intent:
-  - openFormDialog — when the intent matches a specific form ("I want to file a complaint", "how do I request a barangay clearance?", "I'd like to reserve the court", "add my business to the community hub"). This takes them straight to the form, so prefer it whenever a matching form exists. Call it right away, even when they haven't given any details: never ask for a form's details in the chat, because they fill them in on the form, which also has fields you can't fill (uploads, map locations, dates). If they've already mentioned details that match the form's prefill fields, pass those in prefill so the form opens with them filled in, and mention that the form will have them filled in for them to review.
+  - openFormDialog — when the intent matches a specific form ("I want to file a complaint", "how do I request a barangay clearance?", "I'd like to reserve the court", "add my business to the community hub"). This takes them straight to the form, so prefer it whenever a matching form exists. Only open a form that matches what they asked for, never the closest one you have. Call it right away, even when they haven't given any details: never ask for a form's details in the chat, because they fill them in on the form, which also has fields you can't fill (uploads, map locations, dates). If they've already mentioned details that match the form's prefill fields, pass those in prefill so the form opens with them filled in, and mention that the form will have them filled in for them to review.
   - navigateToPage — when they want to browse or manage a page rather than fill out one specific form ("show me my complaints", "where can I see the news?"), or when the intent is too broad to pick a form ("I want to request a document" without saying which — ask which document, or navigate to the page if they'd rather browse).
   Never call both tools for the same intent.`;
 
-export function buildSystemPrompt(knowledgeBaseContext: string | null): string {
-  return knowledgeBaseContext
-    ? `${SYSTEM_PROMPT}\n\nKnowledge base excerpts:\n${knowledgeBaseContext}`
-    : `${SYSTEM_PROMPT}\n\nNo knowledge base document has been uploaded yet, so you have no barangay-specific reference. If the user asks about a specific barangay policy, fee or document, let them know an admin hasn't uploaded the reference document yet.`;
+export function buildSystemPrompt(knowledgeBaseContext: string | null, { isAdmin }: { isAdmin: boolean }): string {
+  const role = `The user is signed in as ${isAdmin ? "a barangay admin" : "a resident"}.`;
+  const knowledgeBase = knowledgeBaseContext
+    ? `Knowledge base excerpts:\n${knowledgeBaseContext}`
+    : "No knowledge base document has been uploaded yet, so you have no barangay-specific reference. If the user asks about a specific barangay policy, fee or document, let them know an admin hasn't uploaded the reference document yet.";
+  return `${SYSTEM_PROMPT}\n\n${role}\n\n${knowledgeBase}`;
 }
