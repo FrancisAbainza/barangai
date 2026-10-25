@@ -8,8 +8,9 @@ import { buildAssistantTools } from "@/lib/ai-assistant/tools";
 import { getSharedUserLocation } from "@/lib/ai-assistant/tools/get-user-location";
 import { getAuthRole } from "@/lib/auth";
 
-// Embedding the query and streaming the completion can take a few seconds combined.
-export const maxDuration = 30;
+// Embedding the query and streaming the completion can take a few seconds combined, and a message
+// asking for several things at once takes a model call per tool.
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   const { userId, isAdmin } = await getAuthRole();
@@ -37,10 +38,11 @@ export async function POST(req: Request) {
     // message instead of responding to the permission prompt. OpenAI rejects a call with no result.
     messages: await convertToModelMessages(messages, { tools, ignoreIncompleteToolCalls: true }),
     tools,
-    // Room for a lookup (calculateCourtFee, findBusinesses), a button tool and the reply, e.g. "how
-    // much is 4:30 - 7:30 PM? I'd like to reserve". A getUserLocation call ends the stream early,
-    // and the browser's follow-up request gets its own three steps.
-    stopWhen: stepCountIs(3),
+    // Each tool call takes a step, and so does the reply. With 3 steps, a message asking for three
+    // forms and a business's details got three form buttons and no reply. 8 covers that (3 forms,
+    // findBusinesses, openBusinessDetails, the reply) with room to spare. A getUserLocation call ends
+    // the stream early, and the browser's follow-up request gets its own steps.
+    stopWhen: stepCountIs(8),
     // One tool call per step. With parallel calls, the model sometimes made stray calls alongside
     // the one it needed, e.g. calculateCourtFee or getUserLocation next to a clearance form.
     providerOptions: { openai: { parallelToolCalls: false } },

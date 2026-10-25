@@ -72,7 +72,19 @@ export function buildOpenFormDialogTool(isAdmin: boolean) {
       const values = Object.fromEntries(
         prefill.filter(({ value }) => value !== "").map(({ field, value }) => [field, value]),
       );
-      return { dialog, href: getPortalDialogHref(dialog, values), buttonShown: true };
+      // With several forms, the model said "I've opened the forms" despite the system prompt, and
+      // it claimed fields were filled in when it had sent none, so the result spells out both.
+      const filledIn = Object.entries(values).map(([field, value]) => `${field}: ${value}`);
+      const instruction =
+        `A "${PORTAL_DIALOG_TARGETS[dialog].label}" button is shown below your reply. Point the user to it. ` +
+        "The form isn't open until they tap it, so don't say you've opened it. " +
+        (filledIn.length > 0
+          ? `It opens with these filled in for them to review: ${filledIn.join(", ")}.`
+          : "Nothing will be filled in, so don't say it will be.");
+      return { dialog, href: getPortalDialogHref(dialog, values), buttonShown: true, instruction };
     },
+    // The model only gets the instruction. Given the href, it wrote links like "[File a Complaint](#)",
+    // as it did with openBusinessDetails.
+    toModelOutput: ({ output }) => ({ type: "text", value: output.instruction }),
   });
 }
