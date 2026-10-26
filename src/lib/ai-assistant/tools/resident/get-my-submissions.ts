@@ -9,41 +9,18 @@ import {
   courtReservationsTable,
   documentRequestsTable,
 } from "@/db/schema";
-import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
+import { PORTAL_NAVIGATION_TARGETS } from "@/lib/ai-assistant/portal-navigation";
 import type { AssistantToolContext } from "@/lib/ai-assistant/tools";
-import { formatReferenceNumber as formatBusinessReference } from "@/lib/business";
-import { formatReferenceNumber as formatComplaintReference } from "@/lib/complaints";
 import {
-  formatReferenceNumber as formatCourtReservationReference,
-  formatFee,
-  formatReservationDate,
-  formatReservationTime,
-} from "@/lib/court-reservations";
-import {
-  formatReferenceNumber as formatDocumentRequestReference,
-  ONLINE_SOFT_COPY_DELIVERY_METHOD,
-  PICKUP_DELIVERY_METHOD,
-} from "@/lib/document-requests";
+  formatBusiness,
+  formatComplaint,
+  formatCourtReservation,
+  formatDocumentRequest,
+  LIST_DESCRIPTIONS,
+  MAX_PER_KIND,
+} from "@/lib/ai-assistant/tools/submissions";
+import { ONLINE_SOFT_COPY_DELIVERY_METHOD, PICKUP_DELIVERY_METHOD } from "@/lib/document-requests";
 import { formatPhilippineDate } from "@/lib/utils";
-
-// Per kind of submission, most recent first. More than a resident usually has.
-const MAX_PER_KIND = 10;
-const MAX_MESSAGE_LENGTH = 300;
-
-// For what the reply has to say when a list is cut off: what the user has, and the page that
-// lists them all.
-const LIST_DESCRIPTIONS = {
-  documentRequests: { name: "document requests", page: "document-request" },
-  complaints: { name: "complaints", page: "complaint" },
-  followedComplaints: { name: "followed complaints", page: "complaint" },
-  courtReservations: { name: "court reservations", page: "court-reservation" },
-  businesses: { name: "Community Hub businesses", page: "community-hub" },
-} as const satisfies Record<string, { name: string; page: PortalNavigationTargetId }>;
-
-function truncate(text: string | null) {
-  if (!text) return undefined;
-  return text.length > MAX_MESSAGE_LENGTH ? `${text.slice(0, MAX_MESSAGE_LENGTH)}…` : text;
-}
 
 // Like findBusinesses, this shows no button; the model answers from its result and then calls
 // openSubmissionDetails. `userId` comes from the signed-in session, never from the model, so it
@@ -55,8 +32,7 @@ export function buildGetMySubmissionsTool({ userId }: AssistantToolContext) {
       "complaints (including ones they follow), court reservations and Community Hub businesses. Use it for " +
       "questions like \"what's the status of my clearance?\", \"is my document ready?\" or \"why was my reservation rejected?\". " +
       "It has only the user's own submissions, so don't use it for questions about other residents' submissions or " +
-      "the barangay's totals, such as an admin asking how many requests are pending: point admins to the page " +
-      "where they review them instead.",
+      "the barangay's totals.",
     inputSchema: z.object({}),
     execute: async () => {
       const isOwnDocumentRequest = eq(documentRequestsTable.requesterId, userId);
@@ -113,53 +89,14 @@ export function buildGetMySubmissionsTool({ userId }: AssistantToolContext) {
         db.select({ count: count() }).from(businessesTable).where(isOwnBusiness),
       ]);
 
-      // In separate lists: with a `following` flag on each complaint, the model called a followed
-      // complaint the user's own.
-      const formatComplaint = (complaint: (typeof complaints)[number]) => ({
-        referenceNumber: formatComplaintReference(complaint.id),
-        subject: complaint.subject,
-        category: complaint.category,
-        status: complaint.status,
-        resolutionMessage: truncate(complaint.resolutionMessage),
-        dismissalReason: truncate(complaint.dismissalReason),
-        submitted: formatPhilippineDate(complaint.createdAt),
-        lastUpdated: formatPhilippineDate(complaint.updatedAt),
-      });
-
       const lists = {
-        documentRequests: documentRequests.map((request) => ({
-          referenceNumber: formatDocumentRequestReference(request.id),
-          documentType: request.documentType,
-          purpose: request.purpose === "Other" ? request.otherPurpose : request.purpose,
-          receiveVia: request.receiveVia,
-          preferredClaimAt: request.preferredClaimAt ? formatPhilippineDate(request.preferredClaimAt, true) : undefined,
-          status: request.status,
-          pickupMessage: truncate(request.pickupMessage),
-          rejectionReason: truncate(request.rejectionReason),
-          claimedAt: request.claimedAt ? formatPhilippineDate(request.claimedAt, true) : undefined,
-          submitted: formatPhilippineDate(request.createdAt),
-          lastUpdated: formatPhilippineDate(request.updatedAt),
-        })),
+        documentRequests: documentRequests.map(formatDocumentRequest),
+        // In separate lists: with a `following` flag on each complaint, the model called a followed
+        // complaint the user's own.
         complaints: complaints.filter((complaint) => complaint.complainantId === userId).map(formatComplaint),
         followedComplaints: complaints.filter((complaint) => complaint.complainantId !== userId).map(formatComplaint),
-        courtReservations: courtReservations.map((reservation) => ({
-          referenceNumber: formatCourtReservationReference(reservation.id),
-          date: formatReservationDate(reservation.date),
-          time: formatReservationTime(reservation),
-          purpose: reservation.purpose,
-          total: formatFee(Number(reservation.totalAmount)),
-          status: reservation.status,
-          rejectionReason: truncate(reservation.rejectionReason),
-          submitted: formatPhilippineDate(reservation.createdAt),
-        })),
-        businesses: businesses.map((business) => ({
-          referenceNumber: formatBusinessReference(business.id),
-          name: business.name,
-          category: business.category,
-          status: business.status,
-          rejectionReason: truncate(business.rejectionReason),
-          submitted: formatPhilippineDate(business.createdAt),
-        })),
+        courtReservations: courtReservations.map(formatCourtReservation),
+        businesses: businesses.map(formatBusiness),
       };
       // How many the user has of each in all, since the lists stop at MAX_PER_KIND. Without them,
       // "ilan lahat ng complaints ko?" got the number listed.

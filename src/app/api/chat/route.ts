@@ -4,7 +4,8 @@ import { getOfficials } from "@/actions/officials";
 import { getBarangaySettings } from "@/actions/settings";
 import { getLastUserText, getRelevantContext } from "@/lib/ai-assistant/knowledge-base-search";
 import { buildSystemPrompt } from "@/lib/ai-assistant/system-prompt";
-import { buildAssistantTools } from "@/lib/ai-assistant/tools";
+import { buildAdminTools } from "@/lib/ai-assistant/tools/admin";
+import { buildResidentTools } from "@/lib/ai-assistant/tools/resident";
 import { getSharedUserLocation } from "@/lib/ai-assistant/tools/get-user-location";
 import { getAuthRole } from "@/lib/auth";
 
@@ -26,7 +27,9 @@ export async function POST(req: Request) {
     getOfficials("barangay"),
     getOfficials("sk"),
   ]);
-  const tools = buildAssistantTools({ userId, isAdmin, settings, userLocation: getSharedUserLocation(messages) });
+  // Residents and admins have separate assistants: their own tools and system prompt.
+  const toolContext = { userId, settings, userLocation: getSharedUserLocation(messages) };
+  const tools = isAdmin ? buildAdminTools(toolContext) : buildResidentTools(toolContext);
 
   const result = streamText({
     model: openai("gpt-4o-mini"),

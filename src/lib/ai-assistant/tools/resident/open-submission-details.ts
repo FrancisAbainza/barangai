@@ -8,20 +8,11 @@ import {
   courtReservationsTable,
   documentRequestsTable,
 } from "@/db/schema";
-import { getSubmissionDialogHref } from "@/lib/ai-assistant/portal-dialogs";
 import type { PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
 import type { AssistantToolContext } from "@/lib/ai-assistant/tools";
 import { buttonTool, MAX_RECORD_BUTTONS } from "@/lib/ai-assistant/tools/buttons";
+import { getSubmissionButton, parseReferenceNumber } from "@/lib/ai-assistant/tools/submissions";
 import { formatReservationDate } from "@/lib/court-reservations";
-
-// The reference number prefixes (createReferenceNumbers in each domain's lib) and the page whose
-// `?view=<id>` opens that kind of submission's Submission Info dialog.
-const REFERENCE_PREFIX_PAGES = {
-  DR: "document-request",
-  CP: "complaint",
-  CR: "court-reservation",
-  CH: "community-hub",
-} as const satisfies Record<string, PortalNavigationTargetId>;
 
 // The button's label for one of the user's submissions, or null if it isn't theirs (or doesn't exist).
 async function getOwnSubmissionLabel(page: PortalNavigationTargetId, id: number, userId: string) {
@@ -86,12 +77,10 @@ export function buildOpenSubmissionDetailsTool({ userId }: AssistantToolContext)
     execute: async ({ referenceNumbers }) => {
       const submissions = [];
       for (const referenceNumber of referenceNumbers.slice(0, MAX_RECORD_BUTTONS)) {
-        const match = referenceNumber.trim().toUpperCase().match(/^(DR|CP|CR|CH)-?(\d+)$/);
-        if (!match) continue;
-        const page = REFERENCE_PREFIX_PAGES[match[1] as keyof typeof REFERENCE_PREFIX_PAGES];
-        const id = Number(match[2]);
-        const label = await getOwnSubmissionLabel(page, id, userId);
-        if (label) submissions.push({ referenceNumber: `${match[1]}-${id}`, label, page, id });
+        const reference = parseReferenceNumber(referenceNumber);
+        if (!reference) continue;
+        const label = await getOwnSubmissionLabel(reference.page, reference.id, userId);
+        if (label) submissions.push({ ...reference, label });
       }
 
       if (submissions.length === 0) {
@@ -103,13 +92,7 @@ export function buildOpenSubmissionDetailsTool({ userId }: AssistantToolContext)
 
       const withoutButton = referenceNumbers.slice(MAX_RECORD_BUTTONS);
       return {
-        buttons: submissions.map(({ referenceNumber, label, page, id }) => ({
-          key: `submission-${referenceNumber}`,
-          kind: "submission",
-          page,
-          label: `View ${referenceNumber}: ${label}`,
-          href: getSubmissionDialogHref(page, id),
-        })),
+        buttons: submissions.map(getSubmissionButton),
         instruction: [
           `A button that opens the details is shown below your reply for: ${submissions.map(({ referenceNumber }) => referenceNumber).join(", ")}. Point the user to it; don't write a link.`,
           "If getMySubmissions said it couldn't list all of a kind, still tell the user that too.",
