@@ -77,7 +77,9 @@ function ReactionButtons({ news }: { news: NewsWithAuthor }) {
       });
 
       queryClient.setQueriesData<InfiniteData<NewsPage, number>>({ queryKey: ["news"] }, (old) => {
-        if (!old) return old;
+        // Only the News page's list is updated here. ["news"] also holds the home page's latest
+        // posts and single posts (/portal/news/[id]), which refetch when onSettled invalidates.
+        if (!old?.pages) return old;
 
         return {
           ...old,

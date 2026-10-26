@@ -5,9 +5,9 @@ import { isAdminRole } from '@/lib/roles'
 const isProtectedRoute = createRouteMatcher(['/portal(.*)'])
 const isAdminRoute = createRouteMatcher(["/portal/user-management(.*)", "/portal/barangay-settings(.*)"]);
 const isResidentOnlyRoute = createRouteMatcher(["/portal/notifications(.*)"]);
-// Pages with a /portal counterpart. The detail pages (/news/[id], /transparency/[id]) are left
-// out because share links point there and the portal has no equivalent.
-const isPublicOnlyRoute = createRouteMatcher(['/', '/news', '/about-us', '/transparency'])
+// Pages with a /portal counterpart. This includes the post pages share links point to
+// (/news/[id], /transparency/[id]), so a signed-in user opening one stays in the portal.
+const isPublicOnlyRoute = createRouteMatcher(['/', '/news', '/news/:id', '/about-us', '/transparency', '/transparency/:id'])
 
 export default clerkMiddleware(async (auth, req) => {
   const { sessionClaims, userId } = await auth();

@@ -40,3 +40,14 @@ export function formatDateTime(date: Date): string {
   }).format(date);
   return `${dateStr} at ${timeStr}`;
 }
+
+// For dates formatted on the server, which runs in UTC: shows them in Philippine time explicitly.
+export function formatPhilippineDate(date: Date, withTime = false) {
+  return date.toLocaleString("en-US", {
+    timeZone: "Asia/Manila",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    ...(withTime && { hour: "numeric", minute: "2-digit" }),
+  });
+}

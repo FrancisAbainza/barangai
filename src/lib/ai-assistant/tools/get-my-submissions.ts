@@ -22,6 +22,7 @@ import {
   ONLINE_SOFT_COPY_DELIVERY_METHOD,
   PICKUP_DELIVERY_METHOD,
 } from "@/lib/document-requests";
+import { formatPhilippineDate } from "@/lib/utils";
 
 // Per kind of submission, most recent first. More than a resident usually has.
 const MAX_PER_KIND = 10;
@@ -30,17 +31,6 @@ const MAX_MESSAGE_LENGTH = 300;
 function truncate(text: string | null) {
   if (!text) return undefined;
   return text.length > MAX_MESSAGE_LENGTH ? `${text.slice(0, MAX_MESSAGE_LENGTH)}…` : text;
-}
-
-// The server runs in UTC, so dates are shown in Philippine time explicitly.
-function formatPhilippineDate(date: Date, withTime = false) {
-  return date.toLocaleString("en-US", {
-    timeZone: "Asia/Manila",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    ...(withTime && { hour: "numeric", minute: "2-digit" }),
-  });
 }
 
 // Like findBusinesses, this shows no button; the model answers from its result and then calls

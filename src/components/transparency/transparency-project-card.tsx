@@ -139,7 +139,9 @@ function ReactionButtons({ project }: { project: TransparencyProjectWithAuthor }
       queryClient.setQueriesData<InfiniteData<TransparencyProjectPage, number>>(
         { queryKey: ["transparency-projects"] },
         (old) => {
-          if (!old) return old;
+          // Only the Transparency page's list is updated here. Single projects
+          // (/portal/transparency/[id]) refetch when onSettled invalidates.
+          if (!old?.pages) return old;
 
           return {
             ...old,

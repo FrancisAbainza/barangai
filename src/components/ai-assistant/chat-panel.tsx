@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
-import { ArrowRightIcon, BotIcon, FileTextIcon, SquarePenIcon, StoreIcon } from "lucide-react";
+import { ArrowRightIcon, BotIcon, EyeIcon, FileTextIcon, MegaphoneIcon, SquarePenIcon, StoreIcon } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -83,18 +83,51 @@ function getSubmissionTargets(message: UIMessage): SubmissionTarget[] {
   return [...targets.values()];
 }
 
+type PostTarget = { id: number; title: string; href: string };
+
+// News posts the assistant offered to open (openNewsPosts tool results), deduplicated.
+// Each `href` is the post's own page.
+function getNewsPostTargets(message: UIMessage): PostTarget[] {
+  const targets = new Map<number, PostTarget>();
+  for (const part of message.parts) {
+    if (part.type === "tool-openNewsPosts" && part.state === "output-available") {
+      const { posts = [], buttonShown } = part.output as { posts?: PostTarget[]; buttonShown: boolean };
+      if (buttonShown) for (const post of posts) targets.set(post.id, post);
+    }
+  }
+  return [...targets.values()];
+}
+
+// Transparency projects the assistant offered to open (openTransparencyProjects tool results),
+// deduplicated. Each `href` is the project's own page.
+function getProjectTargets(message: UIMessage): PostTarget[] {
+  const targets = new Map<number, PostTarget>();
+  for (const part of message.parts) {
+    if (part.type === "tool-openTransparencyProjects" && part.state === "output-available") {
+      const { projects = [], buttonShown } = part.output as { projects?: PostTarget[]; buttonShown: boolean };
+      if (buttonShown) for (const project of projects) targets.set(project.id, project);
+    }
+  }
+  return [...targets.values()];
+}
+
 // Pages the assistant offered to take the user to (navigateToPage tool results), deduplicated.
-// Pages already reached by one of the message's form, business or submission buttons are skipped,
-// so the model calling two tools for one intent doesn't show two buttons to the same place.
+// Pages already reached by one of the message's form, business, submission, news post or project
+// buttons are skipped, so the model calling two tools for one intent doesn't show two buttons to
+// the same place.
 function getNavigationTargets(
   message: UIMessage,
   dialogs: DialogTarget[],
   businesses: BusinessTarget[],
   submissions: SubmissionTarget[],
+  newsPosts: PostTarget[],
+  projects: PostTarget[],
 ): PortalNavigationTargetId[] {
   const coveredPages = new Set<PortalNavigationTargetId>(dialogs.map(({ dialog }) => PORTAL_DIALOG_TARGETS[dialog].page));
   if (businesses.length > 0) coveredPages.add("community-hub");
   for (const { page } of submissions) coveredPages.add(page);
+  if (newsPosts.length > 0) coveredPages.add("news");
+  if (projects.length > 0) coveredPages.add("transparency");
   const pages = new Set<PortalNavigationTargetId>();
   for (const part of message.parts) {
     if (part.type === "tool-navigateToPage" && part.state === "output-available") {
@@ -144,13 +177,24 @@ export function ChatPanel({ messages, sendMessage, status, stop, onNavigate }: C
               const dialogTargets = isStreaming ? [] : getDialogTargets(message);
               const businessTargets = isStreaming ? [] : getBusinessTargets(message);
               const submissionTargets = isStreaming ? [] : getSubmissionTargets(message);
+              const newsPostTargets = isStreaming ? [] : getNewsPostTargets(message);
+              const projectTargets = isStreaming ? [] : getProjectTargets(message);
               const navigationTargets = isStreaming
                 ? []
-                : getNavigationTargets(message, dialogTargets, businessTargets, submissionTargets);
+                : getNavigationTargets(
+                    message,
+                    dialogTargets,
+                    businessTargets,
+                    submissionTargets,
+                    newsPostTargets,
+                    projectTargets,
+                  );
               const hasButtons =
                 dialogTargets.length > 0 ||
                 businessTargets.length > 0 ||
                 submissionTargets.length > 0 ||
+                newsPostTargets.length > 0 ||
+                projectTargets.length > 0 ||
                 navigationTargets.length > 0;
 
               return (
@@ -182,6 +226,23 @@ export function ChatPanel({ messages, sendMessage, status, stop, onNavigate }: C
                               <span className="truncate">
                                 View {referenceNumber}: {label}
                               </span>
+                            </Link>
+                          </Button>
+                        ))}
+                        {/* Keys are prefixed because news, project and business ids can be equal. */}
+                        {newsPostTargets.map(({ id, title, href }) => (
+                          <Button asChild className="max-w-full" key={`news-${id}`} size="sm">
+                            <Link href={href} onClick={onNavigate}>
+                              <MegaphoneIcon />
+                              <span className="truncate">View {title}</span>
+                            </Link>
+                          </Button>
+                        ))}
+                        {projectTargets.map(({ id, title, href }) => (
+                          <Button asChild className="max-w-full" key={`project-${id}`} size="sm">
+                            <Link href={href} onClick={onNavigate}>
+                              <EyeIcon />
+                              <span className="truncate">View {title}</span>
                             </Link>
                           </Button>
                         ))}

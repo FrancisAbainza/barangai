@@ -1,14 +1,18 @@
 # AI Assistant: how the code fits together
 
-A floating chat widget in the portal. It answers questions from the current Barangay Settings, the officials list and the uploaded PDF (RAG), and can call **tools**. It has eight tools. Four of them put buttons under the assistant's reply, three look up something the model answers from, and one runs in the browser:
+A floating chat widget in the portal. It answers questions from the current Barangay Settings, the officials list and the uploaded PDF (RAG), and can call **tools**. It has twelve tools. Six of them put buttons under the assistant's reply, five look up something the model answers from, and one runs in the browser:
 
 - `navigateToPage`: a "Go to X" button that takes the user to a portal page.
 - `openFormDialog`: a button like "File a Complaint" that takes the user to the form's page and opens the form there, with any details the user already gave in the chat filled in.
 - `openBusinessDetails`: a "View <business>" button for each of up to 3 businesses, which opens that business's details on the Community Hub (see [Business buttons](#business-buttons)).
 - `openSubmissionDetails`: a "View DR-12: …" button for each of up to 3 of the user's own submissions, which opens its Submission Info dialog (see [The user's submissions](#the-users-submissions)).
+- `openNewsPosts`: a "View <title>" button for each of up to 3 news posts, which opens the post's own page (see [News and announcements](#news-and-announcements)).
+- `openTransparencyProjects`: a "View <title>" button for each of up to 3 transparency projects, which opens the project's own page (see [Transparency projects](#transparency-projects)).
 - `calculateCourtFee`: the fee for reserving the court at given times, billed the same way as the reservation form. No button (see [Court fees](#court-fees)).
 - `findBusinesses`: the businesses verified in the Community Hub, nearest first once the user has shared their location. No button (see [Local businesses](#local-businesses)).
 - `getMySubmissions`: the user's own document requests, complaints (filed and followed), court reservations and businesses, with their status and the barangay's reply. No button (see [The user's submissions](#the-users-submissions)).
+- `findNews`: the latest posts on News & Announcements, with today's date. No button (see [News and announcements](#news-and-announcements)).
+- `findTransparencyProjects`: the projects on the Transparency page, with their budgets added up in code, overall and per category. No button (see [Transparency projects](#transparency-projects)).
 - `getUserLocation`: the user's location from their device, for "what's the nearest karinderya?". It has no server `execute`, because the chat widget answers it.
 
 ## Files
@@ -16,9 +20,9 @@ A floating chat widget in the portal. It answers questions from the current Bara
 | File | What it does |
 |---|---|
 | `src/components/ai-assistant-widget.tsx` | The widget (mounted in `portal/layout.tsx`). Owns `useChat` and the open/close state, and answers `getUserLocation` calls (`onToolCall`, `sendAutomaticallyWhen`). |
-| `src/components/ai-assistant/chat-panel.tsx` | Message list, input box, microphone. Also renders the buttons for tool results: form buttons (`getDialogTargets`), business buttons (`getBusinessTargets`), submission buttons (`getSubmissionTargets`) and navigation buttons (`getNavigationTargets`). |
+| `src/components/ai-assistant/chat-panel.tsx` | Message list, input box, microphone. Also renders the buttons for tool results: form buttons (`getDialogTargets`), business buttons (`getBusinessTargets`), submission buttons (`getSubmissionTargets`), news post buttons (`getNewsPostTargets`), project buttons (`getProjectTargets`) and navigation buttons (`getNavigationTargets`). |
 | `src/app/api/chat/route.ts` | The endpoint. Auth, then calls the helpers below and streams. Sets `stopWhen: stepCountIs(8)` so the model can make several tool calls and still reply, with one tool call per step and `temperature: 0.2` (see [Gotchas](#gotchas)). |
-| `src/lib/ai-assistant/tools/` | One file per tool (`navigate-to-page.ts`, `open-form-dialog.ts`, `calculate-court-fee.ts`, `find-businesses.ts`, `open-business-details.ts`, `get-my-submissions.ts`, `open-submission-details.ts`, `get-user-location.ts`), each exporting a `buildXTool` (or, for the tools with no per-request settings, the tool itself). `get-user-location.ts` also has `getSharedUserLocation`, which reads the location out of the chat history. `index.ts` has `buildAssistantTools`, which the route calls. `audience.ts` has `AUDIENCE_NOTES`, the "(residents only)" / "(admins only)" labels both button tools use. |
+| `src/lib/ai-assistant/tools/` | One file per tool (`navigate-to-page.ts`, `open-form-dialog.ts`, `calculate-court-fee.ts`, `find-businesses.ts`, `open-business-details.ts`, `get-my-submissions.ts`, `open-submission-details.ts`, `find-news.ts`, `open-news-posts.ts`, `find-transparency-projects.ts`, `open-transparency-projects.ts`, `get-user-location.ts`), each exporting a `buildXTool` (or, for the tools with no per-request settings, the tool itself). `get-user-location.ts` also has `getSharedUserLocation`, which reads the location out of the chat history. `index.ts` has `buildAssistantTools`, which the route calls. `audience.ts` has `AUDIENCE_NOTES`, the "(residents only)" / "(admins only)" labels both button tools use. |
 | `src/lib/ai-assistant/system-prompt.ts` | `SYSTEM_PROMPT`, `formatBarangaySettings`, `formatOfficials`, and `buildSystemPrompt`, which adds the user's role, the current barangay settings, the barangay and SK officials and the excerpts. |
 | `src/lib/ai-assistant/knowledge-base-search.ts` | `getRelevantContext` (embeds the question and finds matching PDF excerpts with pgvector) and `getLastUserText`. Imports the DB. |
 | `src/lib/ai-assistant/knowledge-base.ts` | The embedding model and dimensions, the upload size limit, and `chunkText`. Shared by the search above, the upload action (`src/actions/knowledge-base.ts`) and the DB schema. |
@@ -31,9 +35,9 @@ A floating chat widget in the portal. It answers questions from the current Bara
 
 1. The user sends a message, and `useChat` POSTs the history to `/api/chat`.
 2. `route.ts` checks auth, then calls `getRelevantContext` (finds matching PDF excerpts), `getBarangaySettings` and `getOfficials` (once per section) in parallel, then `buildAssistantTools(userId, isAdmin, settings, getSharedUserLocation(messages))` and `buildSystemPrompt(context, settings, officials, isAdmin)`, and streams `gpt-4o-mini`.
-3. If the model calls a tool, its `execute` runs on the server right away. No tool changes anything. The button tools' `execute` only echoes the target so the call is marked finished, or returns `buttonShown: false` if the user's role can't use it (see [below](#targets-the-users-role-cant-use)). `calculateCourtFee` returns the fee, `findBusinesses` the businesses and `getMySubmissions` the user's submissions. `getUserLocation` has no `execute`, so it ends the stream and the browser takes over (see [Local businesses](#local-businesses)).
+3. If the model calls a tool, its `execute` runs on the server right away. No tool changes anything. The button tools' `execute` only echoes the target so the call is marked finished, or returns `buttonShown: false` if the user's role can't use it (see [below](#targets-the-users-role-cant-use)). `calculateCourtFee` returns the fee, `findBusinesses` the businesses, `getMySubmissions` the user's submissions, `findNews` the latest posts and `findTransparencyProjects` the projects and their budget totals. `getUserLocation` has no `execute`, so it ends the stream and the browser takes over (see [Local businesses](#local-businesses)).
 4. Because of `stopWhen: stepCountIs(8)`, the model gets more steps in the same stream and writes a short reply pointing at the button, or, for a `buttonShown: false` result, saying why the user can't use that form or page. The extra steps cover a lookup followed by a button tool, e.g. `calculateCourtFee` then `openFormDialog` for "how much is 8 to 11 AM? I'd like to reserve", and a message asking for several things at once.
-5. `ChatPanel` finds the finished `tool-openFormDialog` / `tool-openBusinessDetails` / `tool-openSubmissionDetails` / `tool-navigateToPage` parts with `buttonShown: true` on the message and renders the buttons, but only once the response has finished streaming.
+5. `ChatPanel` finds the finished `tool-openFormDialog` / `tool-openBusinessDetails` / `tool-openSubmissionDetails` / `tool-openNewsPosts` / `tool-openTransparencyProjects` / `tool-navigateToPage` parts with `buttonShown: true` on the message and renders the buttons, but only once the response has finished streaming.
 6. Clicking a button navigates with `next/link` and closes the widget (`onNavigate`).
 
 ## How a form gets opened
@@ -66,7 +70,7 @@ Free-text fields in a `prefill` schema are plain `z.string()` rather than the fo
 Both tools can point at the same page, so they're kept from overlapping in two places:
 
 - **System prompt:** use `openFormDialog` when the request matches a specific form ("I want to file a complaint"). Use `navigateToPage` for browsing ("show me my complaints") or a request too broad to pick a form ("I want a document"). Never call both for one request.
-- **Chat panel:** if the model calls both anyway, `getNavigationTargets` drops any page that a form button in the same message already goes to. Business buttons count as going to the Community Hub, and submission buttons as going to their submission's page.
+- **Chat panel:** if the model calls both anyway, `getNavigationTargets` drops any page that a form button in the same message already goes to. Business buttons count as going to the Community Hub, submission buttons as going to their submission's page, news post buttons as going to News & Announcements and project buttons as going to Transparency.
 
 ## Targets the user's role can't use
 
@@ -88,7 +92,7 @@ The chat panel shows no button for a `buttonShown: false` result. The model some
 
 ## Staying on topic
 
-Only the system prompt keeps the assistant to barangay topics; there's no separate filter. `SYSTEM_PROMPT` lists what's in scope (barangay services and information, the Community Hub's local businesses, using the portal, how barangays work in general, and concerns residents bring to the barangay). It tells the model to refuse anything else in a sentence or two and to answer only the barangay part of a mixed message. Barangay-specific facts come only from the barangay settings, the officials lists, the knowledge base excerpts, `findBusinesses` and `getMySubmissions`. Retrieval uses a low similarity cutoff (0.2), so excerpts show up even for unrelated questions, and the prompt tells the model to ignore excerpts that don't fit. To widen or narrow the scope, edit that list. If you add a new kind of page or form, add it there too, or the model may treat questions about it as out of scope.
+Only the system prompt keeps the assistant to barangay topics; there's no separate filter. `SYSTEM_PROMPT` lists what's in scope (barangay services and information, the Community Hub's local businesses, using the portal, how barangays work in general, and concerns residents bring to the barangay). It tells the model to refuse anything else in a sentence or two and to answer only the barangay part of a mixed message. Barangay-specific facts come only from the barangay settings, the officials lists, the knowledge base excerpts, `findBusinesses`, `findNews`, `findTransparencyProjects` and `getMySubmissions`. The news item in the list names brownouts and water interruptions, so a question about one isn't refused as news outside the barangay. Retrieval uses a low similarity cutoff (0.2), so excerpts show up even for unrelated questions, and the prompt tells the model to ignore excerpts that don't fit. To widen or narrow the scope, edit that list. If you add a new kind of page or form, add it there too, or the model may treat questions about it as out of scope.
 
 ## Barangay settings and officials in the prompt
 
@@ -150,6 +154,26 @@ Questions like "ano na status ng clearance ko?", "bakit na-reject yung reservati
 - `openSubmissionDetails` takes up to 3 reference numbers. It parses the prefix, checks each one belongs to the user (complaints they follow count), and returns a label from the database and `<page>?view=<id>`, which opens the Submission Info dialog through `useViewParam`, the same link a notification uses. The href is built inline because `VIEW_SEARCH_PARAM` lives in a client hook. Like `openBusinessDetails`, the model only sees the `instruction`.
 - Both the system prompt and the result's `instruction` say to call `openSubmissionDetails` for businesses too. The model didn't for "na-verify na ba yung business ko?" until the prompt had that question as an example, and once it said "tap the button below" without calling it.
 
+## News and announcements
+
+Questions like "may brownout o water interruption ba ngayong linggo?", "kailan ang susunod na event?" or "any emergency announcements?" go to `findNews`, then `openNewsPosts`. It's the same pattern as `findBusinesses` and `openBusinessDetails`.
+
+- `findNews` takes no input and returns the 20 latest posts in the News & Announcements page's order (pinned first, then newest), each with its id, title, category, `pinned`, the date it was posted and the first 500 characters of its content. Like `findBusinesses`, it leaves the matching to the model, so a post titled "Scheduled Power Interruption" still answers "may brownout ba?".
+- The result has `today` (e.g. "Monday, October 26, 2026", in Philippine time) for "ngayong linggo" and "susunod". Its `instruction` says that `posted` is when the post went up, not when the event or interruption happens, so the model takes those dates from the content, or says the post doesn't give one. Content that was cut short ends with "…", and the `instruction` says only that content may have more in the full post. When it said every excerpt was cut short, the model told users to "see the full post" for details a short post didn't have.
+- The `instruction` also says to go by each post's `category` for emergencies, events and announcements (the model once called the "Oplan Undas" Announcement an emergency), to leave out posts that don't fit (it listed unrelated posts after saying there were no emergency announcements), and not to mention a button unless it calls `openNewsPosts` (`findTransparencyProjects` says the same for `openTransparencyProjects`, after "how much is the total budget?" got "tap the button below" with no button).
+- Dates inside a post's text can't be checked in code the way budgets are, so the model sometimes gets them wrong. Asked for this week's announcements, it included a post whose text gave a date that had already passed.
+- `openNewsPosts` takes up to 3 ids, keeps the ones that exist and returns each one's title and `/portal/news/<id>`. Like `openBusinessDetails`, the model only sees the `instruction`.
+- The button goes to the portal's post page rather than the public `/news/<id>` that share links use. Leaving `/portal` would unmount the portal layout, and with it the widget and the conversation. Signed-in users who open a share link are redirected to the portal's page too (`src/proxy.ts`).
+
+## Transparency projects
+
+Questions like "ano ang mga project ng barangay ngayon?", "magkano ang budget ng road project?" or "magkano lahat ng ginastos sa infrastructure?" go to `findTransparencyProjects`, then `openTransparencyProjects`.
+
+- `findTransparencyProjects` takes no input and returns every project (up to 50 listed, newest first) with its id, title, category, budget, a description cut to 200 characters, the address and the date it was posted.
+- Like `calculateCourtFee`, it does the arithmetic: `budgetTotals` has the total budget of all projects and of each category that has projects, added up in code over every project, including any past the 50 listed. Projects with no budget listed aren't counted, and `projectsWithNoBudget` says how many there are. The system prompt and the `instruction` tell the model never to add up budgets itself. For a group that isn't all projects or a whole category (e.g. two of the Infrastructure projects), it gives each one's budget without a total.
+- The table has a budget, not what was actually spent, so the `instruction` tells the model to call the amounts budgets even when asked "magkano ang ginastos". Projects have no status either, so it's told not to call one ongoing or finished unless the description says so.
+- `openTransparencyProjects` works like `openNewsPosts`, with buttons to `/portal/transparency/<id>`.
+
 ## Streaming and re-renders
 
 Each streamed chunk updates `messages`, which re-renders `ChatPanel` and re-runs `messages.map` over **every** message, not only the one being streamed.
@@ -174,7 +198,7 @@ The tool's input schema, its description for the model, the role check and the c
 
 ## Gotchas
 
-- The tool name must be the same string in `buildAssistantTools` and the chat panel (`tool-navigateToPage`, `tool-openFormDialog`, `tool-openBusinessDetails`, `tool-openSubmissionDetails`) or widget (`getUserLocation`). If it's not, the panel never finds the result and no button shows, or the location request is never answered.
+- The tool name must be the same string in `buildAssistantTools` and the chat panel (`tool-navigateToPage`, `tool-openFormDialog`, `tool-openBusinessDetails`, `tool-openSubmissionDetails`, `tool-openNewsPosts`, `tool-openTransparencyProjects`) or widget (`getUserLocation`). If it's not, the panel never finds the result and no button shows, or the location request is never answered.
 - Every tool the browser doesn't answer needs an `execute`. A call without a result stops the stream with no reply.
 - Parallel tool calls are off (`providerOptions: { openai: { parallelToolCalls: false } }`), so the model makes one call per step. Once `findBusinesses` and `getUserLocation` were added, it sometimes added stray calls next to the one it needed, e.g. `calculateCourtFee` or `getUserLocation` next to the clearance form, in roughly one request in six. Tests showed the tools caused this, not the prompt. A flow that needs two tools (a lookup, then a form) takes two steps instead.
 - `temperature` is 0.2. Replies repeat exact details from tools and settings, and at OpenAI's default of 1 the model now and then miscopied one (a plus-code address `83C7+WRC` came out as `81C7+WRC`). A low temperature also means a bad habit shows up nearly every time instead of now and then, so check a prompt or tool change over several runs of the same question.

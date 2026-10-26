@@ -110,7 +110,10 @@ export default function PortalSidebar() {
           <SidebarMenu className="p-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              // Subpages (e.g. a post at /portal/news/[id]) keep their section active. Home is
+              // "/portal" itself, which every page is under, so it only matches exactly.
+              const isActive =
+                pathname === item.href || (item.href !== "/portal" && pathname.startsWith(`${item.href}/`));
 
               return (
                 <SidebarMenuItem key={item.href}>
