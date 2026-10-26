@@ -1,6 +1,6 @@
 import type { Notification } from "@/db/schema";
-import { VIEW_SEARCH_PARAM } from "@/hooks/use-view-param";
-import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
+import { getSubmissionDialogHref } from "@/lib/ai-assistant/portal-dialogs";
+import type { PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
 
 export const NOTIFICATION_TYPE_CONFIG = {
   "document-request": { label: "Document Request", page: "document-request" },
@@ -13,8 +13,7 @@ export const NOTIFICATION_TYPES = Object.keys(NOTIFICATION_TYPE_CONFIG) as Notif
 
 // The submission's page with `?view=<id>`, which opens its Submission Info dialog on arrival.
 export function getNotificationHref({ type, referenceId }: Pick<Notification, "type" | "referenceId">) {
-  const { href } = PORTAL_NAVIGATION_TARGETS[NOTIFICATION_TYPE_CONFIG[type].page];
-  return `${href}?${VIEW_SEARCH_PARAM}=${referenceId}`;
+  return getSubmissionDialogHref(NOTIFICATION_TYPE_CONFIG[type].page, referenceId);
 }
 
 export function formatRelativeTime(date: Date, now = new Date()): string {

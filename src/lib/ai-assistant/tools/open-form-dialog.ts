@@ -1,4 +1,3 @@
-import { tool } from "ai";
 import z from "zod";
 import {
   getPortalDialogHref,
@@ -7,7 +6,9 @@ import {
   type PortalDialogTargetId,
 } from "@/lib/ai-assistant/portal-dialogs";
 import { PORTAL_NAVIGATION_TARGETS } from "@/lib/ai-assistant/portal-navigation";
+import type { AssistantToolContext } from "@/lib/ai-assistant/tools";
 import { AUDIENCE_NOTES } from "@/lib/ai-assistant/tools/audience";
+import { buttonTool } from "@/lib/ai-assistant/tools/buttons";
 
 // The fields a form's `prefill` schema accepts, for the tool description,
 // e.g. `name, category (one of: ["Food & Beverage","Retail"])`.
@@ -21,10 +22,10 @@ function describePrefillFields(id: PortalDialogTargetId): string {
     .join(", ");
 }
 
-export function buildOpenFormDialogTool(isAdmin: boolean) {
+export function buildOpenFormDialogTool({ isAdmin }: AssistantToolContext) {
   const dialogIds = Object.keys(PORTAL_DIALOG_TARGETS) as [PortalDialogTargetId, ...PortalDialogTargetId[]];
 
-  return tool({
+  return buttonTool({
     description:
       "Open a specific form so the user can fill it out right away. Prefer this over navigateToPage whenever " +
       "the user's intent matches one of these forms. A form marked residents only or admins only may not be " +
@@ -59,11 +60,11 @@ export function buildOpenFormDialogTool(isAdmin: boolean) {
         ),
     }),
     execute: async ({ dialog, prefill = [] }) => {
+      const { label, page } = PORTAL_DIALOG_TARGETS[dialog];
       if (!isPortalDialogAvailable(dialog, isAdmin)) {
-        const pageLabel = PORTAL_NAVIGATION_TARGETS[PORTAL_DIALOG_TARGETS[dialog].page].label;
+        const pageLabel = PORTAL_NAVIGATION_TARGETS[page].label;
         return {
-          dialog,
-          buttonShown: false,
+          buttons: [],
           instruction: isAdmin
             ? `This form is only for residents, so no button was shown. In a sentence or two, tell the user that residents submit this from their own accounts, so admin accounts can't, and that they can review residents' submissions on the ${pageLabel} page. Don't call another tool.`
             : "This form is only for barangay admins, so no button was shown. Tell the user in a sentence that only barangay admins can do this. Don't call another tool.",
@@ -76,15 +77,15 @@ export function buildOpenFormDialogTool(isAdmin: boolean) {
       // it claimed fields were filled in when it had sent none, so the result spells out both.
       const filledIn = Object.entries(values).map(([field, value]) => `${field}: ${value}`);
       const instruction =
-        `A "${PORTAL_DIALOG_TARGETS[dialog].label}" button is shown below your reply. Point the user to it. ` +
+        `A "${label}" button is shown below your reply. Point the user to it. ` +
         "The form isn't open until they tap it, so don't say you've opened it. " +
         (filledIn.length > 0
           ? `It opens with these filled in for them to review: ${filledIn.join(", ")}.`
           : "Nothing will be filled in, so don't say it will be.");
-      return { dialog, href: getPortalDialogHref(dialog, values), buttonShown: true, instruction };
+      return {
+        buttons: [{ key: `form-${dialog}`, kind: "form", page, label, href: getPortalDialogHref(dialog, values) }],
+        instruction,
+      };
     },
-    // The model only gets the instruction. Given the href, it wrote links like "[File a Complaint](#)",
-    // as it did with openBusinessDetails.
-    toModelOutput: ({ output }) => ({ type: "text", value: output.instruction }),
   });
 }

@@ -1,4 +1,3 @@
-import { tool } from "ai";
 import { and, eq, inArray, or } from "drizzle-orm";
 import z from "zod";
 import { db } from "@/db/config";
@@ -9,10 +8,11 @@ import {
   courtReservationsTable,
   documentRequestsTable,
 } from "@/db/schema";
-import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
+import { getSubmissionDialogHref } from "@/lib/ai-assistant/portal-dialogs";
+import type { PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
+import type { AssistantToolContext } from "@/lib/ai-assistant/tools";
+import { buttonTool, MAX_RECORD_BUTTONS } from "@/lib/ai-assistant/tools/buttons";
 import { formatReservationDate } from "@/lib/court-reservations";
-
-const MAX_SUBMISSIONS = 3;
 
 // The reference number prefixes (createReferenceNumbers in each domain's lib) and the page whose
 // `?view=<id>` opens that kind of submission's Submission Info dialog.
@@ -67,54 +67,58 @@ async function getOwnSubmissionLabel(page: PortalNavigationTargetId, id: number,
   return row?.name ?? null;
 }
 
-// Like openBusinessDetails, this only shows buttons: one per submission, each going to its page with
-// `?view=<id>`, which opens its Submission Info dialog (the barangay's reply, attachments, and for a
-// Ready for Pickup online soft copy, the document itself). The reference numbers come from
-// getMySubmissions. They're checked against the user's own submissions here, so a made-up or
-// someone else's reference number gets no button, and the label comes from the database.
-export function buildOpenSubmissionDetailsTool(userId: string) {
-  return tool({
+// One button per submission, each going to its page with `?view=<id>`, which opens its Submission
+// Info dialog (the barangay's reply, attachments, and for a Ready for Pickup online soft copy, the
+// document itself). The reference numbers come from getMySubmissions. They're checked against the
+// user's own submissions here, so a made-up or someone else's reference number gets no button, and
+// the label comes from the database. A longer list (e.g. "show me all my requests") gets none, as
+// getMySubmissions tells the model. If it passes more anyway, it's told which ones got no button.
+export function buildOpenSubmissionDetailsTool({ userId }: AssistantToolContext) {
+  return buttonTool({
     description:
       "Show the user a button for each of their submissions that opens its full details: status, the barangay's " +
       "reply and any attached files. Use the reference numbers getMySubmissions returned (e.g. \"DR-12\").",
     inputSchema: z.object({
       referenceNumbers: z
         .array(z.string())
-        .describe(`The submissions' reference numbers from getMySubmissions, at most ${MAX_SUBMISSIONS}.`),
+        .describe(`The submissions' reference numbers from getMySubmissions. The first ${MAX_RECORD_BUTTONS} get a button.`),
     }),
     execute: async ({ referenceNumbers }) => {
       const submissions = [];
-      for (const referenceNumber of referenceNumbers.slice(0, MAX_SUBMISSIONS)) {
+      for (const referenceNumber of referenceNumbers.slice(0, MAX_RECORD_BUTTONS)) {
         const match = referenceNumber.trim().toUpperCase().match(/^(DR|CP|CR|CH)-?(\d+)$/);
         if (!match) continue;
         const page = REFERENCE_PREFIX_PAGES[match[1] as keyof typeof REFERENCE_PREFIX_PAGES];
         const id = Number(match[2]);
         const label = await getOwnSubmissionLabel(page, id, userId);
-        if (!label) continue;
-        submissions.push({
-          referenceNumber: `${match[1]}-${id}`,
-          label,
-          page,
-          // `?view=` is VIEW_SEARCH_PARAM, which lives in a client hook the server can't import.
-          href: `${PORTAL_NAVIGATION_TARGETS[page].href}?view=${id}`,
-        });
+        if (label) submissions.push({ referenceNumber: `${match[1]}-${id}`, label, page, id });
       }
 
       if (submissions.length === 0) {
         return {
-          buttonShown: false,
+          buttons: [],
           instruction: "None of these reference numbers belongs to one of the user's submissions, so no button was shown. Don't mention one.",
         };
       }
 
+      const withoutButton = referenceNumbers.slice(MAX_RECORD_BUTTONS);
       return {
-        submissions,
-        buttonShown: true,
-        instruction: `A button that opens the details is shown below your reply for: ${submissions.map(({ referenceNumber }) => referenceNumber).join(", ")}. Point the user to it; don't write a link.`,
+        buttons: submissions.map(({ referenceNumber, label, page, id }) => ({
+          key: `submission-${referenceNumber}`,
+          kind: "submission",
+          page,
+          label: `View ${referenceNumber}: ${label}`,
+          href: getSubmissionDialogHref(page, id),
+        })),
+        instruction: [
+          `A button that opens the details is shown below your reply for: ${submissions.map(({ referenceNumber }) => referenceNumber).join(", ")}. Point the user to it; don't write a link.`,
+          "If getMySubmissions said it couldn't list all of a kind, still tell the user that too.",
+          withoutButton.length > 0 &&
+            `Only ${MAX_RECORD_BUTTONS} submissions get a button, so ${withoutButton.join(", ")} didn't. Still include them in your reply, and tell the user they can open those from their pages.`,
+        ]
+          .filter(Boolean)
+          .join(" "),
       };
     },
-    // The model only gets the instruction, for the same reason as openBusinessDetails: given the
-    // hrefs, it pastes them as links instead of pointing to the buttons.
-    toModelOutput: ({ output }) => ({ type: "text", value: output.instruction }),
   });
 }

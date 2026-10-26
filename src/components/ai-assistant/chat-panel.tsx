@@ -2,8 +2,17 @@
 
 import Link from "next/link";
 import type { UseChatHelpers } from "@ai-sdk/react";
-import type { UIMessage } from "ai";
-import { ArrowRightIcon, BotIcon, EyeIcon, FileTextIcon, MegaphoneIcon, SquarePenIcon, StoreIcon } from "lucide-react";
+import { isToolUIPart, type UIMessage } from "ai";
+import {
+  ArrowRightIcon,
+  BotIcon,
+  EyeIcon,
+  FileTextIcon,
+  MegaphoneIcon,
+  SquarePenIcon,
+  StoreIcon,
+  type LucideIcon,
+} from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -24,8 +33,7 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { VoiceInputButton } from "@/components/ai-assistant/voice-input-button";
 import { Button } from "@/components/ui/button";
-import { PORTAL_DIALOG_TARGETS, type PortalDialogTargetId } from "@/lib/ai-assistant/portal-dialogs";
-import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
+import type { AssistantButton, AssistantButtonKind, ButtonToolOutput } from "@/lib/ai-assistant/tools/buttons";
 
 function getMessageText(message: UIMessage): string {
   return message.parts
@@ -34,108 +42,30 @@ function getMessageText(message: UIMessage): string {
     .join("");
 }
 
-type DialogTarget = { dialog: PortalDialogTargetId; href: string };
+// A page button's icon goes after its label ("Go to Complaint →"), the rest before it.
+const BUTTON_ICONS: Record<AssistantButtonKind, LucideIcon> = {
+  page: ArrowRightIcon,
+  form: SquarePenIcon,
+  submission: FileTextIcon,
+  business: StoreIcon,
+  "news-post": MegaphoneIcon,
+  project: EyeIcon,
+};
 
-// Forms the assistant offered to open (openFormDialog tool results), deduplicated.
-// The tool's `href` includes the `?prefill=` values the assistant filled in. Results with
-// `buttonShown: false` are forms the user's role can't use, so they get no button.
-function getDialogTargets(message: UIMessage): DialogTarget[] {
-  const targets = new Map<PortalDialogTargetId, string>();
+// The buttons the message's button tools returned (lib/ai-assistant/tools/buttons.ts), in the order
+// they were called. A target asked for twice gets one button. A page button is left out when
+// another button already goes to that page, so the model calling two tools for one intent doesn't
+// show two buttons to the same place.
+function getButtons(message: UIMessage): AssistantButton[] {
+  const buttons = new Map<string, AssistantButton>();
   for (const part of message.parts) {
-    if (part.type === "tool-openFormDialog" && part.state === "output-available") {
-      const { dialog, href, buttonShown } = part.output as DialogTarget & { buttonShown: boolean };
-      if (buttonShown && dialog in PORTAL_DIALOG_TARGETS) targets.set(dialog, href);
+    if (isToolUIPart(part) && part.state === "output-available") {
+      const output = part.output as Partial<ButtonToolOutput> | null;
+      for (const button of output?.buttons ?? []) buttons.set(button.key, button);
     }
   }
-  return [...targets].map(([dialog, href]) => ({ dialog, href }));
-}
-
-type BusinessTarget = { id: number; name: string; href: string };
-
-// Businesses whose details the assistant offered to open (openBusinessDetails tool results),
-// deduplicated. Each `href` opens the business's details on the Community Hub.
-function getBusinessTargets(message: UIMessage): BusinessTarget[] {
-  const targets = new Map<number, BusinessTarget>();
-  for (const part of message.parts) {
-    if (part.type === "tool-openBusinessDetails" && part.state === "output-available") {
-      const { businesses = [], buttonShown } = part.output as { businesses?: BusinessTarget[]; buttonShown: boolean };
-      if (buttonShown) for (const business of businesses) targets.set(business.id, business);
-    }
-  }
-  return [...targets.values()];
-}
-
-type SubmissionTarget = { referenceNumber: string; label: string; page: PortalNavigationTargetId; href: string };
-
-// The user's submissions the assistant offered to open (openSubmissionDetails tool results),
-// deduplicated. Each `href` opens the submission's Submission Info dialog on its page.
-function getSubmissionTargets(message: UIMessage): SubmissionTarget[] {
-  const targets = new Map<string, SubmissionTarget>();
-  for (const part of message.parts) {
-    if (part.type === "tool-openSubmissionDetails" && part.state === "output-available") {
-      const { submissions = [], buttonShown } = part.output as {
-        submissions?: SubmissionTarget[];
-        buttonShown: boolean;
-      };
-      if (buttonShown) for (const submission of submissions) targets.set(submission.referenceNumber, submission);
-    }
-  }
-  return [...targets.values()];
-}
-
-type PostTarget = { id: number; title: string; href: string };
-
-// News posts the assistant offered to open (openNewsPosts tool results), deduplicated.
-// Each `href` is the post's own page.
-function getNewsPostTargets(message: UIMessage): PostTarget[] {
-  const targets = new Map<number, PostTarget>();
-  for (const part of message.parts) {
-    if (part.type === "tool-openNewsPosts" && part.state === "output-available") {
-      const { posts = [], buttonShown } = part.output as { posts?: PostTarget[]; buttonShown: boolean };
-      if (buttonShown) for (const post of posts) targets.set(post.id, post);
-    }
-  }
-  return [...targets.values()];
-}
-
-// Transparency projects the assistant offered to open (openTransparencyProjects tool results),
-// deduplicated. Each `href` is the project's own page.
-function getProjectTargets(message: UIMessage): PostTarget[] {
-  const targets = new Map<number, PostTarget>();
-  for (const part of message.parts) {
-    if (part.type === "tool-openTransparencyProjects" && part.state === "output-available") {
-      const { projects = [], buttonShown } = part.output as { projects?: PostTarget[]; buttonShown: boolean };
-      if (buttonShown) for (const project of projects) targets.set(project.id, project);
-    }
-  }
-  return [...targets.values()];
-}
-
-// Pages the assistant offered to take the user to (navigateToPage tool results), deduplicated.
-// Pages already reached by one of the message's form, business, submission, news post or project
-// buttons are skipped, so the model calling two tools for one intent doesn't show two buttons to
-// the same place.
-function getNavigationTargets(
-  message: UIMessage,
-  dialogs: DialogTarget[],
-  businesses: BusinessTarget[],
-  submissions: SubmissionTarget[],
-  newsPosts: PostTarget[],
-  projects: PostTarget[],
-): PortalNavigationTargetId[] {
-  const coveredPages = new Set<PortalNavigationTargetId>(dialogs.map(({ dialog }) => PORTAL_DIALOG_TARGETS[dialog].page));
-  if (businesses.length > 0) coveredPages.add("community-hub");
-  for (const { page } of submissions) coveredPages.add(page);
-  if (newsPosts.length > 0) coveredPages.add("news");
-  if (projects.length > 0) coveredPages.add("transparency");
-  const pages = new Set<PortalNavigationTargetId>();
-  for (const part of message.parts) {
-    if (part.type === "tool-navigateToPage" && part.state === "output-available") {
-      const { page, buttonShown } = part.output as { page: PortalNavigationTargetId; buttonShown: boolean };
-      if (buttonShown && page in PORTAL_NAVIGATION_TARGETS && !coveredPages.has(page)) pages.add(page);
-    }
-  }
-  return [...pages];
+  const coveredPages = new Set([...buttons.values()].filter(({ kind }) => kind !== "page").map(({ page }) => page));
+  return [...buttons.values()].filter(({ kind, page }) => kind !== "page" || !coveredPages.has(page));
 }
 
 function PromptInputMic() {
@@ -149,7 +79,7 @@ function PromptInputMic() {
 }
 
 type ChatPanelProps = Pick<UseChatHelpers<UIMessage>, "messages" | "sendMessage" | "status" | "stop"> & {
-  // Called when a navigation or form button is clicked, so the chat widget can get out of the way.
+  // Called when one of the reply's buttons is clicked, so the chat widget can get out of the way.
   onNavigate: () => void;
 };
 
@@ -174,86 +104,26 @@ export function ChatPanel({ messages, sendMessage, status, stop, onNavigate }: C
             messages.map((message, index) => {
               // Hold action buttons back until the whole reply has finished streaming.
               const isStreaming = isResponding && index === messages.length - 1;
-              const dialogTargets = isStreaming ? [] : getDialogTargets(message);
-              const businessTargets = isStreaming ? [] : getBusinessTargets(message);
-              const submissionTargets = isStreaming ? [] : getSubmissionTargets(message);
-              const newsPostTargets = isStreaming ? [] : getNewsPostTargets(message);
-              const projectTargets = isStreaming ? [] : getProjectTargets(message);
-              const navigationTargets = isStreaming
-                ? []
-                : getNavigationTargets(
-                    message,
-                    dialogTargets,
-                    businessTargets,
-                    submissionTargets,
-                    newsPostTargets,
-                    projectTargets,
-                  );
-              const hasButtons =
-                dialogTargets.length > 0 ||
-                businessTargets.length > 0 ||
-                submissionTargets.length > 0 ||
-                newsPostTargets.length > 0 ||
-                projectTargets.length > 0 ||
-                navigationTargets.length > 0;
+              const buttons = isStreaming ? [] : getButtons(message);
 
               return (
                 <Message from={message.role} key={message.id}>
                   <MessageContent>
                     <MessageResponse>{getMessageText(message)}</MessageResponse>
-                    {hasButtons && (
+                    {buttons.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        {dialogTargets.map(({ dialog, href }) => (
-                          <Button asChild key={dialog} size="sm">
-                            <Link href={href} onClick={onNavigate}>
-                              <SquarePenIcon />
-                              {PORTAL_DIALOG_TARGETS[dialog].label}
-                            </Link>
-                          </Button>
-                        ))}
-                        {businessTargets.map(({ id, name, href }) => (
-                          <Button asChild className="max-w-full" key={id} size="sm">
-                            <Link href={href} onClick={onNavigate}>
-                              <StoreIcon />
-                              <span className="truncate">View {name}</span>
-                            </Link>
-                          </Button>
-                        ))}
-                        {submissionTargets.map(({ referenceNumber, label, href }) => (
-                          <Button asChild className="max-w-full" key={referenceNumber} size="sm">
-                            <Link href={href} onClick={onNavigate}>
-                              <FileTextIcon />
-                              <span className="truncate">
-                                View {referenceNumber}: {label}
-                              </span>
-                            </Link>
-                          </Button>
-                        ))}
-                        {/* Keys are prefixed because news, project and business ids can be equal. */}
-                        {newsPostTargets.map(({ id, title, href }) => (
-                          <Button asChild className="max-w-full" key={`news-${id}`} size="sm">
-                            <Link href={href} onClick={onNavigate}>
-                              <MegaphoneIcon />
-                              <span className="truncate">View {title}</span>
-                            </Link>
-                          </Button>
-                        ))}
-                        {projectTargets.map(({ id, title, href }) => (
-                          <Button asChild className="max-w-full" key={`project-${id}`} size="sm">
-                            <Link href={href} onClick={onNavigate}>
-                              <EyeIcon />
-                              <span className="truncate">View {title}</span>
-                            </Link>
-                          </Button>
-                        ))}
-                        {navigationTargets.map((page) => (
-                          <Button asChild key={page} size="sm">
-                            <Link href={PORTAL_NAVIGATION_TARGETS[page].href} onClick={onNavigate}>
-                              Go to {PORTAL_NAVIGATION_TARGETS[page].label}
-                              <ArrowRightIcon />
-                            </Link>
-                          </Button>
-                        ))}
+                        {buttons.map(({ key, kind, label, href }) => {
+                          const Icon = BUTTON_ICONS[kind];
+                          return (
+                            <Button asChild className="max-w-full" key={key} size="sm">
+                              <Link href={href} onClick={onNavigate}>
+                                {kind !== "page" && <Icon />}
+                                <span className="truncate">{label}</span>
+                                {kind === "page" && <Icon />}
+                              </Link>
+                            </Button>
+                          );
+                        })}
                       </div>
                     )}
                   </MessageContent>

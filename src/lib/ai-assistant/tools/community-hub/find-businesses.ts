@@ -3,7 +3,7 @@ import { asc, eq } from "drizzle-orm";
 import z from "zod";
 import { db } from "@/db/config";
 import { businessesTable } from "@/db/schema";
-import type { UserLocation } from "@/lib/ai-assistant/tools/get-user-location";
+import type { AssistantToolContext } from "@/lib/ai-assistant/tools";
 import { formatOperatingHours } from "@/lib/business";
 import { parseTimeInput } from "@/lib/court-reservations";
 import { distanceInMeters } from "@/lib/geolocation";
@@ -40,7 +40,7 @@ function isOpenAt({ days, opens, closes }: OperatingHours, { day, minutes }: { d
 // business and leaves the matching to the model, which can tell that a business described as
 // "lutong-bahay na ulam" is a karinderya. A keyword search can't, and with a category filter the
 // model filtered "any business or store" down to Others and found nothing.
-export function buildFindBusinessesTool(userLocation: UserLocation | null) {
+export function buildFindBusinessesTool({ userLocation }: AssistantToolContext) {
   return tool({
     description:
       "List the businesses verified in the Community Hub, the barangay's directory of local businesses, with their " +

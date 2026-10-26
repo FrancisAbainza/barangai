@@ -1,44 +1,58 @@
 import type { BarangaySettingsValues } from "@/actions/settings";
-import { buildCalculateCourtFeeTool } from "@/lib/ai-assistant/tools/calculate-court-fee";
-import { buildFindBusinessesTool } from "@/lib/ai-assistant/tools/find-businesses";
-import { findNewsTool } from "@/lib/ai-assistant/tools/find-news";
-import { findTransparencyProjectsTool } from "@/lib/ai-assistant/tools/find-transparency-projects";
+import { buildFindBusinessesTool } from "@/lib/ai-assistant/tools/community-hub/find-businesses";
+import { openBusinessDetailsTool } from "@/lib/ai-assistant/tools/community-hub/open-business-details";
+import { buildCalculateCourtFeeTool } from "@/lib/ai-assistant/tools/court-reservation/calculate-court-fee";
 import { buildGetMySubmissionsTool } from "@/lib/ai-assistant/tools/get-my-submissions";
 import { getUserLocationTool, type UserLocation } from "@/lib/ai-assistant/tools/get-user-location";
 import { buildNavigateToPageTool } from "@/lib/ai-assistant/tools/navigate-to-page";
-import { openBusinessDetailsTool } from "@/lib/ai-assistant/tools/open-business-details";
+import { findNewsTool } from "@/lib/ai-assistant/tools/news/find-news";
+import { openNewsPostsTool } from "@/lib/ai-assistant/tools/news/open-news-posts";
 import { buildOpenFormDialogTool } from "@/lib/ai-assistant/tools/open-form-dialog";
-import { openNewsPostsTool } from "@/lib/ai-assistant/tools/open-news-posts";
 import { buildOpenSubmissionDetailsTool } from "@/lib/ai-assistant/tools/open-submission-details";
-import { openTransparencyProjectsTool } from "@/lib/ai-assistant/tools/open-transparency-projects";
+import { findTransparencyProjectsTool } from "@/lib/ai-assistant/tools/transparency/find-transparency-projects";
+import { openTransparencyProjectsTool } from "@/lib/ai-assistant/tools/transparency/open-transparency-projects";
 
-// To add a tool: write a builder in its own file in this folder, like `buildNavigateToPageTool`,
-// add it to `buildAssistantTools`, and describe when to use it in SYSTEM_PROMPT (../system-prompt.ts).
-// navigateToPage, openFormDialog, openBusinessDetails, openSubmissionDetails, openNewsPosts and
-// openTransparencyProjects don't act by themselves: each output is rendered as a button in the chat
-// panel (components/ai-assistant/chat-panel.tsx) that the user clicks — navigateToPage's goes to a
-// page, openFormDialog's goes to the form's page with `?dialog=<id>`, which opens it,
-// openBusinessDetails's open a business's details, openSubmissionDetails's open one of the user's
-// submissions, and openNewsPosts's and openTransparencyProjects's open a post's own page.
-// getUserLocation is the one tool the browser runs (see its file).
-export function buildAssistantTools(
-  userId: string,
-  isAdmin: boolean,
-  settings: BarangaySettingsValues,
-  userLocation: UserLocation | null,
-) {
+// What the tools know about the request. The route gets it from the session, the settings and the
+// chat history, never from the model. A tool that needs any of it is a `buildXTool(context)`, and
+// one that doesn't is exported as the tool itself.
+export type AssistantToolContext = {
+  userId: string;
+  isAdmin: boolean;
+  settings: BarangaySettingsValues;
+  userLocation: UserLocation | null;
+};
+
+// There are three kinds of tools:
+// - Lookup tools (find*, getMySubmissions, calculateCourtFee) return data the model answers from,
+//   with an `instruction` for the reply and `buttonShown: false`, without which the reply sometimes
+//   pointed to a button that wasn't there.
+// - Button tools (navigateToPage, openFormDialog, open*) don't act by themselves. They're built with
+//   `buttonTool` (./buttons.ts) and return the buttons the chat panel shows under the reply.
+// - getUserLocation, which the browser answers (see its file).
+// A tool about one portal page goes in that page's folder, named like the page's route and
+// `src/components/<page>/`, usually a lookup tool and the button tool the model calls after it
+// (findNews, then openNewsPosts). Tools that span pages stay at the top.
+// To add a tool, add it here and describe when to use it in SYSTEM_PROMPT (../system-prompt.ts).
+export function buildAssistantTools(context: AssistantToolContext) {
   return {
-    navigateToPage: buildNavigateToPageTool(isAdmin),
-    openFormDialog: buildOpenFormDialogTool(isAdmin),
-    calculateCourtFee: buildCalculateCourtFeeTool(settings),
-    findBusinesses: buildFindBusinessesTool(userLocation),
+    // Any page
+    navigateToPage: buildNavigateToPageTool(context),
+    openFormDialog: buildOpenFormDialogTool(context),
+    // Court Reservation
+    calculateCourtFee: buildCalculateCourtFeeTool(context),
+    // Community Hub
+    findBusinesses: buildFindBusinessesTool(context),
     openBusinessDetails: openBusinessDetailsTool,
-    getMySubmissions: buildGetMySubmissionsTool(userId),
-    openSubmissionDetails: buildOpenSubmissionDetailsTool(userId),
+    // The user's own submissions, on the four pages residents submit from
+    getMySubmissions: buildGetMySubmissionsTool(context),
+    openSubmissionDetails: buildOpenSubmissionDetailsTool(context),
+    // News & Announcements
     findNews: findNewsTool,
     openNewsPosts: openNewsPostsTool,
+    // Transparency
     findTransparencyProjects: findTransparencyProjectsTool,
     openTransparencyProjects: openTransparencyProjectsTool,
+    // For findBusinesses
     getUserLocation: getUserLocationTool,
   };
 }

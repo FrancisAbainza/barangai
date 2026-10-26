@@ -1,8 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-
-export const VIEW_SEARCH_PARAM = "view";
+import { VIEW_SEARCH_PARAM } from "@/lib/ai-assistant/portal-dialogs";
 
 /**
  * `useState`-like id of the record whose Submission Info dialog is open, stored in the

@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     getOfficials("barangay"),
     getOfficials("sk"),
   ]);
-  const tools = buildAssistantTools(userId, isAdmin, settings, getSharedUserLocation(messages));
+  const tools = buildAssistantTools({ userId, isAdmin, settings, userLocation: getSharedUserLocation(messages) });
 
   const result = streamText({
     model: openai("gpt-4o-mini"),

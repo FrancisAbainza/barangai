@@ -20,8 +20,7 @@ import {
 import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
 
 // Form dialogs the AI assistant can open. Shared between the openFormDialog tool
-// (tools/open-form-dialog.ts, for its input schema/description), the button the chat
-// panel renders for its result (src/components/ai-assistant/chat-panel.tsx), and the
+// (tools/open-form-dialog.ts, for its input schema/description and its button) and the
 // components hosting each dialog, whose open state lives in the URL (`?dialog=<id>`,
 // via useDialogParam in src/hooks/use-dialog-param.ts).
 //
@@ -207,6 +206,14 @@ export function getPortalDialogHref(id: PortalDialogTargetId, prefill?: Record<s
     params.set(PREFILL_SEARCH_PARAM, JSON.stringify(prefill));
   }
   return `${href}?${params}`;
+}
+
+// `?view=<id>` on a submission's page opens its Submission Info dialog on arrival (useViewParam in
+// src/hooks/use-view-param.ts). Notifications and the assistant's submission buttons link to it.
+export const VIEW_SEARCH_PARAM = "view";
+
+export function getSubmissionDialogHref(page: PortalNavigationTargetId, id: number): string {
+  return `${PORTAL_NAVIGATION_TARGETS[page].href}?${VIEW_SEARCH_PARAM}=${id}`;
 }
 
 // The `?prefill=` JSON as form values, keeping only the fields the dialog's `prefill`
