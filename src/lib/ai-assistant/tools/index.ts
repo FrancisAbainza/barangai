@@ -23,8 +23,8 @@ export type AssistantToolContext = {
 //   in the page folders below and in both lists.
 //
 // There are three kinds of tools:
-// - Lookup tools (find*, getMySubmissions, getHandledSubmissions, calculateCourtFee,
-//   checkCourtAvailability) return data the model answers from, with an `instruction` for the reply
+// - Lookup tools (find*, getMySubmissions, getHandledSubmissions, getSubmissionOverview,
+//   calculateCourtFee, checkCourtAvailability) return data the model answers from, with an `instruction` for the reply
 //   and `buttonShown: false`, without which the reply sometimes pointed to a button that wasn't there.
 // - Button tools (navigateToPage, openFormDialog, open*) don't act by themselves. They're built with
 //   `buttonTool` (./buttons.ts) and return the buttons the chat panel shows under the reply.

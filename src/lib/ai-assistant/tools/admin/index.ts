@@ -1,5 +1,6 @@
 import type { AssistantToolContext } from "@/lib/ai-assistant/tools";
 import { buildGetHandledSubmissionsTool } from "@/lib/ai-assistant/tools/admin/get-handled-submissions";
+import { getSubmissionOverviewTool } from "@/lib/ai-assistant/tools/admin/get-submission-overview";
 import { navigateToPageTool } from "@/lib/ai-assistant/tools/admin/navigate-to-page";
 import { openFormDialogTool } from "@/lib/ai-assistant/tools/admin/open-form-dialog";
 import { openSubmissionDetailsTool } from "@/lib/ai-assistant/tools/admin/open-submission-details";
@@ -28,6 +29,8 @@ export function buildAdminTools(context: AssistantToolContext) {
     // The residents' requests and complaints the user is handling, and their own court reservations
     // and businesses
     getHandledSubmissions: buildGetHandledSubmissionsTool(context),
+    // How many of the residents' submissions are in each status, and what needs attention
+    getSubmissionOverview: getSubmissionOverviewTool,
     openSubmissionDetails: openSubmissionDetailsTool,
     // News & Announcements
     findNews: findNewsTool,

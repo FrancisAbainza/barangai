@@ -30,7 +30,8 @@ export function buildGetHandledSubmissionsTool({ userId }: AssistantToolContext)
       "they last changed), and the court reservations and Community Hub businesses they submitted themselves, each " +
       "with its current status. Use it for questions like \"what's the status of my complaints?\", \"which requests " +
       "am I handling?\" or \"na-verify na ba yung business ko?\". It doesn't have pending submissions no admin has " +
-      "acted on yet, ones other admins are handling, residents' court reservations or businesses, or the barangay's totals.",
+      "acted on yet, ones other admins are handling, residents' court reservations or businesses, or the barangay's " +
+      "totals: getSubmissionOverview has the barangay's totals and what needs attention.",
     inputSchema: z.object({}),
     execute: async () => {
       const isHandledDocumentRequest = eq(documentRequestsTable.handlerId, userId);
@@ -99,15 +100,17 @@ export function buildGetHandledSubmissionsTool({ userId }: AssistantToolContext)
         });
 
       // The first one first, because further down, "how many complaints are still pending?" got the
-      // one the user was handling, which was resolved.
+      // one the user was handling, which was resolved. The last one counts the submissions the reply
+      // names: when it said "about 1 to 3 specific submissions", a list of all 3 the user was
+      // handling got no buttons.
       const instructions = [
-        "These are only the document requests and complaints the user is handling and their own court reservations and businesses. Pending submissions no admin has acted on yet, ones other admins are handling and residents' court reservations and businesses aren't here, so if the user asked about those or the barangay's totals, such as how many are pending, don't answer from these: call navigateToPage for the page where they review them, and say you can only look up the ones they're handling.",
+        "These are only the document requests and complaints the user is handling and their own court reservations and businesses. Pending submissions no admin has acted on yet, ones other admins are handling and residents' court reservations and businesses aren't here, so if the user asked about those or the barangay's totals, such as how many are pending or what needs attention, don't answer from these: call getSubmissionOverview.",
         "Otherwise, answer only from these submissions, and only about the ones the user asked about. Mention each one's reference number. If they gave a reference number that isn't here, call openSubmissionDetails with it, which opens any resident's submission. If none match otherwise, say you couldn't find that submission. When they ask for all of them, or all of one kind, list every matching one here.",
         "Admin accounts don't request documents or file complaints, so documentRequests and complaints are residents' ones the user is handling: say they're handling them (e.g. \"You're handling 1 complaint\"), never that they have or filed them. courtReservations and businesses are the user's own.",
         "counts has how many of each kind there are in all. Use it for how many there are, never the number listed.",
         cutOffNotes.length > 0 &&
           `Only the ${MAX_PER_KIND} most recent of each kind are listed. Whenever your answer lists or counts a kind below, or the one asked about isn't listed, tell the user what's below for that kind: ${cutOffNotes.join("; ")}.`,
-        "This result shows no button, so don't mention one unless you call openSubmissionDetails. If your answer is about 1 to 3 specific submissions, call openSubmissionDetails with their reference numbers next (e.g. \"DR-12\", \"CP-3\"), so the user gets a button to open each one. If it lists more, don't call it, so there are no buttons: say they can open each one from its page instead.",
+        "This result shows no button, so don't mention one unless you call openSubmissionDetails. If your answer lists or names 1 to 3 submissions, even when they're all the user has, call openSubmissionDetails with their reference numbers next (e.g. \"DR-12\", \"CP-3\"), so the user gets a button to open each one. If it lists more than 3, don't call it, so there are no buttons: say they can open each one from its page instead.",
       ];
 
       return {

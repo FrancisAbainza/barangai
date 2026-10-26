@@ -63,6 +63,8 @@ export type AdminActivityKind = "document-request" | "complaint" | "court-reserv
 
 export type NeedsAttentionItem = {
   id: string;
+  // The submission's own id, for its reference number (the AI assistant's getSubmissionOverview).
+  recordId: number;
   kind: Exclude<AdminActivityKind, "news">;
   title: string;
   subtitle: string;
@@ -125,6 +127,7 @@ export async function getNeedsAttentionQueue(): Promise<NeedsAttentionItem[]> {
   const items: (NeedsAttentionItem & { rank: number })[] = [
     ...documentRequests.map((r) => ({
       id: `document-request-${r.id}`,
+      recordId: r.id,
       kind: "document-request" as const,
       title: r.documentType,
       subtitle: `Requested by ${nameMap.get(r.requesterId) ?? "Unknown"}`,
@@ -135,6 +138,7 @@ export async function getNeedsAttentionQueue(): Promise<NeedsAttentionItem[]> {
     })),
     ...complaints.map((c) => ({
       id: `complaint-${c.id}`,
+      recordId: c.id,
       kind: "complaint" as const,
       title: c.subject,
       subtitle: `Filed by ${nameMap.get(c.complainantId) ?? "Unknown"}`,
@@ -145,6 +149,7 @@ export async function getNeedsAttentionQueue(): Promise<NeedsAttentionItem[]> {
     })),
     ...courtReservations.map((r) => ({
       id: `court-reservation-${r.id}`,
+      recordId: r.id,
       kind: "court-reservation" as const,
       title: r.purpose,
       subtitle: `Requested by ${nameMap.get(r.requesterId) ?? "Unknown"}`,
@@ -155,6 +160,7 @@ export async function getNeedsAttentionQueue(): Promise<NeedsAttentionItem[]> {
     })),
     ...businesses.map((b) => ({
       id: `business-${b.id}`,
+      recordId: b.id,
       kind: "business" as const,
       title: b.name,
       subtitle: `Submitted by ${nameMap.get(b.ownerId) ?? "Unknown"}`,
