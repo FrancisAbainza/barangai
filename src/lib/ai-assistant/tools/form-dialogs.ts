@@ -1,6 +1,6 @@
 import z from "zod";
 import { getPortalDialogHref, PORTAL_DIALOG_TARGETS, type PortalDialogTargetId } from "@/lib/ai-assistant/portal-dialogs";
-import type { ButtonToolOutput } from "@/lib/ai-assistant/tools/buttons";
+import { HOW_TO_STEPS_NOTE, type ButtonToolOutput } from "@/lib/ai-assistant/tools/buttons";
 
 // What the residents' and the admins' openFormDialog tools (resident/open-form-dialog.ts and
 // admin/open-form-dialog.ts) have in common. Each lists only the forms its role can open, but a
@@ -54,7 +54,8 @@ export function getFormButton(
     "The form isn't open until they tap it, so don't say you've opened it. " +
     (filledIn.length > 0
       ? `It opens with these filled in for them to review: ${filledIn.join(", ")}.`
-      : "Nothing will be filled in, so don't say it will be.");
+      : "Nothing will be filled in, so don't say it will be.") +
+    ` ${HOW_TO_STEPS_NOTE}`;
   return {
     buttons: [{ key: `form-${dialog}`, kind: "form", page, label, href: getPortalDialogHref(dialog, values) }],
     instruction,

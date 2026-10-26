@@ -1,6 +1,6 @@
 import z from "zod";
 import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
-import { buttonTool } from "@/lib/ai-assistant/tools/buttons";
+import { buttonTool, HOW_TO_STEPS_NOTE } from "@/lib/ai-assistant/tools/buttons";
 
 // The pages admins can open, with what each is for in the admin view. With the residents'
 // descriptions ("File a complaint..."), an admin asking to "view my complaints" was told to tap the
@@ -42,7 +42,7 @@ export const navigateToPageTool = buttonTool({
     return {
       buttons: [{ key: `page-${page}`, kind: "page", page, label: `Go to ${label}`, href }],
       // With only the button, the reply still said "to view your complaints".
-      instruction: `A "Go to ${label}" button is shown below your reply. Point the user to it; don't write a link. The page is for this, so describe it that way: ${ADMIN_PAGES[page]}`,
+      instruction: `A "Go to ${label}" button is shown below your reply. Point the user to it; don't write a link. The page is for this, so describe it that way: ${ADMIN_PAGES[page]} ${HOW_TO_STEPS_NOTE}`,
     };
   },
 });

@@ -1,6 +1,6 @@
 import z from "zod";
 import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
-import { buttonTool } from "@/lib/ai-assistant/tools/buttons";
+import { buttonTool, HOW_TO_STEPS_NOTE } from "@/lib/ai-assistant/tools/buttons";
 
 // The pages residents can open, with what each is for. User Management and Barangay Settings are
 // left out, so the description names them: left out unnamed, a request for an admin-only target
@@ -37,7 +37,7 @@ export const navigateToPageTool = buttonTool({
     const { label, href } = PORTAL_NAVIGATION_TARGETS[page];
     return {
       buttons: [{ key: `page-${page}`, kind: "page", page, label: `Go to ${label}`, href }],
-      instruction: `A "Go to ${label}" button is shown below your reply. Point the user to it; don't write a link.`,
+      instruction: `A "Go to ${label}" button is shown below your reply. Point the user to it; don't write a link. ${HOW_TO_STEPS_NOTE}`,
     };
   },
 });

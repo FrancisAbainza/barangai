@@ -26,6 +26,12 @@ export type ButtonToolOutput = { buttons: AssistantButton[]; instruction: string
 // doesn't fill up with them.
 export const MAX_RECORD_BUTTONS = 3;
 
+// Ends the page and form buttons' instructions. The system prompt has the model call one of them
+// for a how-to question and then give the steps, but with only "point the user to it", "paano ko
+// i-approve yung court reservation?" got the button and a one-line reply without the steps.
+export const HOW_TO_STEPS_NOTE =
+  "If the user asked how to do something, still give them every step from the knowledge base excerpts first, with what each step involves.";
+
 // A tool that doesn't act by itself but shows buttons the user taps. Every button tool is built with
 // this, so they all return a ButtonToolOutput and show the model only its instruction, and the chat
 // panel renders a new one's buttons with no change.

@@ -2,7 +2,7 @@ import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from 
 import { openai } from "@ai-sdk/openai";
 import { getOfficials } from "@/actions/officials";
 import { getBarangaySettings } from "@/actions/settings";
-import { getLastUserText, getRelevantContext } from "@/lib/ai-assistant/knowledge-base-search";
+import { getRelevantContext } from "@/lib/ai-assistant/knowledge-base-search";
 import { buildSystemPrompt } from "@/lib/ai-assistant/system-prompt";
 import { buildAdminTools } from "@/lib/ai-assistant/tools/admin";
 import { buildResidentTools } from "@/lib/ai-assistant/tools/resident";
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();
 
   const [context, settings, barangayOfficials, skOfficials] = await Promise.all([
-    getRelevantContext(getLastUserText(messages)),
+    getRelevantContext(messages, isAdmin),
     getBarangaySettings(),
     getOfficials("barangay"),
     getOfficials("sk"),
