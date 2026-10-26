@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
-import { ArrowRightIcon, BotIcon, SquarePenIcon, StoreIcon } from "lucide-react";
+import { ArrowRightIcon, BotIcon, FileTextIcon, SquarePenIcon, StoreIcon } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -65,16 +65,36 @@ function getBusinessTargets(message: UIMessage): BusinessTarget[] {
   return [...targets.values()];
 }
 
+type SubmissionTarget = { referenceNumber: string; label: string; page: PortalNavigationTargetId; href: string };
+
+// The user's submissions the assistant offered to open (openSubmissionDetails tool results),
+// deduplicated. Each `href` opens the submission's Submission Info dialog on its page.
+function getSubmissionTargets(message: UIMessage): SubmissionTarget[] {
+  const targets = new Map<string, SubmissionTarget>();
+  for (const part of message.parts) {
+    if (part.type === "tool-openSubmissionDetails" && part.state === "output-available") {
+      const { submissions = [], buttonShown } = part.output as {
+        submissions?: SubmissionTarget[];
+        buttonShown: boolean;
+      };
+      if (buttonShown) for (const submission of submissions) targets.set(submission.referenceNumber, submission);
+    }
+  }
+  return [...targets.values()];
+}
+
 // Pages the assistant offered to take the user to (navigateToPage tool results), deduplicated.
-// Pages already reached by one of the message's form or business buttons are skipped, so the
-// model calling two tools for one intent doesn't show two buttons to the same place.
+// Pages already reached by one of the message's form, business or submission buttons are skipped,
+// so the model calling two tools for one intent doesn't show two buttons to the same place.
 function getNavigationTargets(
   message: UIMessage,
   dialogs: DialogTarget[],
   businesses: BusinessTarget[],
+  submissions: SubmissionTarget[],
 ): PortalNavigationTargetId[] {
   const coveredPages = new Set<PortalNavigationTargetId>(dialogs.map(({ dialog }) => PORTAL_DIALOG_TARGETS[dialog].page));
   if (businesses.length > 0) coveredPages.add("community-hub");
+  for (const { page } of submissions) coveredPages.add(page);
   const pages = new Set<PortalNavigationTargetId>();
   for (const part of message.parts) {
     if (part.type === "tool-navigateToPage" && part.state === "output-available") {
@@ -123,13 +143,21 @@ export function ChatPanel({ messages, sendMessage, status, stop, onNavigate }: C
               const isStreaming = isResponding && index === messages.length - 1;
               const dialogTargets = isStreaming ? [] : getDialogTargets(message);
               const businessTargets = isStreaming ? [] : getBusinessTargets(message);
-              const navigationTargets = isStreaming ? [] : getNavigationTargets(message, dialogTargets, businessTargets);
+              const submissionTargets = isStreaming ? [] : getSubmissionTargets(message);
+              const navigationTargets = isStreaming
+                ? []
+                : getNavigationTargets(message, dialogTargets, businessTargets, submissionTargets);
+              const hasButtons =
+                dialogTargets.length > 0 ||
+                businessTargets.length > 0 ||
+                submissionTargets.length > 0 ||
+                navigationTargets.length > 0;
 
               return (
                 <Message from={message.role} key={message.id}>
                   <MessageContent>
                     <MessageResponse>{getMessageText(message)}</MessageResponse>
-                    {(dialogTargets.length > 0 || businessTargets.length > 0 || navigationTargets.length > 0) && (
+                    {hasButtons && (
                       <div className="flex flex-wrap gap-2">
                         {dialogTargets.map(({ dialog, href }) => (
                           <Button asChild key={dialog} size="sm">
@@ -144,6 +172,16 @@ export function ChatPanel({ messages, sendMessage, status, stop, onNavigate }: C
                             <Link href={href} onClick={onNavigate}>
                               <StoreIcon />
                               <span className="truncate">View {name}</span>
+                            </Link>
+                          </Button>
+                        ))}
+                        {submissionTargets.map(({ referenceNumber, label, href }) => (
+                          <Button asChild className="max-w-full" key={referenceNumber} size="sm">
+                            <Link href={href} onClick={onNavigate}>
+                              <FileTextIcon />
+                              <span className="truncate">
+                                View {referenceNumber}: {label}
+                              </span>
                             </Link>
                           </Button>
                         ))}

@@ -1,12 +1,14 @@
 # AI Assistant: how the code fits together
 
-A floating chat widget in the portal. It answers questions from the current Barangay Settings, the officials list and the uploaded PDF (RAG), and can call **tools**. It has six tools. Three of them put buttons under the assistant's reply, two look up something the model answers from, and one runs in the browser:
+A floating chat widget in the portal. It answers questions from the current Barangay Settings, the officials list and the uploaded PDF (RAG), and can call **tools**. It has eight tools. Four of them put buttons under the assistant's reply, three look up something the model answers from, and one runs in the browser:
 
 - `navigateToPage`: a "Go to X" button that takes the user to a portal page.
 - `openFormDialog`: a button like "File a Complaint" that takes the user to the form's page and opens the form there, with any details the user already gave in the chat filled in.
 - `openBusinessDetails`: a "View <business>" button for each of up to 3 businesses, which opens that business's details on the Community Hub (see [Business buttons](#business-buttons)).
+- `openSubmissionDetails`: a "View DR-12: …" button for each of up to 3 of the user's own submissions, which opens its Submission Info dialog (see [The user's submissions](#the-users-submissions)).
 - `calculateCourtFee`: the fee for reserving the court at given times, billed the same way as the reservation form. No button (see [Court fees](#court-fees)).
 - `findBusinesses`: the businesses verified in the Community Hub, nearest first once the user has shared their location. No button (see [Local businesses](#local-businesses)).
+- `getMySubmissions`: the user's own document requests, complaints (filed and followed), court reservations and businesses, with their status and the barangay's reply. No button (see [The user's submissions](#the-users-submissions)).
 - `getUserLocation`: the user's location from their device, for "what's the nearest karinderya?". It has no server `execute`, because the chat widget answers it.
 
 ## Files
@@ -14,9 +16,9 @@ A floating chat widget in the portal. It answers questions from the current Bara
 | File | What it does |
 |---|---|
 | `src/components/ai-assistant-widget.tsx` | The widget (mounted in `portal/layout.tsx`). Owns `useChat` and the open/close state, and answers `getUserLocation` calls (`onToolCall`, `sendAutomaticallyWhen`). |
-| `src/components/ai-assistant/chat-panel.tsx` | Message list, input box, microphone. Also renders the buttons for tool results: form buttons (`getDialogTargets`), business buttons (`getBusinessTargets`) and navigation buttons (`getNavigationTargets`). |
+| `src/components/ai-assistant/chat-panel.tsx` | Message list, input box, microphone. Also renders the buttons for tool results: form buttons (`getDialogTargets`), business buttons (`getBusinessTargets`), submission buttons (`getSubmissionTargets`) and navigation buttons (`getNavigationTargets`). |
 | `src/app/api/chat/route.ts` | The endpoint. Auth, then calls the helpers below and streams. Sets `stopWhen: stepCountIs(8)` so the model can make several tool calls and still reply, with one tool call per step and `temperature: 0.2` (see [Gotchas](#gotchas)). |
-| `src/lib/ai-assistant/tools/` | One file per tool (`navigate-to-page.ts`, `open-form-dialog.ts`, `calculate-court-fee.ts`, `find-businesses.ts`, `open-business-details.ts`, `get-user-location.ts`), each exporting a `buildXTool` (or, for the tools with no per-request settings, the tool itself). `get-user-location.ts` also has `getSharedUserLocation`, which reads the location out of the chat history. `index.ts` has `buildAssistantTools`, which the route calls. `audience.ts` has `AUDIENCE_NOTES`, the "(residents only)" / "(admins only)" labels both button tools use. |
+| `src/lib/ai-assistant/tools/` | One file per tool (`navigate-to-page.ts`, `open-form-dialog.ts`, `calculate-court-fee.ts`, `find-businesses.ts`, `open-business-details.ts`, `get-my-submissions.ts`, `open-submission-details.ts`, `get-user-location.ts`), each exporting a `buildXTool` (or, for the tools with no per-request settings, the tool itself). `get-user-location.ts` also has `getSharedUserLocation`, which reads the location out of the chat history. `index.ts` has `buildAssistantTools`, which the route calls. `audience.ts` has `AUDIENCE_NOTES`, the "(residents only)" / "(admins only)" labels both button tools use. |
 | `src/lib/ai-assistant/system-prompt.ts` | `SYSTEM_PROMPT`, `formatBarangaySettings`, `formatOfficials`, and `buildSystemPrompt`, which adds the user's role, the current barangay settings, the barangay and SK officials and the excerpts. |
 | `src/lib/ai-assistant/knowledge-base-search.ts` | `getRelevantContext` (embeds the question and finds matching PDF excerpts with pgvector) and `getLastUserText`. Imports the DB. |
 | `src/lib/ai-assistant/knowledge-base.ts` | The embedding model and dimensions, the upload size limit, and `chunkText`. Shared by the search above, the upload action (`src/actions/knowledge-base.ts`) and the DB schema. |
@@ -28,10 +30,10 @@ A floating chat widget in the portal. It answers questions from the current Bara
 ## Flow
 
 1. The user sends a message, and `useChat` POSTs the history to `/api/chat`.
-2. `route.ts` checks auth, then calls `getRelevantContext` (finds matching PDF excerpts), `getBarangaySettings` and `getOfficials` (once per section) in parallel, then `buildAssistantTools(isAdmin, settings, getSharedUserLocation(messages))` and `buildSystemPrompt(context, settings, officials, isAdmin)`, and streams `gpt-4o-mini`.
-3. If the model calls a tool, its `execute` runs on the server right away. No tool changes anything. The button tools' `execute` only echoes the target so the call is marked finished, or returns `buttonShown: false` if the user's role can't use it (see [below](#targets-the-users-role-cant-use)). `calculateCourtFee` returns the fee and `findBusinesses` the businesses. `getUserLocation` has no `execute`, so it ends the stream and the browser takes over (see [Local businesses](#local-businesses)).
+2. `route.ts` checks auth, then calls `getRelevantContext` (finds matching PDF excerpts), `getBarangaySettings` and `getOfficials` (once per section) in parallel, then `buildAssistantTools(userId, isAdmin, settings, getSharedUserLocation(messages))` and `buildSystemPrompt(context, settings, officials, isAdmin)`, and streams `gpt-4o-mini`.
+3. If the model calls a tool, its `execute` runs on the server right away. No tool changes anything. The button tools' `execute` only echoes the target so the call is marked finished, or returns `buttonShown: false` if the user's role can't use it (see [below](#targets-the-users-role-cant-use)). `calculateCourtFee` returns the fee, `findBusinesses` the businesses and `getMySubmissions` the user's submissions. `getUserLocation` has no `execute`, so it ends the stream and the browser takes over (see [Local businesses](#local-businesses)).
 4. Because of `stopWhen: stepCountIs(8)`, the model gets more steps in the same stream and writes a short reply pointing at the button, or, for a `buttonShown: false` result, saying why the user can't use that form or page. The extra steps cover a lookup followed by a button tool, e.g. `calculateCourtFee` then `openFormDialog` for "how much is 8 to 11 AM? I'd like to reserve", and a message asking for several things at once.
-5. `ChatPanel` finds the finished `tool-openFormDialog` / `tool-openBusinessDetails` / `tool-navigateToPage` parts with `buttonShown: true` on the message and renders the buttons, but only once the response has finished streaming.
+5. `ChatPanel` finds the finished `tool-openFormDialog` / `tool-openBusinessDetails` / `tool-openSubmissionDetails` / `tool-navigateToPage` parts with `buttonShown: true` on the message and renders the buttons, but only once the response has finished streaming.
 6. Clicking a button navigates with `next/link` and closes the widget (`onNavigate`).
 
 ## How a form gets opened
@@ -64,7 +66,7 @@ Free-text fields in a `prefill` schema are plain `z.string()` rather than the fo
 Both tools can point at the same page, so they're kept from overlapping in two places:
 
 - **System prompt:** use `openFormDialog` when the request matches a specific form ("I want to file a complaint"). Use `navigateToPage` for browsing ("show me my complaints") or a request too broad to pick a form ("I want a document"). Never call both for one request.
-- **Chat panel:** if the model calls both anyway, `getNavigationTargets` drops any page that a form button in the same message already goes to. Business buttons count as going to the Community Hub.
+- **Chat panel:** if the model calls both anyway, `getNavigationTargets` drops any page that a form button in the same message already goes to. Business buttons count as going to the Community Hub, and submission buttons as going to their submission's page.
 
 ## Targets the user's role can't use
 
@@ -86,7 +88,7 @@ The chat panel shows no button for a `buttonShown: false` result. The model some
 
 ## Staying on topic
 
-Only the system prompt keeps the assistant to barangay topics; there's no separate filter. `SYSTEM_PROMPT` lists what's in scope (barangay services and information, the Community Hub's local businesses, using the portal, how barangays work in general, and concerns residents bring to the barangay). It tells the model to refuse anything else in a sentence or two and to answer only the barangay part of a mixed message. Barangay-specific facts come only from the barangay settings, the officials lists, the knowledge base excerpts and `findBusinesses`. Retrieval uses a low similarity cutoff (0.2), so excerpts show up even for unrelated questions, and the prompt tells the model to ignore excerpts that don't fit. To widen or narrow the scope, edit that list. If you add a new kind of page or form, add it there too, or the model may treat questions about it as out of scope.
+Only the system prompt keeps the assistant to barangay topics; there's no separate filter. `SYSTEM_PROMPT` lists what's in scope (barangay services and information, the Community Hub's local businesses, using the portal, how barangays work in general, and concerns residents bring to the barangay). It tells the model to refuse anything else in a sentence or two and to answer only the barangay part of a mixed message. Barangay-specific facts come only from the barangay settings, the officials lists, the knowledge base excerpts, `findBusinesses` and `getMySubmissions`. Retrieval uses a low similarity cutoff (0.2), so excerpts show up even for unrelated questions, and the prompt tells the model to ignore excerpts that don't fit. To widen or narrow the scope, edit that list. If you add a new kind of page or form, add it there too, or the model may treat questions about it as out of scope.
 
 ## Barangay settings and officials in the prompt
 
@@ -138,6 +140,16 @@ After answering from `findBusinesses`, the model calls `openBusinessDetails` wit
 
 If the user sends another message while the permission prompt is still open, the unanswered call stays in the history. `convertToModelMessages(..., { ignoreIncompleteToolCalls: true })` drops it, because OpenAI rejects a tool call with no result.
 
+## The user's submissions
+
+Questions like "ano na status ng clearance ko?", "bakit na-reject yung reservation ko?" or "na-verify na ba yung business ko?" go to `getMySubmissions`, then `openSubmissionDetails`. It's the same pattern as `findBusinesses` and `openBusinessDetails`.
+
+- `getMySubmissions` takes no input. The route passes the session's `userId` to the builder, so the model can't ask about anyone else's submissions. It queries the tables directly rather than through the `getMy*` actions, which page their results and fetch names from Clerk. It returns the 10 most recent of each kind with the reference number (`DR-12`, `CP-3`, `CR-7`, `CH-5`), status, the barangay's reply (`pickupMessage`, `rejectionReason`, `resolutionMessage`, `dismissalReason`, cut to 300 characters) and the dates. The server runs in UTC, so dates are formatted with `timeZone: "Asia/Manila"`.
+- Complaints the user follows come back as a separate `followedComplaints` list. With a `following: true` flag on each complaint instead, the model answered "may update na ba sa complaint ko?" with only a followed complaint and called it "complaint mo".
+- The tool description says it has only the user's own submissions. Without that, an admin asking "ilan ang pending na document requests?" got their own (empty) list back as "walang pending".
+- `openSubmissionDetails` takes up to 3 reference numbers. It parses the prefix, checks each one belongs to the user (complaints they follow count), and returns a label from the database and `<page>?view=<id>`, which opens the Submission Info dialog through `useViewParam`, the same link a notification uses. The href is built inline because `VIEW_SEARCH_PARAM` lives in a client hook. Like `openBusinessDetails`, the model only sees the `instruction`.
+- Both the system prompt and the result's `instruction` say to call `openSubmissionDetails` for businesses too. The model didn't for "na-verify na ba yung business ko?" until the prompt had that question as an example, and once it said "tap the button below" without calling it.
+
 ## Streaming and re-renders
 
 Each streamed chunk updates `messages`, which re-renders `ChatPanel` and re-runs `messages.map` over **every** message, not only the one being streamed.
@@ -162,7 +174,7 @@ The tool's input schema, its description for the model, the role check and the c
 
 ## Gotchas
 
-- The tool name must be the same string in `buildAssistantTools` and the chat panel (`tool-navigateToPage`, `tool-openFormDialog`, `tool-openBusinessDetails`) or widget (`getUserLocation`). If it's not, the panel never finds the result and no button shows, or the location request is never answered.
+- The tool name must be the same string in `buildAssistantTools` and the chat panel (`tool-navigateToPage`, `tool-openFormDialog`, `tool-openBusinessDetails`, `tool-openSubmissionDetails`) or widget (`getUserLocation`). If it's not, the panel never finds the result and no button shows, or the location request is never answered.
 - Every tool the browser doesn't answer needs an `execute`. A call without a result stops the stream with no reply.
 - Parallel tool calls are off (`providerOptions: { openai: { parallelToolCalls: false } }`), so the model makes one call per step. Once `findBusinesses` and `getUserLocation` were added, it sometimes added stray calls next to the one it needed, e.g. `calculateCourtFee` or `getUserLocation` next to the clearance form, in roughly one request in six. Tests showed the tools caused this, not the prompt. A flow that needs two tools (a lookup, then a form) takes two steps instead.
 - `temperature` is 0.2. Replies repeat exact details from tools and settings, and at OpenAI's default of 1 the model now and then miscopied one (a plus-code address `83C7+WRC` came out as `81C7+WRC`). A low temperature also means a bad habit shows up nearly every time instead of now and then, so check a prompt or tool change over several runs of the same question.
