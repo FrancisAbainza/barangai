@@ -7,6 +7,7 @@ import type { AssistantToolContext } from "@/lib/ai-assistant/tools";
 import { formatOperatingHours } from "@/lib/business";
 import { parseTimeInput } from "@/lib/court-reservations";
 import { distanceInMeters } from "@/lib/geolocation";
+import { getPhilippineTime } from "@/lib/utils";
 import { DAYS_OF_WEEK, type OperatingHours } from "@/schemas/business-schema";
 
 // Enough for a barangay's businesses without filling the model's context.
@@ -16,13 +17,6 @@ const MAX_DESCRIPTION_LENGTH = 200;
 // e.g. 340 → "340 m", 1250 → "1.3 km"
 function formatDistance(meters: number): string {
   return meters < 1000 ? `${Math.round(meters / 10) * 10} m` : `${(meters / 1000).toFixed(1)} km`;
-}
-
-// The day (index into DAYS_OF_WEEK) and minutes after midnight in the Philippines. The server runs
-// in UTC, and the Philippines is UTC+8 all year, so this reads a date 8 hours ahead in UTC.
-function getPhilippineTime() {
-  const shifted = new Date(Date.now() + 8 * 60 * 60 * 1000);
-  return { day: (shifted.getUTCDay() + 6) % 7, minutes: shifted.getUTCHours() * 60 + shifted.getUTCMinutes() };
 }
 
 // Hours that close at or before the opening time run past midnight (e.g. 6:00 PM – 2:00 AM), so

@@ -41,6 +41,18 @@ export function formatDateTime(date: Date): string {
   return `${dateStr} at ${timeStr}`;
 }
 
+// The date ("YYYY-MM-DD"), day (0 = Monday, the order of DAYS_OF_WEEK) and minutes after midnight in
+// the Philippines. The server runs in UTC, and the Philippines is UTC+8 all year, so this reads a
+// date 8 hours ahead in UTC.
+export function getPhilippineTime() {
+  const shifted = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  return {
+    date: shifted.toISOString().slice(0, 10),
+    day: (shifted.getUTCDay() + 6) % 7,
+    minutes: shifted.getUTCHours() * 60 + shifted.getUTCMinutes(),
+  };
+}
+
 // For dates formatted on the server, which runs in UTC: shows them in Philippine time explicitly.
 export function formatPhilippineDate(date: Date, withTime = false) {
   return date.toLocaleString("en-US", {

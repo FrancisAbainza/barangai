@@ -1,5 +1,6 @@
 import z from "zod";
 import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
+import { parseDateValue, toDateValue } from "@/lib/utils";
 import { BUSINESS_CATEGORIES } from "@/schemas/business-schema";
 import { CLEARANCE_DELIVERY_METHODS, CLEARANCE_PURPOSES } from "@/schemas/clearance-document-request-schema";
 import { INDIGENCY_DELIVERY_METHODS, INDIGENCY_REQUEST_PURPOSES } from "@/schemas/indigency-document-request-schema";
@@ -49,7 +50,16 @@ export const PORTAL_DIALOG_TARGETS = {
     description: "Book the barangay court for a date and time.",
     audience: "all",
     prefill: z.object({
-      purpose: z.string(),
+      date: z
+        .string()
+        // A real date from today on: the date picker can't pick a past day, but a link opened
+        // later (or a date from the model's training years) would fill one in.
+        .refine((value) => toDateValue(parseDateValue(value)) === value && value >= toDateValue(new Date()))
+        // Without "don't assume today", the model filled in today for "pa-reserve ako 3 to 5 PM". After
+        // calculateCourtFee ("magkano ang 8 to 11 AM? gusto ko mag-reserve"), it usually still does.
+        .describe('"YYYY-MM-DD", only when the user said which day, e.g. "bukas" or "sa Sabado"; don\'t assume today'),
+      // The model made up "Event" or "Court Reservation" without this.
+      purpose: z.string().describe("only when the user said what it's for, e.g. basketball practice"),
       startTime: z
         .string()
         .regex(/^([01]\d|2[0-3]):[0-5]\d$/)

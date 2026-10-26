@@ -11,8 +11,8 @@ import {
 } from "@/lib/court-reservations";
 
 // "HH:MM" (or "H:MM") → minutes after midnight. Midnight, the latest a reservation can end,
-// may come as "24:00" or "00:00".
-function parseCourtEndTime(value: string): number | null {
+// may come as "24:00" or "00:00". Also used by checkCourtAvailability.
+export function parseCourtEndTime(value: string): number | null {
   if (value === "24:00") return MINUTES_PER_DAY;
   const minutes = parseTimeInput(value.padStart(5, "0"));
   return minutes === 0 ? MINUTES_PER_DAY : minutes;

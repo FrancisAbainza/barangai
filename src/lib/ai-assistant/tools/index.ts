@@ -2,6 +2,7 @@ import type { BarangaySettingsValues } from "@/actions/settings";
 import { buildFindBusinessesTool } from "@/lib/ai-assistant/tools/community-hub/find-businesses";
 import { openBusinessDetailsTool } from "@/lib/ai-assistant/tools/community-hub/open-business-details";
 import { buildCalculateCourtFeeTool } from "@/lib/ai-assistant/tools/court-reservation/calculate-court-fee";
+import { buildCheckCourtAvailabilityTool } from "@/lib/ai-assistant/tools/court-reservation/check-court-availability";
 import { buildGetMySubmissionsTool } from "@/lib/ai-assistant/tools/get-my-submissions";
 import { getUserLocationTool, type UserLocation } from "@/lib/ai-assistant/tools/get-user-location";
 import { buildNavigateToPageTool } from "@/lib/ai-assistant/tools/navigate-to-page";
@@ -23,9 +24,9 @@ export type AssistantToolContext = {
 };
 
 // There are three kinds of tools:
-// - Lookup tools (find*, getMySubmissions, calculateCourtFee) return data the model answers from,
-//   with an `instruction` for the reply and `buttonShown: false`, without which the reply sometimes
-//   pointed to a button that wasn't there.
+// - Lookup tools (find*, getMySubmissions, calculateCourtFee, checkCourtAvailability) return data the
+//   model answers from, with an `instruction` for the reply and `buttonShown: false`, without which
+//   the reply sometimes pointed to a button that wasn't there.
 // - Button tools (navigateToPage, openFormDialog, open*) don't act by themselves. They're built with
 //   `buttonTool` (./buttons.ts) and return the buttons the chat panel shows under the reply.
 // - getUserLocation, which the browser answers (see its file).
@@ -40,6 +41,7 @@ export function buildAssistantTools(context: AssistantToolContext) {
     openFormDialog: buildOpenFormDialogTool(context),
     // Court Reservation
     calculateCourtFee: buildCalculateCourtFeeTool(context),
+    checkCourtAvailability: buildCheckCourtAvailabilityTool(),
     // Community Hub
     findBusinesses: buildFindBusinessesTool(context),
     openBusinessDetails: openBusinessDetailsTool,
