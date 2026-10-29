@@ -46,6 +46,11 @@ export default function RootLayout({
           signInFallbackRedirectUrl="/portal"
           signUpFallbackRedirectUrl="/portal"
           appearance={{
+            // Footer links on Clerk's components. The sign-up consent checkbox's links are set in the Clerk Dashboard.
+            options: {
+              termsPageUrl: "/terms",
+              privacyPageUrl: "/privacy",
+            },
             elements: {
               userButtonPopoverRootBox: {
                 pointerEvents: "auto",

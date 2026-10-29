@@ -444,9 +444,19 @@ export default async function Home() {
 
             <Separator className="bg-primary-foreground/15" />
 
-            <p className="text-sm">
-              © {new Date().getFullYear()} {barangayName}, {barangayCity}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-sm">
+              <p>
+                © {new Date().getFullYear()} {barangayName}, {barangayCity}
+              </p>
+              <div className="flex gap-5">
+                <Link href="/terms" className="hover:text-primary-foreground">
+                  Terms of Service
+                </Link>
+                <Link href="/privacy" className="hover:text-primary-foreground">
+                  Privacy Policy
+                </Link>
+              </div>
+            </div>
           </div>
         </footer>
       </ReducedMotionConfig>
