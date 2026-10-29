@@ -331,6 +331,17 @@ export async function updateBusiness(id: number, data: CreateBusinessInput) {
       photos: data.photos,
       permit: data.permit,
       location: data.location || null,
+      // A resident's edit is a resubmission: it goes back to Pending for review, and its submission
+      // date becomes now so it's listed first in the admin's newest-first list.
+      ...(isAdmin
+        ? {}
+        : {
+            status: "Pending" as const,
+            handlerId: null,
+            rejectionReason: null,
+            rejectionAttachments: [],
+            createdAt: new Date(),
+          }),
       updatedAt: new Date(),
     })
     .where(eq(businessesTable.id, id));
