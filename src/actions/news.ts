@@ -2,6 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { getAuthRole } from "@/lib/auth";
+import { getAuditChanges, logAudit } from "@/lib/audit";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfo, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { newsCommentsTable, newsReactionsTable, newsTable, type News, type NewsComment } from "@/db/schema";
@@ -29,18 +30,37 @@ export type NewsCommentWithAuthor = NewsComment & {
   authorImageUrl: string;
 };
 
+// The fields a post's audit log entries keep. Media and attachments aren't compared.
+const NEWS_AUDIT_LABELS = {
+  title: "Title",
+  category: "Category",
+  content: "Content",
+  pinned: "Pinned",
+};
+
 export async function createNews(data: CreateNewsInput) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  await db.insert(newsTable).values({
-    title: data.title,
-    category: data.category,
-    content: data.content,
-    media: data.media,
-    attachments: data.attachments,
-    pinned: data.pinned,
-    authorId: userId,
+  const [news] = await db
+    .insert(newsTable)
+    .values({
+      title: data.title,
+      category: data.category,
+      content: data.content,
+      media: data.media,
+      attachments: data.attachments,
+      pinned: data.pinned,
+      authorId: userId,
+    })
+    .returning({ id: newsTable.id });
+
+  await logAudit({
+    action: "created",
+    entityType: "news",
+    entityId: news.id,
+    summary: `Posted ${data.category.toLowerCase()} "${data.title}"`,
+    changes: getAuditChanges({}, data, NEWS_AUDIT_LABELS),
   });
 }
 
@@ -64,6 +84,14 @@ export async function updateNews(id: number, data: CreateNewsInput) {
       updatedAt: new Date(),
     })
     .where(eq(newsTable.id, id));
+
+  await logAudit({
+    action: "updated",
+    entityType: "news",
+    entityId: id,
+    summary: `Edited post "${data.title}"`,
+    changes: getAuditChanges(existing, data, NEWS_AUDIT_LABELS),
+  });
 }
 
 const NEWS_PAGE_SIZE = 10;
@@ -250,6 +278,14 @@ export async function deleteNews(id: number) {
   if (existing.authorId !== userId && !isSuperAdmin) throw new Error("Forbidden");
 
   await db.delete(newsTable).where(eq(newsTable.id, id));
+
+  await logAudit({
+    action: "deleted",
+    entityType: "news",
+    entityId: id,
+    summary: `Deleted post "${existing.title}"`,
+    changes: getAuditChanges(existing, {}, NEWS_AUDIT_LABELS),
+  });
 }
 
 export async function getNewsComments(newsId: number): Promise<NewsCommentWithAuthor[]> {

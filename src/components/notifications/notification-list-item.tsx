@@ -5,7 +5,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, FileText, MessageSquareWarning, SportShoe, Store } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { markNotificationRead } from "@/actions/notifications";
-import { formatRelativeTime, getNotificationHref, NOTIFICATION_TYPE_CONFIG } from "@/lib/notifications";
+import {
+  DELETED_NOTIFICATION_STATUS,
+  formatRelativeTime,
+  getNotificationHref,
+  NOTIFICATION_TYPE_CONFIG,
+} from "@/lib/notifications";
 import { statusBadgeVariant as documentRequestBadgeVariant } from "@/lib/document-requests";
 import { statusBadgeVariant as businessBadgeVariant } from "@/lib/business";
 import { statusBadgeVariant as courtReservationBadgeVariant } from "@/lib/court-reservations";
@@ -20,8 +25,10 @@ const TYPE_ICONS = {
   complaint: MessageSquareWarning,
 } as const satisfies Record<Notification["type"], unknown>;
 
-// `status` is stored as text, but it always holds a value of the matching domain's status enum.
+// `status` is stored as text, but it always holds a value of the matching domain's status enum,
+// or "Deleted".
 function statusBadgeVariant({ type, status }: Notification) {
+  if (status === DELETED_NOTIFICATION_STATUS) return "destructive";
   switch (type) {
     case "document-request":
       return documentRequestBadgeVariant(status as DocumentRequest["status"]);

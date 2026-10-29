@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Calendar, Megaphone, MessageSquare, MoreHorizontal, Pencil, Pin, Share2, ThumbsDown, ThumbsUp, Trash2, TriangleAlert } from "lucide-react";
+import { Calendar, Megaphone, MessageSquare, MoreHorizontal, Pencil, Pin, ScrollText, Share2, ThumbsDown, ThumbsUp, Trash2, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -23,6 +23,7 @@ import { MediaGrid, AttachmentList } from "@/components/media-gallery";
 import EditNewsDialog from "./edit-news-dialog";
 import DeleteNewsDialog from "./delete-news-dialog";
 import CommentsDialog from "./comments-dialog";
+import RecordAuditLogsDialog from "@/components/audit-logs/record-audit-logs-dialog";
 
 const CATEGORY_CONFIG = {
   Announcement: { icon: Megaphone, className: "bg-green-700 text-white hover:bg-green-700" },
@@ -34,6 +35,7 @@ function NewsCardMenu({ news }: { news: NewsWithAuthor }) {
   const { user } = useUser();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [auditLogsOpen, setAuditLogsOpen] = useState(false);
 
   const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
   if (user?.id !== news.authorId && !isSuperAdmin) return null;
@@ -51,6 +53,12 @@ function NewsCardMenu({ news }: { news: NewsWithAuthor }) {
             <Pencil className="size-4" />
             Edit
           </DropdownMenuItem>
+          {isSuperAdmin && (
+            <DropdownMenuItem onSelect={() => setAuditLogsOpen(true)}>
+              <ScrollText className="size-4" />
+              Audit Logs
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
             <Trash2 className="size-4" />
             Delete
@@ -60,6 +68,9 @@ function NewsCardMenu({ news }: { news: NewsWithAuthor }) {
 
       <EditNewsDialog news={news} open={editOpen} onOpenChange={setEditOpen} />
       <DeleteNewsDialog news={news} open={deleteOpen} onOpenChange={setDeleteOpen} />
+      {isSuperAdmin && (
+        <RecordAuditLogsDialog entityType="news" entityId={news.id} open={auditLogsOpen} onOpenChange={setAuditLogsOpen} />
+      )}
     </>
   );
 }

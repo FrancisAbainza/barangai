@@ -3,9 +3,10 @@
 import { auth } from "@clerk/nextjs/server";
 import { and, asc, count, desc, eq, gte, ilike, like, lte, ne, or, sql, type SQL } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
-import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
-import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
-import { referenceNumberSearchPattern } from "@/lib/business";
+import { notifyDeletion, notifyStatusChange } from "@/lib/notify";
+import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfo, getUserDisplayInfoMap } from "@/lib/clerk-users";
+import { getAuditChanges, logAudit } from "@/lib/audit";
+import { formatReferenceNumber, referenceNumberSearchPattern } from "@/lib/business";
 import { db } from "@/db/config";
 import { businessesTable, type Business } from "@/db/schema";
 import type { BusinessFormValues } from "@/schemas/business-schema";
@@ -284,23 +285,39 @@ export async function setBusinessStatus(
     previousStatus: existing.status,
     status,
   });
+
+  await logAudit({
+    action: "status-changed",
+    entityType: "business",
+    entityId: id,
+    summary: `Changed ${formatReferenceNumber(id)} "${existing.name}" from ${existing.status} to ${status}`,
+    changes: details ? [{ label: "Message", from: null, to: details.reason }] : [],
+  });
 }
 
+// The fields an admin's edit is logged with. Photos, the permit, the hours and the location aren't compared.
+const BUSINESS_AUDIT_LABELS = {
+  name: "Name",
+  description: "Description",
+  category: "Category",
+  contactNumber: "Contact Number",
+  socialMediaLink: "Social Media Link",
+};
+
+// Returns the business, the user and whether they're an admin, whose changes are logged.
 async function requireBusinessOwnerOrAdmin(id: number) {
   const { userId, isAdmin } = await getAuthRole();
   if (!userId) throw new Error("Unauthorized");
-  if (isAdmin) return;
 
-  const [business] = await db
-    .select({ ownerId: businessesTable.ownerId })
-    .from(businessesTable)
-    .where(eq(businessesTable.id, id));
+  const [business] = await db.select().from(businessesTable).where(eq(businessesTable.id, id));
+  if (!business) throw new Error("Business not found");
+  if (business.ownerId !== userId && !isAdmin) throw new Error("Forbidden");
 
-  if (!business || business.ownerId !== userId) throw new Error("Forbidden");
+  return { business, userId, isAdmin };
 }
 
 export async function updateBusiness(id: number, data: CreateBusinessInput) {
-  await requireBusinessOwnerOrAdmin(id);
+  const { business, isAdmin } = await requireBusinessOwnerOrAdmin(id);
 
   await db
     .update(businessesTable)
@@ -317,11 +334,38 @@ export async function updateBusiness(id: number, data: CreateBusinessInput) {
       updatedAt: new Date(),
     })
     .where(eq(businessesTable.id, id));
+
+  if (isAdmin) {
+    await logAudit({
+      action: "updated",
+      entityType: "business",
+      entityId: id,
+      summary: `Edited ${formatReferenceNumber(id)} "${data.name}"`,
+      changes: getAuditChanges(business, data, BUSINESS_AUDIT_LABELS),
+    });
+  }
 }
 
 export async function deleteBusiness(id: number) {
-  await requireBusinessOwnerOrAdmin(id);
+  const { business, userId, isAdmin } = await requireBusinessOwnerOrAdmin(id);
 
   await db.delete(businessesTable).where(eq(businessesTable.id, id));
-  await deleteNotificationsFor("community-hub", id);
+  await notifyDeletion({
+    userId: business.ownerId,
+    actorId: userId,
+    type: "community-hub",
+    referenceId: id,
+    subject: `business "${business.name}"`,
+  });
+
+  if (isAdmin) {
+    const owner = await getUserDisplayInfo(business.ownerId);
+    await logAudit({
+      action: "deleted",
+      entityType: "business",
+      entityId: id,
+      summary: `Deleted ${formatReferenceNumber(id)} "${business.name}" (${business.status}) owned by ${owner.fullName}`,
+      changes: getAuditChanges(business, {}, BUSINESS_AUDIT_LABELS),
+    });
+  }
 }

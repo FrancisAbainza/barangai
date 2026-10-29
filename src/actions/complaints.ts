@@ -5,9 +5,10 @@ import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { and, asc, count, desc, eq, gte, ilike, inArray, like, lte, ne, notInArray, or, sql } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
-import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
-import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
-import { referenceNumberSearchPattern } from "@/lib/complaints";
+import { deleteNotificationsFor, notifyDeletion, notifyStatusChange } from "@/lib/notify";
+import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfo, getUserDisplayInfoMap } from "@/lib/clerk-users";
+import { logAudit } from "@/lib/audit";
+import { formatReferenceNumber, referenceNumberSearchPattern } from "@/lib/complaints";
 import { distanceInMeters } from "@/lib/geolocation";
 import { db } from "@/db/config";
 import { complaintFollowersTable, complaintsTable, type Complaint } from "@/db/schema";
@@ -464,6 +465,14 @@ export async function setComplaintStatus(
     previousStatus: existing.status,
     status,
   });
+
+  await logAudit({
+    action: "status-changed",
+    entityType: "complaint",
+    entityId: id,
+    summary: `Changed ${formatReferenceNumber(id)} "${existing.subject}" from ${existing.status} to ${status}`,
+    changes: details ? [{ label: "Message", from: null, to: details.message }] : [],
+  });
 }
 
 export async function deleteComplaint(id: number) {
@@ -475,16 +484,34 @@ export async function deleteComplaint(id: number) {
   if (existing.complainantId !== userId && !isAdmin) throw new Error("Forbidden");
   if (existing.status !== "Pending" && !isAdmin) throw new Error("Only pending complaints can be deleted.");
 
+  const followers = await db
+    .select({ userId: complaintFollowersTable.userId })
+    .from(complaintFollowersTable)
+    .where(eq(complaintFollowersTable.complaintId, id));
+
   // Deleting it would silently take it out of its followers' My Complaints too.
-  if (!isAdmin) {
-    const [{ followerCount }] = await db
-      .select({ followerCount: count() })
-      .from(complaintFollowersTable)
-      .where(eq(complaintFollowersTable.complaintId, id));
-    if (followerCount > 0) throw new Error("Other residents are following this complaint, so it can't be deleted.");
+  if (!isAdmin && followers.length > 0) {
+    throw new Error("Other residents are following this complaint, so it can't be deleted.");
   }
 
-  // Its follower rows cascade.
+  // Its follower rows cascade, which is why they're read above.
   await db.delete(complaintsTable).where(eq(complaintsTable.id, id));
-  await deleteNotificationsFor("complaint", id);
+  await notifyDeletion({
+    userId: existing.complainantId,
+    followerIds: followers.map((follower) => follower.userId),
+    actorId: userId,
+    type: "complaint",
+    referenceId: id,
+    subject: `complaint "${existing.subject}"`,
+  });
+
+  if (isAdmin) {
+    const complainant = await getUserDisplayInfo(existing.complainantId);
+    await logAudit({
+      action: "deleted",
+      entityType: "complaint",
+      entityId: id,
+      summary: `Deleted ${formatReferenceNumber(id)} "${existing.subject}" (${existing.status}) filed by ${complainant.fullName}`,
+    });
+  }
 }

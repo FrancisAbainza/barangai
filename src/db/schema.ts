@@ -37,6 +37,7 @@ import {
   type ClearancePurposeFees,
 } from "@/lib/data";
 import { KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS } from "@/lib/ai-assistant/knowledge-base";
+import type { AuditAction, AuditChange, AuditEntityType } from "@/lib/audit-logs";
 
 export const newsCategoryEnum = pgEnum("news_category", ["Announcement", "Event", "Emergency"]);
 export const newsReactionTypeEnum = pgEnum("news_reaction_type", ["like", "dislike"]);
@@ -323,11 +324,11 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "complaint",
 ]);
 
-// Sent to a resident when an admin changes the status of one of their submissions
-// (see notifyStatusChange in src/lib/notify.ts). `referenceId` is the id of the row in
-// the table matching `type`; it has no FK since it points at one of several tables, so
-// the domain delete actions clean up their notifications themselves. `message` and
-// `status` are snapshots taken when the notification was sent.
+// Sent to a resident when an admin changes the status of one of their submissions or deletes
+// it (see notifyStatusChange and notifyDeletion in src/lib/notify.ts). `referenceId` is the id
+// of the row in the table matching `type`; it has no FK since it points at one of several
+// tables, and a deleted submission's notifications are kept. `message` and `status` are
+// snapshots taken when the notification was sent (`status` is "Deleted" for a deletion).
 export const notificationsTable = pgTable(
   "notifications",
   {
@@ -423,3 +424,28 @@ export const userPreferencesTable = pgTable("user_preferences", {
 
 export type UserPreferences = typeof userPreferencesTable.$inferSelect;
 export type ThemePreference = UserPreferences["theme"];
+
+// Who changed what, written by logAudit (src/lib/audit.ts) after an admin's action and shown on
+// the super admins' Audit Logs page. Entries are never edited or deleted, not with their record
+// and not by deleteAllUserData, so `entityId` has no FK. `summary` and `changes` are snapshots
+// taken when the action happened. `action` and `entityType` are plain varchar rather than enums
+// so that logging a new kind of action doesn't need a DB change.
+export const auditLogsTable = pgTable(
+  "audit_logs",
+  {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    actorId: varchar({ length: 255 }).notNull(),
+    // The actor's role at the time of the action.
+    actorRole: varchar({ length: 32 }),
+    action: varchar({ length: 32 }).$type<AuditAction>().notNull(),
+    entityType: varchar({ length: 32 }).$type<AuditEntityType>().notNull(),
+    // The record's id, or the Clerk userId for "user".
+    entityId: varchar({ length: 255 }).notNull(),
+    summary: text().notNull(),
+    changes: json().$type<AuditChange[]>().notNull().default([]),
+    createdAt: timestamp().notNull().defaultNow(),
+  },
+  (table) => [index("audit_logs_created_at_idx").on(table.createdAt)]
+);
+
+export type AuditLog = typeof auditLogsTable.$inferSelect;

@@ -6,6 +6,7 @@ import { embedMany } from "ai";
 import { desc, eq } from "drizzle-orm";
 import { extractText } from "unpdf";
 import { requireAdmin } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 import { getUserDisplayInfo } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { knowledgeBaseChunksTable, knowledgeBaseDocumentsTable } from "@/db/schema";
@@ -98,6 +99,14 @@ export async function replaceKnowledgeBaseDocument({
       await r2.send(new DeleteObjectCommand({ Bucket: bucket, Key: previousDoc.fileKey })).catch(() => {});
     }
   }
+
+  await logAudit({
+    action: "replaced",
+    entityType: "knowledge-base",
+    entityId: newDoc.id,
+    summary: `Uploaded "${fileName}" as the AI assistant's knowledge base`,
+    changes: [{ label: "Document", from: previousDoc?.fileName ?? null, to: fileName }],
+  });
 
   const uploader = await getUserDisplayInfo(userId);
 

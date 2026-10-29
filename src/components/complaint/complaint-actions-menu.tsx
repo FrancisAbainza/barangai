@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Eye, ListChecks, ListX, MoreHorizontal, Trash2 } from "lucide-react";
+import { Eye, ListChecks, ListX, MoreHorizontal, ScrollText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,13 +18,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { setComplaintStatus, unfollowComplaint, type ComplaintWithComplainant } from "@/actions/complaints";
 import { complaintStatusEnum, type Complaint } from "@/db/schema";
-import { isAdminRole } from "@/lib/roles";
+import { isAdminRole, isSuperAdminRole } from "@/lib/roles";
 import { deleteFile } from "@/lib/storage";
 import type { MediaItem } from "@/components/file-uploader";
 import ViewComplaintDialog from "@/components/complaint/dialogs/view-complaint-dialog";
 import DeleteComplaintDialog from "@/components/complaint/dialogs/delete-complaint-dialog";
 import AdminResolveComplaintDialog from "@/components/complaint/dialogs/admin-resolve-complaint-dialog";
 import AdminDismissComplaintDialog from "@/components/complaint/dialogs/admin-dismiss-complaint-dialog";
+import RecordAuditLogsDialog from "@/components/audit-logs/record-audit-logs-dialog";
 
 export default function ComplaintActionsMenu({
   complaint,
@@ -35,10 +36,12 @@ export default function ComplaintActionsMenu({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [dismissOpen, setDismissOpen] = useState(false);
+  const [auditLogsOpen, setAuditLogsOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { user } = useUser();
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
+  const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
   const isOwnComplaint = complaint.complainantId === user?.id;
 
   const { mutate: changeStatus, isPending: isChangingStatus } = useMutation({
@@ -104,6 +107,13 @@ export default function ComplaintActionsMenu({
             Submission Info
           </DropdownMenuItem>
 
+          {isSuperAdmin && (
+            <DropdownMenuItem onSelect={() => setAuditLogsOpen(true)}>
+              <ScrollText />
+              Audit Logs
+            </DropdownMenuItem>
+          )}
+
           {isAdmin && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
@@ -150,6 +160,14 @@ export default function ComplaintActionsMenu({
           <AdminResolveComplaintDialog complaint={complaint} open={resolveOpen} onOpenChange={setResolveOpen} />
           <AdminDismissComplaintDialog complaint={complaint} open={dismissOpen} onOpenChange={setDismissOpen} />
         </>
+      )}
+      {isSuperAdmin && (
+        <RecordAuditLogsDialog
+          entityType="complaint"
+          entityId={complaint.id}
+          open={auditLogsOpen}
+          onOpenChange={setAuditLogsOpen}
+        />
       )}
     </>
   );

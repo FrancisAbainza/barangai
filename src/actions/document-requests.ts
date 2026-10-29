@@ -2,12 +2,14 @@
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
-import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
+import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfo, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { documentRequestsTable, type DocumentRequest } from "@/db/schema";
 import { and, asc, count, desc, eq, gte, inArray, like, lte, or, sql } from "drizzle-orm";
-import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
+import { notifyDeletion, notifyStatusChange } from "@/lib/notify";
+import { logAudit } from "@/lib/audit";
 import {
+  formatReferenceNumber,
   ONLINE_SOFT_COPY_DELIVERY_METHOD,
   PICKUP_DELIVERY_METHOD,
   referenceNumberSearchPattern,
@@ -257,7 +259,23 @@ export async function deleteDocumentRequest(id: number) {
   if (existing.status !== "Pending" && !isAdmin) throw new Error("Only pending requests can be deleted.");
 
   await db.delete(documentRequestsTable).where(eq(documentRequestsTable.id, id));
-  await deleteNotificationsFor("document-request", id);
+  await notifyDeletion({
+    userId: existing.requesterId,
+    actorId: userId,
+    type: "document-request",
+    referenceId: id,
+    subject: `${existing.documentType} request`,
+  });
+
+  if (isAdmin) {
+    const requester = await getUserDisplayInfo(existing.requesterId);
+    await logAudit({
+      action: "deleted",
+      entityType: "document-request",
+      entityId: id,
+      summary: `Deleted ${formatReferenceNumber(id)} (${existing.documentType}, ${existing.status}) requested by ${requester.fullName}`,
+    });
+  }
 }
 
 export type DocumentRequestStatusDetails = {
@@ -308,6 +326,14 @@ export async function setDocumentRequestStatus(
     subject: `${existing.documentType} request`,
     previousStatus: existing.status,
     status,
+  });
+
+  await logAudit({
+    action: "status-changed",
+    entityType: "document-request",
+    entityId: id,
+    summary: `Changed ${formatReferenceNumber(id)} (${existing.documentType}) from ${existing.status} to ${status}`,
+    changes: details ? [{ label: "Message", from: null, to: details.message }] : [],
   });
 }
 

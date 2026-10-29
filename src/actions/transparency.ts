@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
+import { getAuditChanges, logAudit } from "@/lib/audit";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfo, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import {
@@ -35,18 +36,42 @@ export type TransparencyProjectCommentWithAuthor = TransparencyProjectComment & 
   authorImageUrl: string;
 };
 
+// The fields a project's audit log entries keep. The location, media and attachments aren't compared.
+const TRANSPARENCY_AUDIT_LABELS = {
+  title: "Title",
+  category: "Category",
+  description: "Description",
+  budget: "Budget",
+};
+
+// The budget as the numeric column returns it ("1500.00"), so an unchanged one compares equal.
+function toAuditValues(data: CreateTransparencyProjectInput) {
+  return { ...data, budget: data.budget?.toFixed(2) };
+}
+
 export async function createTransparencyProject(data: CreateTransparencyProjectInput) {
   const authorId = await requireAdmin();
 
-  await db.insert(transparencyProjectsTable).values({
-    title: data.title,
-    category: data.category,
-    description: data.description,
-    budget: data.budget !== undefined ? data.budget.toString() : null,
-    location: data.location || null,
-    media: data.media,
-    attachments: data.attachments,
-    authorId,
+  const [project] = await db
+    .insert(transparencyProjectsTable)
+    .values({
+      title: data.title,
+      category: data.category,
+      description: data.description,
+      budget: data.budget !== undefined ? data.budget.toString() : null,
+      location: data.location || null,
+      media: data.media,
+      attachments: data.attachments,
+      authorId,
+    })
+    .returning({ id: transparencyProjectsTable.id });
+
+  await logAudit({
+    action: "created",
+    entityType: "transparency-project",
+    entityId: project.id,
+    summary: `Posted project "${data.title}"`,
+    changes: getAuditChanges({}, toAuditValues(data), TRANSPARENCY_AUDIT_LABELS),
   });
 }
 
@@ -74,6 +99,14 @@ export async function updateTransparencyProject(id: number, data: CreateTranspar
       updatedAt: new Date(),
     })
     .where(eq(transparencyProjectsTable.id, id));
+
+  await logAudit({
+    action: "updated",
+    entityType: "transparency-project",
+    entityId: id,
+    summary: `Edited project "${data.title}"`,
+    changes: getAuditChanges(existing, toAuditValues(data), TRANSPARENCY_AUDIT_LABELS),
+  });
 }
 
 export async function deleteTransparencyProject(id: number) {
@@ -88,6 +121,14 @@ export async function deleteTransparencyProject(id: number) {
   if (existing.authorId !== userId && !isSuperAdmin) throw new Error("Forbidden");
 
   await db.delete(transparencyProjectsTable).where(eq(transparencyProjectsTable.id, id));
+
+  await logAudit({
+    action: "deleted",
+    entityType: "transparency-project",
+    entityId: id,
+    summary: `Deleted project "${existing.title}"`,
+    changes: getAuditChanges(existing, {}, TRANSPARENCY_AUDIT_LABELS),
+  });
 }
 
 const TRANSPARENCY_PAGE_SIZE = 10;

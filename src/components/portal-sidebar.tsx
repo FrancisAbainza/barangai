@@ -13,6 +13,7 @@ import {
   Users,
   Store,
   SportShoe,
+  ScrollText,
   Shield,
   User,
   Settings,
@@ -63,6 +64,11 @@ const adminMenuItems = [
   { title: "Barangay Settings", href: "/portal/barangay-settings", icon: Settings },
 ];
 
+const superAdminMenuItems = [
+  ...adminMenuItems,
+  { title: "Audit Logs", href: "/portal/audit-logs", icon: ScrollText },
+];
+
 export default function PortalSidebar() {
   const pathname = usePathname();
   const { state, isMobile, setOpenMobile } = useSidebar();
@@ -77,7 +83,7 @@ export default function PortalSidebar() {
 
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
   const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
-  const menuItems = isAdmin ? adminMenuItems : residentMenuItems;
+  const menuItems = isSuperAdmin ? superAdminMenuItems : isAdmin ? adminMenuItems : residentMenuItems;
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ["notifications", "unread-count"],

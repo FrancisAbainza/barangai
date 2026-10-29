@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
+import { getAuditChanges, logAudit } from "@/lib/audit";
 import { db } from "@/db/config";
 import { barangaySettingsTable } from "@/db/schema";
 import {
@@ -17,6 +18,7 @@ import {
   DEFAULT_COURT_DAY_RATE,
   DEFAULT_COURT_NIGHT_RATE,
   DEFAULT_GCASH_NUMBER,
+  PAID_CLEARANCE_PURPOSES,
   type ClearancePurposeFees,
 } from "@/lib/data";
 
@@ -67,6 +69,23 @@ export async function getBarangaySettings(): Promise<BarangaySettingsValues> {
   };
 }
 
+const SETTINGS_AUDIT_LABELS = {
+  gcashNumber: "GCash Number",
+  courtDayRate: "Court Day Rate",
+  courtNightRate: "Court Night Rate",
+  goal: "Goal",
+  mission: "Mission",
+  vision: "Vision",
+  hotline1: "Hotline 1",
+  hotline2: "Hotline 2",
+  email: "Email",
+  address: "Address",
+};
+
+const CLEARANCE_FEE_AUDIT_LABELS = Object.fromEntries(
+  PAID_CLEARANCE_PURPOSES.map((purpose) => [purpose, `Clearance Fee (${purpose})`])
+);
+
 // Accepts a partial update so each Barangay Settings page section can submit only the
 // fields it owns without clobbering the rest of this single shared settings row.
 export async function updateBarangaySettings(data: Partial<BarangaySettingsValues>) {
@@ -86,4 +105,18 @@ export async function updateBarangaySettings(data: Partial<BarangaySettingsValue
   // Every public page's hotline bar, plus the landing and About Us pages, renders these
   // settings on the server.
   revalidatePath("/", "layout");
+
+  const changes = [
+    ...getAuditChanges(current, merged, SETTINGS_AUDIT_LABELS),
+    ...getAuditChanges(current.clearancePurposeFees, merged.clearancePurposeFees, CLEARANCE_FEE_AUDIT_LABELS),
+  ];
+  if (changes.length > 0) {
+    await logAudit({
+      action: "updated",
+      entityType: "barangay-settings",
+      entityId: 1,
+      summary: `Updated ${changes.map((change) => change.label).join(", ")}`,
+      changes,
+    });
+  }
 }

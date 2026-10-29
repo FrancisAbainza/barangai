@@ -1,9 +1,10 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
-import { isAdminRole } from '@/lib/roles'
+import { isAdminRole, isSuperAdminRole } from '@/lib/roles'
 
 const isProtectedRoute = createRouteMatcher(['/portal(.*)'])
 const isAdminRoute = createRouteMatcher(["/portal/user-management(.*)", "/portal/barangay-settings(.*)"]);
+const isSuperAdminRoute = createRouteMatcher(["/portal/audit-logs(.*)"]);
 const isResidentOnlyRoute = createRouteMatcher(["/portal/notifications(.*)"]);
 // Pages with a /portal counterpart. This includes the post pages share links point to
 // (/news/[id], /transparency/[id]), so a signed-in user opening one stays in the portal.
@@ -16,6 +17,10 @@ export default clerkMiddleware(async (auth, req) => {
   if (isAdminRoute(req) && !isAdmin) {
     const url = new URL("/", req.url);
     return NextResponse.redirect(url);
+  }
+
+  if (isSuperAdminRoute(req) && !isSuperAdminRole(sessionClaims?.metadata?.role)) {
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   if (isResidentOnlyRoute(req) && isAdmin) {

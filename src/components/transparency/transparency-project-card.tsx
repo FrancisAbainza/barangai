@@ -16,6 +16,7 @@ import {
   MessageSquare,
   MoreHorizontal,
   Pencil,
+  ScrollText,
   Share2,
   ShieldCheck,
   Tag,
@@ -46,6 +47,7 @@ import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
 import EditTransparencyProjectDialog from "./edit-transparency-project-dialog";
 import DeleteTransparencyProjectDialog from "./delete-transparency-project-dialog";
 import TransparencyCommentsDialog from "./transparency-comments-dialog";
+import RecordAuditLogsDialog from "@/components/audit-logs/record-audit-logs-dialog";
 
 const CATEGORY_CONFIG: Record<(typeof TRANSPARENCY_CATEGORIES)[number], { icon: LucideIcon; className: string }> = {
   Infrastructure: { icon: HardHat, className: "bg-amber-600 text-white hover:bg-amber-600" },
@@ -94,6 +96,7 @@ function TransparencyProjectCardMenu({ project }: { project: TransparencyProject
   const { user } = useUser();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [auditLogsOpen, setAuditLogsOpen] = useState(false);
 
   const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
   if (user?.id !== project.authorId && !isSuperAdmin) return null;
@@ -111,6 +114,12 @@ function TransparencyProjectCardMenu({ project }: { project: TransparencyProject
             <Pencil className="size-4" />
             Edit
           </DropdownMenuItem>
+          {isSuperAdmin && (
+            <DropdownMenuItem onSelect={() => setAuditLogsOpen(true)}>
+              <ScrollText className="size-4" />
+              Audit Logs
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
             <Trash2 className="size-4" />
             Delete
@@ -120,6 +129,14 @@ function TransparencyProjectCardMenu({ project }: { project: TransparencyProject
 
       <EditTransparencyProjectDialog project={project} open={editOpen} onOpenChange={setEditOpen} />
       <DeleteTransparencyProjectDialog project={project} open={deleteOpen} onOpenChange={setDeleteOpen} />
+      {isSuperAdmin && (
+        <RecordAuditLogsDialog
+          entityType="transparency-project"
+          entityId={project.id}
+          open={auditLogsOpen}
+          onOpenChange={setAuditLogsOpen}
+        />
+      )}
     </>
   );
 }

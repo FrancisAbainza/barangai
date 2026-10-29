@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Eye, ListChecks, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Eye, ListChecks, MoreHorizontal, Pencil, ScrollText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,12 +18,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { setBusinessStatus, type BusinessWithOwner } from "@/actions/business";
 import { businessStatusEnum, type Business } from "@/db/schema";
-import { isAdminRole } from "@/lib/roles";
+import { isAdminRole, isSuperAdminRole } from "@/lib/roles";
 import { deleteFile } from "@/lib/storage";
 import ViewSubmissionDialog from "@/components/community-hub/dialogs/view-submission-dialog";
 import EditBusinessDialog from "@/components/community-hub/dialogs/edit-business-dialog";
 import DeleteBusinessDialog from "@/components/community-hub/dialogs/delete-business-dialog";
 import RejectBusinessDialog from "@/components/community-hub/dialogs/reject-business-dialog";
+import RecordAuditLogsDialog from "@/components/audit-logs/record-audit-logs-dialog";
 import type { MediaItem } from "@/components/file-uploader";
 
 export default function BusinessActionsMenu({ business }: { business: BusinessWithOwner }) {
@@ -31,10 +32,12 @@ export default function BusinessActionsMenu({ business }: { business: BusinessWi
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [auditLogsOpen, setAuditLogsOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { user } = useUser();
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
+  const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
   const isOwnBusiness = business.ownerId === user?.id;
 
   const { mutate: changeStatus, isPending: isChangingStatus } = useMutation({
@@ -82,6 +85,13 @@ export default function BusinessActionsMenu({ business }: { business: BusinessWi
             </DropdownMenuItem>
           )}
 
+          {isSuperAdmin && (
+            <DropdownMenuItem onSelect={() => setAuditLogsOpen(true)}>
+              <ScrollText />
+              Audit Logs
+            </DropdownMenuItem>
+          )}
+
           {isOwnBusiness && (
             <DropdownMenuItem onSelect={() => setEditOpen(true)}>
               <Pencil />
@@ -126,6 +136,14 @@ export default function BusinessActionsMenu({ business }: { business: BusinessWi
       )}
       <DeleteBusinessDialog business={business} open={deleteOpen} onOpenChange={setDeleteOpen} />
       {isAdmin && <RejectBusinessDialog business={business} open={rejectOpen} onOpenChange={setRejectOpen} />}
+      {isSuperAdmin && (
+        <RecordAuditLogsDialog
+          entityType="business"
+          entityId={business.id}
+          open={auditLogsOpen}
+          onOpenChange={setAuditLogsOpen}
+        />
+      )}
     </>
   );
 }

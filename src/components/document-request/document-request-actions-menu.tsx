@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Eye, ListChecks, MoreHorizontal, Trash2 } from "lucide-react";
+import { Eye, ListChecks, MoreHorizontal, ScrollText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { setDocumentRequestStatus, type DocumentRequestWithRequester } from "@/actions/document-requests";
 import { documentRequestStatusEnum, type DocumentRequest } from "@/db/schema";
-import { isAdminRole } from "@/lib/roles";
+import { isAdminRole, isSuperAdminRole } from "@/lib/roles";
 import { PICKUP_DELIVERY_METHOD } from "@/lib/document-requests";
 import { deleteFile } from "@/lib/storage";
 import type { MediaItem } from "@/components/file-uploader";
@@ -26,6 +26,7 @@ import ViewDocumentRequestDialog from "@/components/document-request/dialogs/vie
 import DeleteDocumentRequestDialog from "@/components/document-request/dialogs/delete-document-request-dialog";
 import AdminReadyForPickupDialog from "@/components/document-request/dialogs/admin-ready-for-pickup-dialog";
 import AdminRejectDocumentRequestDialog from "@/components/document-request/dialogs/admin-reject-document-request-dialog";
+import RecordAuditLogsDialog from "@/components/audit-logs/record-audit-logs-dialog";
 
 export default function DocumentRequestActionsMenu({
   request,
@@ -36,10 +37,12 @@ export default function DocumentRequestActionsMenu({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [readyForPickupOpen, setReadyForPickupOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [auditLogsOpen, setAuditLogsOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { user } = useUser();
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
+  const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
   const isOwnRequest = request.requesterId === user?.id;
 
   const { mutate: changeStatus, isPending: isChangingStatus } = useMutation({
@@ -97,6 +100,13 @@ export default function DocumentRequestActionsMenu({
             Submission Info
           </DropdownMenuItem>
 
+          {isSuperAdmin && (
+            <DropdownMenuItem onSelect={() => setAuditLogsOpen(true)}>
+              <ScrollText />
+              Audit Logs
+            </DropdownMenuItem>
+          )}
+
           {isAdmin && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
@@ -142,6 +152,14 @@ export default function DocumentRequestActionsMenu({
           />
           <AdminRejectDocumentRequestDialog request={request} open={rejectOpen} onOpenChange={setRejectOpen} />
         </>
+      )}
+      {isSuperAdmin && (
+        <RecordAuditLogsDialog
+          entityType="document-request"
+          entityId={request.id}
+          open={auditLogsOpen}
+          onOpenChange={setAuditLogsOpen}
+        />
       )}
     </>
   );

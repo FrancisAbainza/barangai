@@ -2,14 +2,17 @@
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getAuthRole, requireAdmin } from "@/lib/auth";
-import { deleteNotificationsFor, notifyStatusChange } from "@/lib/notify";
-import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
+import { notifyDeletion, notifyStatusChange } from "@/lib/notify";
+import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfo, getUserDisplayInfoMap } from "@/lib/clerk-users";
+import { logAudit } from "@/lib/audit";
 import { db } from "@/db/config";
 import { courtReservationsTable, type CourtReservation } from "@/db/schema";
 import { and, asc, count, desc, eq, inArray, like, ne, or, sql } from "drizzle-orm";
 import type { MediaItem } from "@/components/file-uploader";
 import {
   calculateCourtFee,
+  formatReferenceNumber,
+  formatReservationDate,
   getReservationRange,
   MINUTES_PER_DAY,
   rangesOverlap,
@@ -322,6 +325,14 @@ export async function setCourtReservationStatus(
     previousStatus: reservation.status,
     status,
   });
+
+  await logAudit({
+    action: "status-changed",
+    entityType: "court-reservation",
+    entityId: id,
+    summary: `Changed ${formatReferenceNumber(id)} (${reservationDate}) from ${reservation.status} to ${status}`,
+    changes: details ? [{ label: "Message", from: null, to: details.reason }] : [],
+  });
 }
 
 export async function deleteCourtReservation(id: number) {
@@ -337,5 +348,21 @@ export async function deleteCourtReservation(id: number) {
   if (existing.status !== "Pending" && !isAdmin) throw new Error("Only pending reservations can be deleted.");
 
   await db.delete(courtReservationsTable).where(eq(courtReservationsTable.id, id));
-  await deleteNotificationsFor("court-reservation", id);
+  await notifyDeletion({
+    userId: existing.requesterId,
+    actorId: userId,
+    type: "court-reservation",
+    referenceId: id,
+    subject: `court reservation for ${formatReservationDate(existing.date)}`,
+  });
+
+  if (isAdmin) {
+    const requester = await getUserDisplayInfo(existing.requesterId);
+    await logAudit({
+      action: "deleted",
+      entityType: "court-reservation",
+      entityId: id,
+      summary: `Deleted ${formatReferenceNumber(id)} (${formatReservationDate(existing.date)}, ${existing.status}) requested by ${requester.fullName}`,
+    });
+  }
 }

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Eye, ListChecks, MoreHorizontal, Trash2 } from "lucide-react";
+import { Eye, ListChecks, MoreHorizontal, ScrollText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,11 +18,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { setCourtReservationStatus, type CourtReservationWithRequester } from "@/actions/court-reservations";
 import { courtReservationStatusEnum, type CourtReservation } from "@/db/schema";
-import { isAdminRole } from "@/lib/roles";
+import { isAdminRole, isSuperAdminRole } from "@/lib/roles";
 import { deleteFile } from "@/lib/storage";
 import ViewCourtReservationDialog from "@/components/court-reservation/dialogs/view-court-reservation-dialog";
 import DeleteCourtReservationDialog from "@/components/court-reservation/dialogs/delete-court-reservation-dialog";
 import RejectCourtReservationDialog from "@/components/court-reservation/dialogs/reject-court-reservation-dialog";
+import RecordAuditLogsDialog from "@/components/audit-logs/record-audit-logs-dialog";
 import type { MediaItem } from "@/components/file-uploader";
 
 export default function CourtReservationActionsMenu({
@@ -33,10 +34,12 @@ export default function CourtReservationActionsMenu({
   const [viewOpen, setViewOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [auditLogsOpen, setAuditLogsOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { user } = useUser();
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
+  const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
   const isOwnReservation = reservation.requesterId === user?.id;
 
   const { mutate: changeStatus, isPending: isChangingStatus } = useMutation({
@@ -86,6 +89,13 @@ export default function CourtReservationActionsMenu({
             Submission Info
           </DropdownMenuItem>
 
+          {isSuperAdmin && (
+            <DropdownMenuItem onSelect={() => setAuditLogsOpen(true)}>
+              <ScrollText />
+              Audit Logs
+            </DropdownMenuItem>
+          )}
+
           {isAdmin && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
@@ -121,6 +131,14 @@ export default function CourtReservationActionsMenu({
       <DeleteCourtReservationDialog reservation={reservation} open={deleteOpen} onOpenChange={setDeleteOpen} />
       {isAdmin && (
         <RejectCourtReservationDialog reservation={reservation} open={rejectOpen} onOpenChange={setRejectOpen} />
+      )}
+      {isSuperAdmin && (
+        <RecordAuditLogsDialog
+          entityType="court-reservation"
+          entityId={reservation.id}
+          open={auditLogsOpen}
+          onOpenChange={setAuditLogsOpen}
+        />
       )}
     </>
   );

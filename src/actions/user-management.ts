@@ -21,7 +21,9 @@ import {
   userSnapshotsTable,
 } from "@/db/schema";
 import { getAuthRole, requireAdmin, requireSuperAdmin } from "@/lib/auth";
-import { isAdminRole } from "@/lib/roles";
+import { logAudit } from "@/lib/audit";
+import { getUserDisplayInfo } from "@/lib/clerk-users";
+import { isAdminRole, roleLabel } from "@/lib/roles";
 import { bucket, r2 } from "@/lib/r2";
 import type { MediaItem } from "@/components/file-uploader";
 
@@ -161,11 +163,19 @@ export async function getUserStats(): Promise<UserStats> {
 export async function updateUserRole(userId: string, role: "admin" | "superadmin" | null) {
   await requireSuperAdmin();
 
+  const target = await getUserDisplayInfo(userId);
   const client = await clerkClient();
   // Residents have no `role` key at all, so passing `null` removes it from
   // publicMetadata rather than writing a literal "resident" string.
   await client.users.updateUserMetadata(userId, {
     publicMetadata: { role },
+  });
+
+  await logAudit({
+    action: "role-changed",
+    entityType: "user",
+    entityId: userId,
+    summary: `Changed ${target.fullName}'s role from ${roleLabel(target.role)} to ${roleLabel(role)}`,
   });
 }
 
@@ -175,11 +185,9 @@ export async function setUserBanned(userId: string, banned: boolean) {
 
   const client = await clerkClient();
   const { isSuperAdmin } = await getAuthRole();
-  if (!isSuperAdmin) {
-    const target = await client.users.getUser(userId);
-    if (isAdminRole(target.publicMetadata?.role as string | undefined)) {
-      throw new Error("Only a Super Admin can ban or unban an admin.");
-    }
+  const target = await getUserDisplayInfo(userId);
+  if (!isSuperAdmin && isAdminRole(target.role)) {
+    throw new Error("Only a Super Admin can ban or unban an admin.");
   }
 
   if (banned) {
@@ -187,14 +195,29 @@ export async function setUserBanned(userId: string, banned: boolean) {
   } else {
     await client.users.unbanUser(userId);
   }
+
+  await logAudit({
+    action: banned ? "banned" : "unbanned",
+    entityType: "user",
+    entityId: userId,
+    summary: `${banned ? "Banned" : "Unbanned"} ${target.fullName} (${target.email})`,
+  });
 }
 
 export async function deleteUser(userId: string) {
   const authUserId = await requireSuperAdmin();
   if (authUserId === userId) throw new Error("You cannot delete your own account.");
 
+  const target = await getUserDisplayInfo(userId);
   const client = await clerkClient();
   await client.users.deleteUser(userId);
+
+  await logAudit({
+    action: "deleted",
+    entityType: "user",
+    entityId: userId,
+    summary: `Deleted the account of ${target.fullName} (${target.email})`,
+  });
 }
 
 const DELETED_USERS_PAGE_SIZE = 20;
@@ -265,6 +288,12 @@ function extractR2Keys(groups: MediaGroup[]): string[] {
 
 export async function deleteAllUserData(userId: string) {
   await requireSuperAdmin();
+
+  // Read before its snapshot row is deleted below, for the audit log.
+  const [snapshot] = await db
+    .select({ fullName: userSnapshotsTable.fullName, email: userSnapshotsTable.email })
+    .from(userSnapshotsTable)
+    .where(eq(userSnapshotsTable.userId, userId));
 
   const [news, documentRequests, complaints, transparencyProjects, businesses, courtReservations, residentProfile] =
     await Promise.all([
@@ -344,6 +373,15 @@ export async function deleteAllUserData(userId: string) {
     db.delete(courtReservationsTable).where(eq(courtReservationsTable.requesterId, userId)),
     db.delete(userSnapshotsTable).where(eq(userSnapshotsTable.userId, userId)),
   ]);
+
+  await logAudit({
+    action: "data-deleted",
+    entityType: "user",
+    entityId: userId,
+    summary: snapshot
+      ? `Deleted all data of ${snapshot.fullName} (${snapshot.email})`
+      : "Deleted all data of a deleted user",
+  });
 
   // R2 has no cascading delete, so orphaned objects are cleaned up last, after the
   // rows referencing them are gone; a failure here just leaves unreferenced objects

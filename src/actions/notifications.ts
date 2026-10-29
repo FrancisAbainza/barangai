@@ -1,9 +1,10 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { and, count, desc, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNull, lt } from "drizzle-orm";
 import { db } from "@/db/config";
 import { notificationsTable, type Notification } from "@/db/schema";
+import { READ_NOTIFICATION_RETENTION_DAYS } from "@/lib/notifications";
 
 const NOTIFICATIONS_PAGE_SIZE = 20;
 
@@ -26,6 +27,15 @@ export async function getMyNotifications({
   type?: Notification["type"] | "all";
 } = {}): Promise<NotificationsPage> {
   const userId = await requireUserId();
+
+  // Expired read notifications are cleared out when the list is opened. Only on the first page,
+  // so loading more doesn't shift the offsets.
+  if (offset === 0) {
+    const cutoff = new Date(Date.now() - READ_NOTIFICATION_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    await db
+      .delete(notificationsTable)
+      .where(and(eq(notificationsTable.userId, userId), lt(notificationsTable.readAt, cutoff)));
+  }
 
   const conditions = [eq(notificationsTable.userId, userId)];
   if (type !== "all") conditions.push(eq(notificationsTable.type, type));
