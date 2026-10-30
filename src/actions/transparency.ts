@@ -142,13 +142,19 @@ export async function getTransparencyProjects({
   page = 0,
   search,
   category,
+  authorId,
 }: {
   page?: number;
   search?: string;
   category?: TransparencyProject["category"] | "all";
+  // Narrows the list to one admin's projects, for their profile.
+  authorId?: string;
 } = {}): Promise<TransparencyProjectPage> {
   const conditions = [];
 
+  if (authorId) {
+    conditions.push(eq(transparencyProjectsTable.authorId, authorId));
+  }
   if (category && category !== "all") {
     conditions.push(eq(transparencyProjectsTable.category, category));
   }

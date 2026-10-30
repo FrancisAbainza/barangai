@@ -9,34 +9,39 @@ import type { ResidentProfile } from "@/db/schema";
 interface OwnProfileViewProps {
   profileUser: User;
   residentProfile: ResidentProfile | null;
+  // Admins have no Resident Credentials, and see their own actions in Audit Logs instead.
+  isAdmin: boolean;
 }
 
 export default function OwnProfileView({
   profileUser,
   residentProfile,
+  isAdmin,
 }: OwnProfileViewProps) {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
       <ProfileHeader profileUser={profileUser} />
 
-      <ResidentProfileSection
-        userId={profileUser.id}
-        defaultValues={{
-          firstName: residentProfile?.firstName ?? profileUser.firstName ?? "",
-          lastName: residentProfile?.lastName ?? profileUser.lastName ?? "",
-          middleName: residentProfile?.middleName ?? "",
-          birthdate: residentProfile?.birthdate ?? "",
-          sex: residentProfile?.sex ?? "Male",
-          civilStatus: residentProfile?.civilStatus ?? "Single",
-          contactNumber: residentProfile?.contactNumber ?? "",
-          address: residentProfile?.address ?? "",
-          validIdType: residentProfile?.validIdType ?? VALID_ID_TYPES[0],
-          validIdFront: (residentProfile?.validIdFront as MediaItem[]) ?? [],
-          validIdBack: (residentProfile?.validIdBack as MediaItem[]) ?? [],
-        }}
-      />
+      {!isAdmin && (
+        <ResidentProfileSection
+          userId={profileUser.id}
+          defaultValues={{
+            firstName: residentProfile?.firstName ?? profileUser.firstName ?? "",
+            lastName: residentProfile?.lastName ?? profileUser.lastName ?? "",
+            middleName: residentProfile?.middleName ?? "",
+            birthdate: residentProfile?.birthdate ?? "",
+            sex: residentProfile?.sex ?? "Male",
+            civilStatus: residentProfile?.civilStatus ?? "Single",
+            contactNumber: residentProfile?.contactNumber ?? "",
+            address: residentProfile?.address ?? "",
+            validIdType: residentProfile?.validIdType ?? VALID_ID_TYPES[0],
+            validIdFront: (residentProfile?.validIdFront as MediaItem[]) ?? [],
+            validIdBack: (residentProfile?.validIdBack as MediaItem[]) ?? [],
+          }}
+        />
+      )}
 
-      <ProfileTabs userId={profileUser.id} />
+      <ProfileTabs userId={profileUser.id} isAdmin={isAdmin} showAuditLogs={isAdmin} />
     </div>
   );
 }

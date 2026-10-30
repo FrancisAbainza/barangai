@@ -105,13 +105,19 @@ export async function getNews({
   page = 0,
   search,
   category,
+  authorId,
 }: {
   page?: number;
   search?: string;
   category?: News["category"] | "all";
+  // Narrows the list to one admin's posts, for their profile.
+  authorId?: string;
 } = {}): Promise<NewsPage> {
   const conditions = [];
 
+  if (authorId) {
+    conditions.push(eq(newsTable.authorId, authorId));
+  }
   if (category && category !== "all") {
     conditions.push(eq(newsTable.category, category));
   }

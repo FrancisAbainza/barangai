@@ -77,18 +77,20 @@ function formatLogDate(date: Date) {
   });
 }
 
-function LogRowSkeleton() {
+function LogRowSkeleton({ showActor }: { showActor: boolean }) {
   return (
     <TableRow>
       <TableCell>
         <Skeleton className="h-4 w-32" />
       </TableCell>
-      <TableCell>
-        <div className="space-y-1.5">
-          <Skeleton className="h-3.5 w-32" />
-          <Skeleton className="h-3 w-20" />
-        </div>
-      </TableCell>
+      {showActor && (
+        <TableCell>
+          <div className="space-y-1.5">
+            <Skeleton className="h-3.5 w-32" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+        </TableCell>
+      )}
       <TableCell>
         <Skeleton className="h-4 w-28" />
       </TableCell>
@@ -102,7 +104,9 @@ function LogRowSkeleton() {
   );
 }
 
-export default function AuditLogsTable() {
+// With `actorId`, only that admin's actions, for the Audit Logs on their profile.
+export default function AuditLogsTable({ actorId }: { actorId?: string }) {
+  const showActor = !actorId;
   const [search, setSearch] = useState("");
   const [entityType, setEntityType] = useState("all");
   const [action, setAction] = useState("all");
@@ -124,10 +128,11 @@ export default function AuditLogsTable() {
   }
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["audit-logs", { search: debouncedSearch, entityType, action, dateFrom, dateTo }],
+    queryKey: ["audit-logs", { actorId, search: debouncedSearch, entityType, action, dateFrom, dateTo }],
     queryFn: ({ pageParam }) =>
       getAuditLogs({
         offset: pageParam,
+        actorId,
         search: debouncedSearch,
         entityType: entityType as AuditEntityType | "all",
         action: action as AuditAction | "all",
@@ -148,7 +153,7 @@ export default function AuditLogsTable() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by admin, reference no., or details…"
+            placeholder={showActor ? "Search by admin, reference no., or details…" : "Search by reference no. or details…"}
             className="pl-8"
           />
         </div>
@@ -229,7 +234,11 @@ export default function AuditLogsTable() {
         <EmptyState
           icon={ScrollText}
           title="No audit logs found"
-          description="Changes made by admins that match your search and filters will appear here."
+          description={
+            showActor
+              ? "Changes made by admins that match your search and filters will appear here."
+              : "Changes made by this admin that match your search and filters will appear here."
+          }
         />
       ) : (
         <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
@@ -237,7 +246,7 @@ export default function AuditLogsTable() {
             <TableHeader>
               <TableRow>
                 <TableHead>Date & Time</TableHead>
-                <TableHead>Done By</TableHead>
+                {showActor && <TableHead>Done By</TableHead>}
                 <TableHead>Category</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Details</TableHead>
@@ -246,19 +255,21 @@ export default function AuditLogsTable() {
             <TableBody>
               {isLoading ? (
                 <>
-                  <LogRowSkeleton />
-                  <LogRowSkeleton />
-                  <LogRowSkeleton />
+                  <LogRowSkeleton showActor={showActor} />
+                  <LogRowSkeleton showActor={showActor} />
+                  <LogRowSkeleton showActor={showActor} />
                 </>
               ) : (
                 <>
                   {logs.map((log) => (
                     <TableRow key={log.id} className="cursor-pointer" onClick={() => setViewedLog(log)}>
                       <TableCell className="text-muted-foreground">{formatLogDate(log.createdAt)}</TableCell>
-                      <TableCell>
-                        <p className="font-medium truncate">{log.actorName}</p>
-                        <p className="text-xs text-muted-foreground truncate">{roleLabel(log.actorRole)}</p>
-                      </TableCell>
+                      {showActor && (
+                        <TableCell>
+                          <p className="font-medium truncate">{log.actorName}</p>
+                          <p className="text-xs text-muted-foreground truncate">{roleLabel(log.actorRole)}</p>
+                        </TableCell>
+                      )}
                       <TableCell>{AUDIT_ENTITY_LABELS[log.entityType]}</TableCell>
                       <TableCell>
                         <Badge variant={auditActionBadgeVariant(log.action)}>{AUDIT_ACTION_LABELS[log.action]}</Badge>
@@ -267,9 +278,13 @@ export default function AuditLogsTable() {
                     </TableRow>
                   ))}
                   {hasNextPage && (
-                    <LoadMoreTrigger colSpan={5} onIntersect={fetchNextPage} disabled={isFetchingNextPage} />
+                    <LoadMoreTrigger
+                      colSpan={showActor ? 5 : 4}
+                      onIntersect={fetchNextPage}
+                      disabled={isFetchingNextPage}
+                    />
                   )}
-                  {isFetchingNextPage && <LogRowSkeleton />}
+                  {isFetchingNextPage && <LogRowSkeleton showActor={showActor} />}
                 </>
               )}
             </TableBody>

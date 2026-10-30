@@ -5,6 +5,7 @@ import OtherProfileView from "@/components/profile/other-profile-view";
 import DeletedProfileView from "@/components/profile/deleted-profile-view";
 import { getResidentProfile } from "@/actions/resident-profile";
 import { getAuthRole } from "@/lib/auth";
+import { isAdminRole } from "@/lib/roles";
 
 export default async function ProfilePage({
   params,
@@ -12,7 +13,7 @@ export default async function ProfilePage({
   params: Promise<{ userId: string }>;
 }) {
   const { userId: profileUserId } = await params;
-  const { userId, isAdmin } = await getAuthRole();
+  const { userId, isAdmin, isSuperAdmin } = await getAuthRole();
 
   if (userId !== profileUserId && !isAdmin) {
     redirect("/portal");
@@ -29,11 +30,21 @@ export default async function ProfilePage({
     return <DeletedProfileView profileUserId={profileUserId} residentProfile={residentProfile} />;
   }
 
+  const isProfileAdmin = isAdminRole(profileUser.publicMetadata?.role as string | undefined);
+
   if (userId !== profileUserId) {
-    return <OtherProfileView profileUser={profileUser} residentProfile={residentProfile} />;
+    return (
+      <OtherProfileView
+        profileUser={profileUser}
+        residentProfile={residentProfile}
+        isAdmin={isProfileAdmin}
+        // Audit logs are for super admins, so other admins can't read each other's.
+        showAuditLogs={isProfileAdmin && isSuperAdmin}
+      />
+    );
   }
 
   return (
-    <OwnProfileView profileUser={profileUser} residentProfile={residentProfile} />
+    <OwnProfileView profileUser={profileUser} residentProfile={residentProfile} isAdmin={isProfileAdmin} />
   );
 }

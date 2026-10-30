@@ -74,14 +74,15 @@ function LoadMoreTrigger({ onIntersect, disabled }: { onIntersect: () => void; d
   return <div ref={ref} className="h-1" />;
 }
 
-export default function NewsList() {
+// With `authorId`, only that admin's posts, for their profile.
+export default function NewsList({ authorId }: { authorId?: string }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<News["category"] | "all">("all");
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["news", { search: debouncedSearch, category }],
-    queryFn: ({ pageParam }) => getNews({ page: pageParam, search: debouncedSearch, category }),
+    queryKey: ["news", { authorId, search: debouncedSearch, category }],
+    queryFn: ({ pageParam }) => getNews({ page: pageParam, search: debouncedSearch, category, authorId }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextPage,
   });

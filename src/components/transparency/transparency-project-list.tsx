@@ -77,16 +77,17 @@ function LoadMoreTrigger({ onIntersect, disabled }: { onIntersect: () => void; d
   return <div ref={ref} className="h-1" />;
 }
 
-export default function TransparencyProjectList() {
+// With `authorId`, only that admin's projects, for their profile.
+export default function TransparencyProjectList({ authorId }: { authorId?: string }) {
   const [view, setView] = useState<"list" | "map">("list");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<TransparencyProject["category"] | "all">("all");
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["transparency-projects", { search: debouncedSearch, category }],
+    queryKey: ["transparency-projects", { authorId, search: debouncedSearch, category }],
     queryFn: ({ pageParam }) =>
-      getTransparencyProjects({ page: pageParam, search: debouncedSearch, category }),
+      getTransparencyProjects({ page: pageParam, search: debouncedSearch, category, authorId }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextPage,
   });

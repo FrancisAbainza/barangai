@@ -13,16 +13,19 @@ import { uploadFile } from "@/lib/storage";
 import { createBusiness } from "@/actions/business";
 import { getResidentProfile } from "@/actions/resident-profile";
 import { useDialogParam, useDialogPrefill } from "@/hooks/use-dialog-param";
+import { isAdminRole } from "@/lib/roles";
 
 export default function CreateBusinessDialog() {
   const [open, setOpen] = useDialogParam("submit-business");
   const prefill = useDialogPrefill("submit-business");
 
   const { user } = useUser();
+  // Admins don't have Resident Credentials, so only residents need them to submit.
+  const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
   const { data: residentProfile, isLoading: isResidentProfileLoading } = useQuery({
     queryKey: ["resident-profile", user?.id],
     queryFn: () => getResidentProfile(user!.id),
-    enabled: !!user?.id,
+    enabled: !!user?.id && !isAdmin,
   });
 
   const queryClient = useQueryClient();
@@ -61,7 +64,7 @@ export default function CreateBusinessDialog() {
     },
   });
 
-  const canSubmit = !isResidentProfileLoading && !!residentProfile;
+  const canSubmit = isAdmin || (!isResidentProfileLoading && !!residentProfile);
 
   return (
     <Dialog open={open && canSubmit} onOpenChange={setOpen}>
@@ -72,7 +75,7 @@ export default function CreateBusinessDialog() {
             Add Business
           </Button>
         </DialogTrigger>
-        {!isResidentProfileLoading && !residentProfile && (
+        {!canSubmit && !isResidentProfileLoading && (
           <Link
             href={`/portal/profile/${user?.id}`}
             className="self-center text-xs text-primary underline underline-offset-4"

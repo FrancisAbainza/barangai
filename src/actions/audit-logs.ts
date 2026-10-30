@@ -2,7 +2,7 @@
 
 import { clerkClient } from "@clerk/nextjs/server";
 import { and, desc, eq, gte, ilike, inArray, lte, or } from "drizzle-orm";
-import { requireSuperAdmin } from "@/lib/auth";
+import { getAuthRole } from "@/lib/auth";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { auditLogsTable, userSnapshotsTable, type AuditLog } from "@/db/schema";
@@ -25,6 +25,7 @@ export async function getAuditLogs({
   search,
   entityType,
   entityId,
+  actorId,
   action,
   dateFrom,
   dateTo,
@@ -34,14 +35,22 @@ export async function getAuditLogs({
   entityType?: AuditEntityType | "all";
   // Narrows the list to one record of `entityType`, for the Audit Logs in its actions menu.
   entityId?: string | number;
+  // Narrows the list to one admin's actions, for the Audit Logs on their profile.
+  actorId?: string;
   action?: AuditAction | "all";
   dateFrom?: string;
   dateTo?: string;
 } = {}): Promise<AuditLogsPage> {
-  await requireSuperAdmin();
+  // Admins can read their own entries, on their profile. Everything else is for super admins.
+  const { userId, isAdmin, isSuperAdmin } = await getAuthRole();
+  if (!userId) throw new Error("Unauthorized");
+  if (!isSuperAdmin && !(isAdmin && actorId === userId)) throw new Error("Forbidden");
 
   const conditions = [];
 
+  if (actorId) {
+    conditions.push(eq(auditLogsTable.actorId, actorId));
+  }
   if (entityType && entityType !== "all") {
     conditions.push(eq(auditLogsTable.entityType, entityType));
   }

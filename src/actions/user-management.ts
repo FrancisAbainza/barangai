@@ -171,12 +171,33 @@ export async function updateUserRole(userId: string, role: "admin" | "superadmin
     publicMetadata: { role },
   });
 
+  // Admins don't have Resident Credentials, so making someone an admin clears theirs,
+  // valid ID photos included.
+  const [clearedProfile] = isAdminRole(role)
+    ? await db
+        .delete(residentProfilesTable)
+        .where(eq(residentProfilesTable.userId, userId))
+        .returning({ validIdFront: residentProfilesTable.validIdFront, validIdBack: residentProfilesTable.validIdBack })
+    : [];
+
   await logAudit({
     action: "role-changed",
     entityType: "user",
     entityId: userId,
-    summary: `Changed ${target.fullName}'s role from ${roleLabel(target.role)} to ${roleLabel(role)}`,
+    summary:
+      `Changed ${target.fullName}'s role from ${roleLabel(target.role)} to ${roleLabel(role)}` +
+      (clearedProfile ? " and cleared their Resident Credentials" : ""),
   });
+
+  const keys = clearedProfile ? extractR2Keys([clearedProfile.validIdFront, clearedProfile.validIdBack]) : [];
+  if (keys.length > 0) {
+    await r2.send(
+      new DeleteObjectsCommand({
+        Bucket: bucket,
+        Delete: { Objects: keys.map((Key) => ({ Key })) },
+      })
+    );
+  }
 }
 
 export async function setUserBanned(userId: string, banned: boolean) {

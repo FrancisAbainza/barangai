@@ -64,6 +64,8 @@ export default function UserActionsMenu({
     mutationFn: (newRole: "admin" | "superadmin" | null) => updateUserRole(userId, newRole),
     onSuccess: (_data, newRole) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      // Making someone an admin clears their Resident Credentials.
+      queryClient.invalidateQueries({ queryKey: ["resident-profile", userId] });
       router.refresh();
       const label =
         newRole === "admin" ? "an Admin" : newRole === "superadmin" ? "a Super Admin" : "a Resident";
