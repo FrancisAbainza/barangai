@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -16,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn, formatDateTime } from "@/lib/utils";
-import { isSuperAdminRole, roleLabel } from "@/lib/roles";
+import { isAdminRole, isSuperAdminRole, roleLabel } from "@/lib/roles";
 import { setNewsReaction } from "@/actions/news";
 import type { NewsPage, NewsWithAuthor } from "@/actions/news";
 import { MediaGrid, AttachmentList } from "@/components/media-gallery";
@@ -229,6 +230,22 @@ export default function NewsCard({ news }: { news: NewsWithAuthor }) {
   const categoryConfig = CATEGORY_CONFIG[news.category];
   const CategoryIcon = categoryConfig.icon;
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const { user } = useUser();
+  const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
+
+  const avatar = (
+    <div className="relative size-10 rounded-full overflow-hidden bg-muted shrink-0">
+      {news.authorImageUrl && (
+        <Image
+          src={news.authorImageUrl}
+          alt={news.authorName}
+          fill
+          className="object-cover"
+          unoptimized
+        />
+      )}
+    </div>
+  );
 
   return (
     // On mobile, bleed past the parent's px-6 gutter and drop the card chrome (feed-style),
@@ -236,17 +253,18 @@ export default function NewsCard({ news }: { news: NewsWithAuthor }) {
     <Card className="-mx-6 rounded-none border-x-0 border-t-0 shadow-none md:mx-0 md:rounded-xl md:border md:shadow-sm">
       <CardHeader className="p-4 pb-3 flex-row items-start justify-between gap-2 space-y-0">
         <div className="flex items-center gap-3">
-          <div className="relative size-10 rounded-full overflow-hidden bg-muted shrink-0">
-            {news.authorImageUrl && (
-              <Image
-                src={news.authorImageUrl}
-                alt={news.authorName}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            )}
-          </div>
+          {/* Only admins can open other users' profiles. */}
+          {isAdmin ? (
+            <Link
+              href={`/portal/profile/${news.authorId}`}
+              aria-label={`View ${news.authorName}'s profile`}
+              className="shrink-0 rounded-full transition-opacity hover:opacity-80"
+            >
+              {avatar}
+            </Link>
+          ) : (
+            avatar
+          )}
           <div>
             <div className="flex items-center gap-1.5">
               <p className="font-semibold text-sm leading-tight">{news.authorName}</p>

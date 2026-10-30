@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getDeletedUsers } from "@/actions/user-management";
@@ -100,6 +101,7 @@ function LoadMoreTrigger({
 }
 
 export default function DeletedUsersTable() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -153,7 +155,11 @@ export default function DeletedUsersTable() {
             ) : (
               <>
                 {users.map((user) => (
-                  <TableRow key={user.userId}>
+                  <TableRow
+                    key={user.userId}
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/portal/profile/${user.userId}`)}
+                  >
                     <TableCell>
                       <div className="min-w-0">
                         <p className="font-medium truncate">{user.fullName}</p>
@@ -171,7 +177,8 @@ export default function DeletedUsersTable() {
                     <TableCell className="text-muted-foreground">
                       {formatDate(user.deletedAt)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    {/* Clicks in the menu (and its portaled dialogs) bubble to the row, which would open the profile too. */}
+                    <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                       <DeletedUserActionsMenu userId={user.userId} userName={user.fullName} />
                     </TableCell>
                   </TableRow>

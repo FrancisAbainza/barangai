@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { deleteUser } from "@/actions/user-management";
@@ -28,11 +29,13 @@ export default function DeleteUserDialog({
   onOpenChange,
 }: DeleteUserDialogProps) {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { mutate: handleConfirm, isPending } = useMutation({
     mutationFn: () => deleteUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      router.refresh();
       toast.success(`${userName} has been deleted.`);
       onOpenChange(false);
     },

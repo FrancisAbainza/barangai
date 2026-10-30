@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ interface UserActionsMenuProps {
   userName: string;
   role: string;
   isBanned: boolean;
+  showViewProfile?: boolean;
 }
 
 export default function UserActionsMenu({
@@ -44,10 +46,12 @@ export default function UserActionsMenu({
   userName,
   role,
   isBanned,
+  showViewProfile = true,
 }: UserActionsMenuProps) {
   const [banDialogOpen, setBanDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { user } = useUser();
   const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
   const isSelf = user?.id === userId;
@@ -60,6 +64,7 @@ export default function UserActionsMenu({
     mutationFn: (newRole: "admin" | "superadmin" | null) => updateUserRole(userId, newRole),
     onSuccess: (_data, newRole) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      router.refresh();
       const label =
         newRole === "admin" ? "an Admin" : newRole === "superadmin" ? "a Super Admin" : "a Resident";
       toast.success(`${userName} is now ${label}.`);
@@ -68,6 +73,9 @@ export default function UserActionsMenu({
       toast.error(error instanceof Error ? error.message : "Something went wrong. Please try again.");
     },
   });
+
+  // e.g. a plain admin viewing another admin's profile has nothing they can do.
+  if (!showViewProfile && !isSuperAdmin && !canBan && !canDelete) return null;
 
   return (
     <>
@@ -79,12 +87,14 @@ export default function UserActionsMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem asChild>
-            <Link href={`/portal/profile/${userId}`}>
-              <UserRound />
-              View Profile
-            </Link>
-          </DropdownMenuItem>
+          {showViewProfile && (
+            <DropdownMenuItem asChild>
+              <Link href={`/portal/profile/${userId}`}>
+                <UserRound />
+                View Profile
+              </Link>
+            </DropdownMenuItem>
+          )}
           {isSuperAdmin && (
             <>
               <DropdownMenuSub>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { SignInButton, useUser } from "@clerk/nextjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { addNewsComment, deleteNewsComment, getNewsComments } from "@/actions/news";
 import type { NewsCommentWithAuthor, NewsWithAuthor } from "@/actions/news";
+import { isAdminRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
 function formatRelativeTime(date: Date): string {
@@ -36,19 +38,34 @@ function Avatar({ src, alt }: { src: string; alt: string }) {
 function CommentItem({
   comment,
   isOwn,
+  isAdmin,
   onDelete,
   onReply,
   isReplying,
 }: {
   comment: NewsCommentWithAuthor;
   isOwn: boolean;
+  isAdmin: boolean;
   onDelete: (id: number) => void;
   onReply?: (comment: NewsCommentWithAuthor) => void;
   isReplying?: boolean;
 }) {
+  const avatar = <Avatar src={comment.authorImageUrl} alt={comment.authorName} />;
+
   return (
     <div className="group flex items-start gap-2">
-      <Avatar src={comment.authorImageUrl} alt={comment.authorName} />
+      {/* Only admins can open other users' profiles, so residents only get a link on their own comments. */}
+      {isAdmin || isOwn ? (
+        <Link
+          href={`/portal/profile/${comment.userId}`}
+          aria-label={`View ${comment.authorName}'s profile`}
+          className="shrink-0 rounded-full transition-opacity hover:opacity-80"
+        >
+          {avatar}
+        </Link>
+      ) : (
+        avatar
+      )}
       <div className="flex-1 min-w-0">
         <div className="rounded-2xl bg-muted px-3 py-2">
           <p className="text-xs font-semibold">{comment.authorName}</p>
@@ -93,6 +110,7 @@ export default function CommentsDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { user } = useUser();
+  const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
   const [replyTo, setReplyTo] = useState<NewsCommentWithAuthor | null>(null);
@@ -209,6 +227,7 @@ export default function CommentsDialog({
                 <CommentItem
                   comment={comment}
                   isOwn={!!user && comment.userId === user.id}
+                  isAdmin={isAdmin}
                   onDelete={removeComment}
                   onReply={
                     user
@@ -228,6 +247,7 @@ export default function CommentsDialog({
                         key={reply.id}
                         comment={reply}
                         isOwn={!!user && reply.userId === user.id}
+                        isAdmin={isAdmin}
                         onDelete={removeComment}
                         onReply={(target) => {
                           setReplyTo((current) => (current?.id === target.id ? null : target));

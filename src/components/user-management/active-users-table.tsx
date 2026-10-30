@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getUsers } from "@/actions/user-management";
@@ -132,6 +133,7 @@ function LoadMoreTrigger({
 }
 
 export default function ActiveUsersTable() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -201,7 +203,11 @@ export default function ActiveUsersTable() {
             ) : (
               <>
                 {users.map((user) => (
-                  <TableRow key={user.id}>
+                  <TableRow
+                    key={user.id}
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/portal/profile/${user.id}`)}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Image
@@ -253,7 +259,8 @@ export default function ActiveUsersTable() {
                     >
                       {formatLastSignIn(user.lastSignInAt)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    {/* Clicks in the menu (and its portaled dialogs) bubble to the row, which would open the profile too. */}
+                    <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                       <UserActionsMenu
                         userId={user.id}
                         userName={user.fullName}

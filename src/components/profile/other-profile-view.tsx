@@ -13,7 +13,8 @@ interface OtherProfileViewProps {
 export default function OtherProfileView({ profileUser, residentProfile }: OtherProfileViewProps) {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
-      <ProfileHeader profileUser={profileUser} />
+      {/* Only admins can view another user's profile, so the actions menu is always theirs to use. */}
+      <ProfileHeader profileUser={profileUser} showActions />
 
       {residentProfile ? (
         <ResidentProfileView profile={residentProfile} />

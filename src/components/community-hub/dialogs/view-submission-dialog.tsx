@@ -1,10 +1,12 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Ban, IdCard, MapPin, Store, UserCog } from "lucide-react";
+import { Ban, IdCard, MapPin, Store, UserCog, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -250,6 +252,15 @@ export default function ViewSubmissionDialog({
                 </div>
               </>
             )}
+
+            <DialogFooter>
+              <Button asChild variant="outline">
+                <Link href={`/portal/profile/${business.ownerId}`} onClick={() => onOpenChange(false)}>
+                  <UserRound />
+                  View Profile
+                </Link>
+              </Button>
+            </DialogFooter>
           </TabsContent>
         </Tabs>
       </DialogContent>

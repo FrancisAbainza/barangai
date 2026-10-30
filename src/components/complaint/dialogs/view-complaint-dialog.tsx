@@ -1,13 +1,24 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, CheckCircle2, IdCard, MapPin, MessageSquareWarning, Sparkles, UserCog, Users } from "lucide-react";
+import {
+  Ban,
+  CheckCircle2,
+  IdCard,
+  MapPin,
+  MessageSquareWarning,
+  Sparkles,
+  UserCog,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -303,6 +314,17 @@ export default function ViewComplaintDialog({
                   <ValidIdPreview label="Valid ID (Back)" item={(profile.validIdBack as MediaItem[])[0]} />
                 </div>
               </>
+            )}
+
+            {!complaint.isFollowing && (
+              <DialogFooter>
+                <Button asChild variant="outline">
+                  <Link href={`/portal/profile/${complaint.complainantId}`} onClick={() => onOpenChange(false)}>
+                    <UserRound />
+                    View Profile
+                  </Link>
+                </Button>
+              </DialogFooter>
             )}
           </TabsContent>
 
