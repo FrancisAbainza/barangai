@@ -15,7 +15,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/empty-state";
 import ViewAuditLogDialog from "@/components/audit-logs/view-audit-log-dialog";
-import { getAuditLogs, type AuditLogWithActor } from "@/actions/audit-logs";
+import { getAuditLogs } from "@/actions/audit-logs";
+import type { AuditLogWithActor } from "@/lib/audit";
 import { AUDIT_ACTION_LABELS, auditActionBadgeVariant, type AuditEntityType } from "@/lib/audit-logs";
 import { roleLabel } from "@/lib/roles";
 import { formatDateTime } from "@/lib/utils";

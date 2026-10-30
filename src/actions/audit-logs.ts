@@ -8,8 +8,6 @@ import { auditLogsTable } from "@/db/schema";
 
 const AUDIT_LOGS_PAGE_SIZE = 20;
 
-export type { AuditLogWithActor };
-
 export type AuditLogsPage = {
   items: AuditLogWithActor[];
   nextOffset: number | null;

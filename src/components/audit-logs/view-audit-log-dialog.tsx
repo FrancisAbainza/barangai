@@ -21,7 +21,7 @@ import {
 } from "@/lib/audit-logs";
 import { roleLabel } from "@/lib/roles";
 import { formatDateTime } from "@/lib/utils";
-import type { AuditLogWithActor } from "@/actions/audit-logs";
+import type { AuditLogWithActor } from "@/lib/audit";
 
 interface ViewAuditLogDialogProps {
   log: AuditLogWithActor;

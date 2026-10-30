@@ -36,7 +36,8 @@ import DatePicker from "@/components/date-picker";
 import EmptyState from "@/components/empty-state";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import ViewAuditLogDialog from "@/components/audit-logs/view-audit-log-dialog";
-import { getAuditLogs, type AuditLogWithActor } from "@/actions/audit-logs";
+import { getAuditLogs } from "@/actions/audit-logs";
+import type { AuditLogWithActor } from "@/lib/audit";
 import {
   AUDIT_ACTION_LABELS,
   AUDIT_ENTITY_LABELS,
