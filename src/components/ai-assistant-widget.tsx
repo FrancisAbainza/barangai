@@ -77,6 +77,7 @@ export function AiAssistantWidget() {
       sendMessage={sendMessage}
       status={status}
       stop={stop}
+      isAdmin={isAdmin}
       onNavigate={() => setOpen(false)}
     />
   );

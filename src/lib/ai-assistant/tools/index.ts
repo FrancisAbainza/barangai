@@ -3,10 +3,13 @@ import type { UserLocation } from "@/lib/ai-assistant/tools/get-user-location";
 
 // What the tools know about the request. The route gets it from the session, the settings and the
 // chat history, never from the model. A tool that needs any of it is a `buildXTool(context)`, and
-// one that doesn't is exported as the tool itself. The user's role isn't in it: residents and admins
-// get separate tools, so no tool checks it.
+// one that doesn't is exported as the tool itself. Whether the user is a resident or an admin isn't
+// in it: they get separate tools, so no tool checks it.
 export type AssistantToolContext = {
   userId: string;
+  // Among admins, only super admins see every admin's audit logs and the Audit Logs page
+  // (findAuditLogs and the admins' navigateToPage).
+  isSuperAdmin: boolean;
   settings: BarangaySettingsValues;
   userLocation: UserLocation | null;
 };
@@ -23,7 +26,7 @@ export type AssistantToolContext = {
 //   in the page folders below and in both lists.
 //
 // There are three kinds of tools:
-// - Lookup tools (find*, getMySubmissions, getHandledSubmissions, getSubmissionOverview,
+// - Lookup tools (find*, getMySubmissions, getHandledSubmissions, getSubmissionOverview, findAuditLogs,
 //   calculateCourtFee, checkCourtAvailability) return data the model answers from, with an `instruction` for the reply
 //   and `buttonShown: false`, without which the reply sometimes pointed to a button that wasn't there.
 // - Button tools (navigateToPage, openFormDialog, open*) don't act by themselves. They're built with

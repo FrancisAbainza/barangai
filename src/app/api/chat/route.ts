@@ -14,7 +14,7 @@ import { getAuthRole } from "@/lib/auth";
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  const { userId, isAdmin } = await getAuthRole();
+  const { userId, isAdmin, isSuperAdmin } = await getAuthRole();
   if (!userId) {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     getOfficials("sk"),
   ]);
   // Residents and admins have separate assistants: their own tools and system prompt.
-  const toolContext = { userId, settings, userLocation: getSharedUserLocation(messages) };
+  const toolContext = { userId, isSuperAdmin, settings, userLocation: getSharedUserLocation(messages) };
   const tools = isAdmin ? buildAdminTools(toolContext) : buildResidentTools(toolContext);
 
   const result = streamText({
@@ -36,7 +36,13 @@ export async function POST(req: Request) {
     // Low, because replies repeat exact details from the tools and settings. At OpenAI's default
     // of 1, the model now and then miscopies one, e.g. a business's "83C7+WRC" address as "81C7+WRC".
     temperature: 0.2,
-    system: buildSystemPrompt(context, settings, { barangay: barangayOfficials, sk: skOfficials }, isAdmin),
+    system: buildSystemPrompt(
+      context,
+      settings,
+      { barangay: barangayOfficials, sk: skOfficials },
+      isAdmin,
+      isSuperAdmin,
+    ),
     // Skips a getUserLocation call the browser never answered, e.g. when the user sent another
     // message instead of responding to the permission prompt. OpenAI rejects a call with no result.
     messages: await convertToModelMessages(messages, { tools, ignoreIncompleteToolCalls: true }),

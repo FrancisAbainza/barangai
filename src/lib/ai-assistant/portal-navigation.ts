@@ -44,6 +44,10 @@ export const PORTAL_NAVIGATION_TARGETS = {
     label: "Barangay Settings",
     href: "/portal/barangay-settings",
   },
+  "audit-logs": {
+    label: "Audit Logs",
+    href: "/portal/audit-logs",
+  },
 } as const satisfies Record<string, { label: string; href: string }>;
 
 export type PortalNavigationTargetId = keyof typeof PORTAL_NAVIGATION_TARGETS;

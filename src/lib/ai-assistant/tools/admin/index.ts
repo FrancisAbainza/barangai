@@ -1,7 +1,8 @@
 import type { AssistantToolContext } from "@/lib/ai-assistant/tools";
+import { buildFindAuditLogsTool } from "@/lib/ai-assistant/tools/admin/find-audit-logs";
 import { buildGetHandledSubmissionsTool } from "@/lib/ai-assistant/tools/admin/get-handled-submissions";
 import { getSubmissionOverviewTool } from "@/lib/ai-assistant/tools/admin/get-submission-overview";
-import { navigateToPageTool } from "@/lib/ai-assistant/tools/admin/navigate-to-page";
+import { buildNavigateToPageTool } from "@/lib/ai-assistant/tools/admin/navigate-to-page";
 import { openFormDialogTool } from "@/lib/ai-assistant/tools/admin/open-form-dialog";
 import { openSubmissionDetailsTool } from "@/lib/ai-assistant/tools/admin/open-submission-details";
 import { buildFindBusinessesTool } from "@/lib/ai-assistant/tools/community-hub/find-businesses";
@@ -17,8 +18,8 @@ import { openTransparencyProjectsTool } from "@/lib/ai-assistant/tools/transpare
 // The admins' assistant's tools. Its system prompt is ADMIN_PROMPT (../../system-prompt.ts).
 export function buildAdminTools(context: AssistantToolContext) {
   return {
-    // Any page
-    navigateToPage: navigateToPageTool,
+    // Any page. Audit Logs is among them for super admins only.
+    navigateToPage: buildNavigateToPageTool(context),
     openFormDialog: openFormDialogTool,
     // Court Reservation
     calculateCourtFee: buildCalculateCourtFeeTool(context),
@@ -38,6 +39,8 @@ export function buildAdminTools(context: AssistantToolContext) {
     // Transparency
     findTransparencyProjects: findTransparencyProjectsTool,
     openTransparencyProjects: openTransparencyProjectsTool,
+    // Audit Logs: every admin's changes for super admins, and only their own for the others
+    findAuditLogs: buildFindAuditLogsTool(context),
     // For findBusinesses
     getUserLocation: getUserLocationTool,
   };
