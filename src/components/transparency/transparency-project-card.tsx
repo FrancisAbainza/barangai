@@ -359,7 +359,9 @@ export default function TransparencyProjectCard({ project }: { project: Transpar
 
         <h3 className="font-bold text-base">{project.title}</h3>
 
-        <p className="text-sm text-muted-foreground leading-relaxed">{project.description}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap wrap-break-word">
+          {project.description}
+        </p>
 
         {(formattedBudget || project.location) && (
           <div className="flex flex-wrap items-center gap-3 text-sm">

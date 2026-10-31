@@ -291,7 +291,9 @@ export default function NewsCard({ news }: { news: NewsWithAuthor }) {
 
         <h3 className="font-bold text-base">{news.title}</h3>
 
-        <p className="text-sm text-muted-foreground leading-relaxed">{news.content}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap wrap-break-word">
+          {news.content}
+        </p>
 
         <MediaGrid media={news.media} />
 

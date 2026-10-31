@@ -3,16 +3,17 @@ import Link from "next/link";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import {
   ArrowRight,
-  Bot,
-  BrainCircuit,
+  ArrowUpRight,
   CalendarCheck,
   ChartColumn,
-  Cloud,
   Eye,
   FileText,
   Flag,
   LockKeyhole,
   MapPin,
+  Scale,
+  ScrollText,
+  ShieldCheck,
   Store,
   Target,
   TriangleAlert,
@@ -80,30 +81,40 @@ const services: Service[] = [
   },
 ];
 
-type TechFeature = {
+type Policy = {
   icon: LucideIcon;
   title: string;
   description: string;
+  cta: string;
+  href: string;
+  external?: boolean;
 };
 
-const techFeatures: Record<"ai" | "assistant" | "cloud", TechFeature> = {
-  ai: {
-    icon: BrainCircuit,
-    title: "Artificial Intelligence",
+const policies: Record<"dataPrivacyAct" | "privacy" | "terms", Policy> = {
+  dataPrivacyAct: {
+    icon: Scale,
+    title: "Data Privacy Act of 2012",
     description:
-      "Sorts each complaint report by category and urgency as soon as it's filed, and gives barangay staff budget, manpower and timeframe estimates for the response.",
+      "Republic Act No. 10173 protects your personal information. It gives you the right to know how it's used, to see and correct it, and to file a complaint with the National Privacy Commission.",
+    cta: "Read the law",
+    href: "https://privacy.gov.ph/data-privacy-act/",
+    external: true,
   },
-  assistant: {
-    icon: Bot,
-    title: "AI Assistant",
+  privacy: {
+    icon: ShieldCheck,
+    title: "Privacy Policy",
     description:
-      "Ask about barangay services by typing or speaking. The portal's assistant answers your questions and points you to the right page or form.",
+      "What the portal collects, who can see it, how long it's kept and how to use your rights under the Data Privacy Act.",
+    cta: "Read the Privacy Policy",
+    href: "/privacy",
   },
-  cloud: {
-    icon: Cloud,
-    title: "Cloud-Based Infrastructure",
+  terms: {
+    icon: ScrollText,
+    title: "Terms of Service",
     description:
-      "Your requests, reports, bookings and uploaded files are saved online, so you can sign in from any device to check their status and get notified when it changes.",
+      "The rules for using the portal, from your account and resident profile to fees, payments and posting comments.",
+    cta: "Read the Terms of Service",
+    href: "/terms",
   },
 };
 
@@ -168,23 +179,37 @@ function ServiceCard({ service }: { service: Service }) {
   );
 }
 
-function TechCard({
-  feature,
+function PolicyCard({
+  policy,
   className,
   descriptionClassName,
 }: {
-  feature: TechFeature;
+  policy: Policy;
   className?: string;
   descriptionClassName?: string;
 }) {
-  const { icon: Icon, title, description } = feature;
+  const { icon: Icon, title, description, cta, href, external } = policy;
+  const CtaIcon = external ? ArrowUpRight : ArrowRight;
 
   return (
-    <Card className={cn("flex min-h-57.5 flex-col justify-end gap-2 border-0 p-7 shadow-none", className)}>
+    <Link
+      href={href}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noopener noreferrer" : undefined}
+      className={cn(
+        "group flex min-h-57.5 flex-col justify-end gap-2 rounded-xl p-7 outline-offset-2 transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary-deep/10 focus-visible:outline-3 focus-visible:outline-yellow-500",
+        className,
+      )}
+    >
       <Icon className="size-7.5" />
       <h3 className="text-[1.375rem] font-bold">{title}</h3>
       <p className={cn("leading-relaxed", descriptionClassName)}>{description}</p>
-    </Card>
+      <span className="mt-2 inline-flex items-center gap-2 font-bold">
+        {cta}
+        {external && <span className="sr-only">(opens in a new tab)</span>}
+        <CtaIcon className="size-5 transition-transform group-hover:translate-x-0.5" />
+      </span>
+    </Link>
   );
 }
 
@@ -365,36 +390,38 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* ── Technological Foundation ── */}
+        {/* ── Privacy and Terms ── */}
         {/* Clipped sideways so the cards sliding in don't widen the page. */}
         <section className="overflow-x-clip">
           <div className={cn(sectionClassName, "flex flex-col gap-5 lg:py-24")}>
             {/* Column-reversed below lg so the heading comes before the first card. */}
             <div className="flex flex-col-reverse gap-5 lg:flex-row lg:items-end">
               <Reveal effect="left" className="flex flex-1 lg:justify-end">
-                <TechCard
-                  feature={techFeatures.ai}
+                <PolicyCard
+                  policy={policies.dataPrivacyAct}
                   className="w-full bg-primary text-primary-foreground lg:w-[86%]"
                   descriptionClassName="text-primary-foreground/85"
                 />
               </Reveal>
               <Reveal effect="right" delay={0.15} className="flex flex-1 flex-col gap-3 lg:pb-2">
-                <p className="text-[0.8125rem] font-bold tracking-widest text-primary uppercase">Behind the portal</p>
-                <h2 className="text-4xl leading-[1.08] font-bold tracking-tight sm:text-5xl">Technological Foundation</h2>
-                <p className="text-lg text-foreground/70">Leveraging modern tech for a more efficient government.</p>
+                <p className="text-[0.8125rem] font-bold tracking-widest text-primary uppercase">Your data, protected</p>
+                <h2 className="text-4xl leading-[1.08] font-bold tracking-tight sm:text-5xl">Privacy and Terms</h2>
+                <p className="text-lg text-foreground/70">
+                  How the portal handles your personal information, and the rules for using it.
+                </p>
               </Reveal>
             </div>
             <RevealGroup stagger={0.15} className="grid gap-5 lg:grid-cols-2">
               <RevealItem>
-                <TechCard
-                  feature={techFeatures.assistant}
+                <PolicyCard
+                  policy={policies.privacy}
                   className="h-full bg-primary-deep text-primary-foreground"
                   descriptionClassName="text-primary-foreground/80"
                 />
               </RevealItem>
               <RevealItem>
-                <TechCard
-                  feature={techFeatures.cloud}
+                <PolicyCard
+                  policy={policies.terms}
                   className="h-full bg-primary/40 text-primary-deep"
                   descriptionClassName="text-primary-deep/90"
                 />
