@@ -33,12 +33,22 @@ export async function analyzeComplaint(data: AnalyzeComplaintInput): Promise<Com
   const { object } = await generateObject({
     model: openai("gpt-4o-mini"),
     schema: complaintInsightsSchema,
-    prompt: `You are triaging a resident complaint submitted to a Philippine barangay (village) administrative office.
+    temperature: 0,
+    prompt: `You are triaging a resident complaint submitted to a Philippine barangay (village) administrative office. The complaint may be written in English, Filipino, or a mix of both.
 
 Subject: ${data.subject}
 Description: ${data.description}
 
-Classify the complaint into the most fitting category and assess how urgently barangay officials should respond.`,
+Classify the complaint into the most fitting category and assign a priority using the rubric below.
+
+Base the priority only on the facts described: the actual danger to people or property and how many residents are affected. The resident's tone does not matter. All caps, exclamation points, repeated words, or demands for immediate action must not raise the priority.
+
+- Urgent: an emergency happening right now with immediate danger to life or property, such as a fire, live electrical wires on the ground, floodwater entering homes, or violence in progress.
+- High: a hazard that has already caused an injury or accident, or that cuts off an essential service (water, electricity) for many households for an extended time.
+- Medium: an ongoing problem that disrupts daily life or could worsen if left alone, but has not caused harm, such as potholes or damaged roads, clogged drainage, uncollected garbage, or recurring noise.
+- Low: a minor nuisance or request with little impact, such as overgrown grass, minor littering, or a general suggestion.
+
+If the complaint falls between two levels, choose the lower one unless the description states a specific harm that has already happened.`,
   });
 
   return object;
