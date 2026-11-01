@@ -1,6 +1,6 @@
 # AI Assistant: how the code fits together
 
-A floating chat widget in the portal. It answers questions from the current Barangay Settings, the officials list and the uploaded PDF (RAG), and can call **tools**. Residents and admins each get their own assistant: the same widget, but a separate set of tools and system prompt (see [Residents and admins](#residents-and-admins)). Residents get thirteen tools and admins fifteen. Six of them put buttons under the assistant's reply, the rest look up something the model answers from, and one runs in the browser:
+A floating chat widget in the portal. It answers questions from the current Barangay Settings, the officials list and the uploaded PDFs (RAG), and can call **tools**. Residents and admins each get their own assistant: the same widget, but a separate set of tools and system prompt (see [Residents and admins](#residents-and-admins)). Residents get thirteen tools and admins fifteen. Six of them put buttons under the assistant's reply, the rest look up something the model answers from, and one runs in the browser:
 
 - `navigateToPage`: a "Go to X" button that takes the user to a portal page. Each role's version lists only the pages it can open, and the admins' has Audit Logs for super admins only.
 - `openFormDialog`: a button like "File a Complaint" that takes the user to the form's page and opens the form there, with any details the user already gave in the chat filled in. Each role's version lists only the forms it can open.
@@ -103,7 +103,7 @@ The route picks the user's assistant by their role (`isAdmin` from `getAuthRole`
 - Tools that work the same for both roles (the court, the Community Hub, news, transparency and `getUserLocation`) are in both lists.
 - `navigateToPage`, `openFormDialog` and `openSubmissionDetails` have a version per role, in `tools/resident/` and `tools/admin/`. The admins' `navigateToPage` describes each page as the admin view has it ("Review and resolve residents' complaints…"), and its `instruction` repeats that description. With the residents' descriptions ("File a complaint…"), and then with only the button, the reply still said "to view your complaints".
 - Residents have `getMySubmissions`, and admins have `getHandledSubmissions` and `getSubmissionOverview` instead (see [The user's submissions](#the-users-submissions)). Admins also have `findAuditLogs`.
-- `ADMIN_PROMPT` says admin accounts don't request documents or file complaints, so "my requests" or "my complaints" means the residents' ones they're handling. Its scope list covers the admin's work in the portal, and with no knowledge base document, it tells the admin they can upload one in the assistant's Knowledge Base tab.
+- `ADMIN_PROMPT` says admin accounts don't request documents or file complaints, so "my requests" or "my complaints" means the residents' ones they're handling. Its scope list covers the admin's work in the portal, and with no knowledge base document, it tells the admin they can upload one in Barangay Settings.
 - `AssistantToolContext` has no `isAdmin`, and no tool checks whether the user is a resident or an admin. A tool only one role should have goes only in that role's list.
 - Super admins and the other admins share `buildAdminTools` and `ADMIN_PROMPT`. Only the audit logs differ between them, so the context has `isSuperAdmin` for the two tools that need it: `findAuditLogs`, which searches only the user's own entries unless they're a super admin, and the admins' `navigateToPage`, which lists Audit Logs only for super admins. The prompt's role line (`describeRole`) says what the user can see in the audit logs.
 
@@ -138,10 +138,10 @@ If you add a field to Barangay Settings that residents might ask about, add a li
 
 ## Knowledge base search
 
-`getRelevantContext(messages, isAdmin)` finds the excerpts of the uploaded PDF that go in the system prompt:
+`getRelevantContext(messages, isAdmin)` finds the excerpts of the uploaded PDFs that go in the system prompt:
 
 1. `writeSearchQuery` has `gpt-4o-mini` (temperature 0) rewrite the user's latest message, with up to 4 messages before it (`SEARCH_QUERY_EARLIER_MESSAGES`), as a short English question that says who does what, e.g. "How does an admin process resident document requests?". An admin's query then gets "Admin: " in front.
-2. `searchKnowledgeBase` embeds the query and returns the `KNOWLEDGE_BASE_TOP_K` (5) most similar chunks above a similarity of 0.2.
+2. `searchKnowledgeBase` embeds the query and returns the `KNOWLEDGE_BASE_TOP_K` (5) most similar chunks above a similarity of 0.2, ranking every document's chunks together. Each excerpt is labeled with its document's file name (`[Excerpt 1, from "…"]`), so the model can tell which document says what when two disagree. In testing, replies didn't quote the file names.
 
 The user's message as is matched the manual poorly, which is why the query is rewritten:
 
@@ -150,6 +150,7 @@ The user's message as is matched the manual poorly, which is why the query is re
 - Every excerpt mentions "Barangay Maduya" and "the portal", so a query with them matched the manual's introduction instead (the steps dropped from 2nd to 28th). The rewrite prompt leaves them out and names the portal's features, with "document request" for a request of no stated kind.
 - Keyword lists matched worse than questions ("Online Soft Copy distribution process" matched the Knowledge Base tab), so the prompt asks for a question.
 - The manual has an admin section for each service. Without "Admin: ", the soft copy follow-up matched how residents receive one, and the reply told the admin to open Submission Info to download it.
+- Admins can upload other documents besides the manual. Told only about the manual, the rewrite turned questions about the barangay itself into portal ones ("magkano ang multa sa pag-iingay sa gabi?" became "What is the fine for noise complaints at night?"), so the prompt says not to. Rewording the prompt further lost "document request" on the admin question above, and with it the manual's steps, so the rest is unchanged. An admin's question about the barangay can still come back framed as reviewing a submission ("requirements for reviewing a Barangay Clearance for a business").
 
 This adds a `gpt-4o-mini` call before the reply starts streaming.
 

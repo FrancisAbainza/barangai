@@ -9,7 +9,7 @@ export const KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS = 1536;
 // chunk, and embed the whole document within its execution time/memory limits.
 export const MAX_KNOWLEDGE_BASE_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
 
-// Number of most-similar chunks pulled into the system prompt per chat turn.
+// Number of most-similar chunks pulled into the system prompt per chat turn, from all documents.
 export const KNOWLEDGE_BASE_TOP_K = 5;
 
 const textSplitter = new RecursiveCharacterTextSplitter({

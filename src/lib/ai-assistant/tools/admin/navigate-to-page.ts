@@ -19,7 +19,7 @@ const ADMIN_PAGES = {
   "about-us": "Learn about the barangay's officials, goal, mission, and vision.",
   "user-management": "Manage resident and admin accounts.",
   "barangay-settings":
-    "Manage document request pricing (GCash number and clearance fees), court reservation fees, the barangay goal, mission and vision, and the barangay and SK officials.",
+    "Manage document request pricing (GCash number and clearance fees), court reservation fees, the barangay goal, mission and vision, the barangay and SK officials, and the PDFs the AI assistant uses as its knowledge base.",
   "audit-logs":
     "See the changes every admin made in the portal: who did what and when, with each field's value before and after. Its filters narrow them down by category, action, or date.",
 } as const satisfies Partial<Record<PortalNavigationTargetId, string>>;

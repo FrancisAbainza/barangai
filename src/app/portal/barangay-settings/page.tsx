@@ -8,7 +8,7 @@ export default function BarangaySettingsPage() {
       <PageHeader
         icon={Settings}
         title="Barangay Settings"
-        description="Manage fees, goal, mission and vision, contact information, and barangay and SK officials"
+        description="Manage fees, goal, mission and vision, contact information, barangay and SK officials, and the AI Assistant's knowledge base"
       />
       <BarangaySettings />
     </div>

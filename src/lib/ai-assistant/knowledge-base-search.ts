@@ -1,8 +1,8 @@
 import { embed, generateText, type UIMessage } from "ai";
-import { cosineDistance, desc, gt, sql } from "drizzle-orm";
+import { cosineDistance, desc, eq, gt, sql } from "drizzle-orm";
 import { openai } from "@ai-sdk/openai";
 import { db } from "@/db/config";
-import { knowledgeBaseChunksTable } from "@/db/schema";
+import { knowledgeBaseChunksTable, knowledgeBaseDocumentsTable } from "@/db/schema";
 import { KNOWLEDGE_BASE_EMBEDDING_MODEL, KNOWLEDGE_BASE_TOP_K } from "@/lib/ai-assistant/knowledge-base";
 
 // Server-only: imports the DB. Finds the knowledge base excerpts the chat route puts in the system prompt.
@@ -34,11 +34,12 @@ async function writeSearchQuery(conversation: UIMessage[], isAdmin: boolean): Pr
   const { text } = await generateText({
     model: openai("gpt-4o-mini"),
     temperature: 0,
-    system: `You write search queries for the user manual of a barangay's online portal. The manual is in English. Given a conversation, write one short English search query for what the user's last message asks about:
+    system: `You write search queries for a barangay's knowledge base: the user manual of its online portal, and any other documents its admins uploaded about the barangay. The manual is in English. Given a conversation, write one short English search query for what the user's last message asks about:
 - Write it as a plain question that says who does what, e.g. "How does a resident cancel a pending court reservation?", not a list of keywords.
 - Translate Filipino or Taglish into English.
 - Use the earlier messages only to work out what the last one refers to.
 - Name the specific feature and what the user wants to do with it, in the portal's terms where they apply: Document Request, Barangay Clearance, Certificate of Residency, Certificate of No Objection, Certificate of Indigency, Solo Parent Certification, Medical / Lab Assistance, Pickup at Barangay Hall, Online Soft Copy, Complaint, blotter, Court Reservation, Community Hub business, News & Announcements, Transparency project, Resident Credentials, Notifications, Submission Info, Barangay Settings, User Management, Audit Logs, AI Assistant, Knowledge Base. When the user says "request" without saying what kind, write "document request".
+- Don't turn a question about the barangay itself, such as its rules, fees, requirements, programs or services, into one about using the portal.
 - Leave out "Barangay Maduya" and "portal": every part of the manual mentions them.
 The user is signed in as ${isAdmin ? "a barangay admin, so a question about requests, complaints, reservations or businesses is about reviewing and processing residents' submissions, not submitting one" : "a resident"}. Reply with the query only.`,
     prompt: transcript,
@@ -57,16 +58,21 @@ async function searchKnowledgeBase(query: string): Promise<string | null> {
   // embedding over the wire and scoring it in memory.
   const similarity = sql<number>`1 - (${cosineDistance(knowledgeBaseChunksTable.embedding, queryEmbedding)})`;
 
+  // Every uploaded document's chunks are ranked together.
   const chunks = await db
-    .select({ content: knowledgeBaseChunksTable.content, similarity })
+    .select({ content: knowledgeBaseChunksTable.content, fileName: knowledgeBaseDocumentsTable.fileName, similarity })
     .from(knowledgeBaseChunksTable)
+    .innerJoin(knowledgeBaseDocumentsTable, eq(knowledgeBaseChunksTable.documentId, knowledgeBaseDocumentsTable.id))
     .where(gt(similarity, 0.2))
     .orderBy(desc(similarity))
     .limit(KNOWLEDGE_BASE_TOP_K);
 
   if (chunks.length === 0) return null;
 
-  return chunks.map((chunk, index) => `[Excerpt ${index + 1}]\n${chunk.content}`).join("\n\n");
+  // Labeled with their document, so the model can tell which one says what when two disagree.
+  return chunks
+    .map((chunk, index) => `[Excerpt ${index + 1}, from "${chunk.fileName}"]\n${chunk.content}`)
+    .join("\n\n");
 }
 
 export async function getRelevantContext(messages: UIMessage[], isAdmin: boolean): Promise<string | null> {

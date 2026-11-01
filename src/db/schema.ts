@@ -362,9 +362,9 @@ export const userSnapshotsTable = pgTable("user_snapshots", {
 
 export type UserSnapshot = typeof userSnapshotsTable.$inferSelect;
 
-// The AI assistant's RAG knowledge base. Only one document is active at a time — admins
-// replace it wholesale rather than managing a library, so `replaceKnowledgeBaseDocument`
-// (src/actions/knowledge-base.ts) deletes the previous row (cascading its chunks) on upload.
+// The AI assistant's RAG knowledge base: one row per PDF admins upload in Barangay Settings
+// (src/actions/knowledge-base.ts). The chat searches every document's chunks together, and
+// deleting a document deletes its chunks (cascade).
 export const knowledgeBaseDocumentsTable = pgTable("knowledge_base_documents", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   fileName: varchar({ length: 255 }).notNull(),

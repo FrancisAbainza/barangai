@@ -15,9 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChatPanel } from "@/components/ai-assistant/chat-panel";
-import { KnowledgeBaseManager } from "@/components/knowledge-base-manager";
 import { getCurrentLocation } from "@/lib/geolocation";
 import { isAdminRole } from "@/lib/roles";
 
@@ -71,17 +69,6 @@ export function AiAssistantWidget() {
     sendAutomaticallyWhen: hasAnsweredLocationRequest,
   });
 
-  const chatPanel = (
-    <ChatPanel
-      messages={messages}
-      sendMessage={sendMessage}
-      status={status}
-      stop={stop}
-      isAdmin={isAdmin}
-      onNavigate={() => setOpen(false)}
-    />
-  );
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -106,22 +93,14 @@ export function AiAssistantWidget() {
           </div>
         </DialogHeader>
 
-        {isAdmin ? (
-          <Tabs className="flex min-h-0 flex-1 flex-col" defaultValue="chat">
-            <TabsList className="w-full">
-              <TabsTrigger value="chat">Chat</TabsTrigger>
-              <TabsTrigger value="knowledge-base">Knowledge Base</TabsTrigger>
-            </TabsList>
-            <TabsContent className="flex min-h-0 flex-1 flex-col" value="chat">
-              {chatPanel}
-            </TabsContent>
-            <TabsContent className="flex min-h-0 flex-1 flex-col" value="knowledge-base">
-              <KnowledgeBaseManager />
-            </TabsContent>
-          </Tabs>
-        ) : (
-          chatPanel
-        )}
+        <ChatPanel
+          messages={messages}
+          sendMessage={sendMessage}
+          status={status}
+          stop={stop}
+          isAdmin={isAdmin}
+          onNavigate={() => setOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );

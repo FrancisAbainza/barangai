@@ -124,7 +124,7 @@ export function buildFindAuditLogsTool({ userId, isSuperAdmin }: AssistantToolCo
       `Today is ${parseDateValue(today).toLocaleDateString("en-US", { dateStyle: "full" })} in the Philippines. ` +
       "Search the audit logs, the record of the changes admins make in the portal: changing the status of residents' " +
       "submissions (e.g. from Pending to Rejected), editing or deleting them, posting news and transparency projects, " +
-      "changing Barangay Settings and the officials, managing user accounts, and uploading the AI knowledge base. " +
+      "changing Barangay Settings and the officials, managing user accounts, and adding and removing the AI knowledge base's documents. " +
       "Each entry has who did it, when, and each changed field's value before and after. " +
       (isSuperAdmin
         ? "Every admin's changes are here. "

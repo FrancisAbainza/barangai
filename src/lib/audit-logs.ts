@@ -64,6 +64,7 @@ export function getAuditLogHref({ action, entityType, entityId }: Pick<AuditLog,
       return `/portal/transparency/${entityId}`;
     case "official":
     case "barangay-settings":
+    case "knowledge-base":
       return "/portal/barangay-settings";
     case "user":
       return `/portal/profile/${entityId}`;

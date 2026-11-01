@@ -9,6 +9,7 @@ import ContactInformationForm from "@/components/barangay-settings/forms/contact
 import CourtFeesForm from "@/components/barangay-settings/forms/court-fees-form";
 import DocumentPricingForm from "@/components/barangay-settings/forms/document-pricing-form";
 import GoalMissionVisionForm from "@/components/barangay-settings/forms/goal-mission-vision-form";
+import KnowledgeBaseManager from "@/components/barangay-settings/knowledge-base-manager";
 import OfficialsList from "@/components/barangay-settings/officials-list";
 import { getBarangaySettings, updateBarangaySettings, type BarangaySettingsValues } from "@/actions/settings";
 
@@ -174,6 +175,8 @@ export default function BarangaySettings() {
       <OfficialsList title="Barangay Officials" icon={<Landmark />} addLabel="Add Official" section="barangay" />
 
       <OfficialsList title="Sangguniang Kabataan" icon={<Users />} addLabel="Add SK" section="sk" />
+
+      <KnowledgeBaseManager />
     </div>
   );
 }
