@@ -3,7 +3,11 @@ import { NextResponse } from 'next/server'
 import { isAdminRole, isSuperAdminRole } from '@/lib/roles'
 
 const isProtectedRoute = createRouteMatcher(['/portal(.*)'])
-const isAdminRoute = createRouteMatcher(["/portal/user-management(.*)", "/portal/barangay-settings(.*)"]);
+const isAdminRoute = createRouteMatcher([
+  "/portal/analytics(.*)",
+  "/portal/user-management(.*)",
+  "/portal/barangay-settings(.*)",
+]);
 const isSuperAdminRoute = createRouteMatcher(["/portal/audit-logs(.*)"]);
 const isResidentOnlyRoute = createRouteMatcher(["/portal/notifications(.*)"]);
 // Pages with a /portal counterpart. This includes the post pages share links point to

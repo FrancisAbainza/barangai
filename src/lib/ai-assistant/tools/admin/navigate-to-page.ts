@@ -17,6 +17,8 @@ const ADMIN_PAGES = {
   news: "View and post barangay news and announcements.",
   transparency: "View and add the barangay's transparency projects.",
   "about-us": "Learn about the barangay's officials, goal, mission, and vision.",
+  analytics:
+    "See a month's report with charts: how many document requests, complaints, court reservations, Community Hub businesses, news posts and new users there were, compared with the month before and over the last 12 months, broken down by status, type, category and priority, with the court's booked hours and fees.",
   "user-management": "Manage resident and admin accounts.",
   "barangay-settings":
     "Manage document request pricing (GCash number and clearance fees), court reservation fees, the barangay goal, mission and vision, the barangay and SK officials, and the PDFs the AI assistant uses as its knowledge base.",

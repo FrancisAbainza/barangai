@@ -36,6 +36,10 @@ export const PORTAL_NAVIGATION_TARGETS = {
     label: "Notifications",
     href: "/portal/notifications",
   },
+  analytics: {
+    label: "Analytics",
+    href: "/portal/analytics",
+  },
   "user-management": {
     label: "User Management",
     href: "/portal/user-management",

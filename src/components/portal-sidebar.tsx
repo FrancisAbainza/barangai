@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
+  ChartColumn,
   Home,
   Megaphone,
   FileText,
@@ -58,6 +59,7 @@ const menuGroups: { label: string; items: MenuItem[] }[] = [
     items: [
       { title: "Home", href: "/portal", icon: Home },
       { title: "Notifications", href: NOTIFICATIONS_HREF, icon: Bell, audience: "resident" },
+      { title: "Analytics", href: "/portal/analytics", icon: ChartColumn, audience: "admin" },
     ],
   },
   {
