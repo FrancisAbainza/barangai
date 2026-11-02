@@ -19,6 +19,7 @@ import {
   UsersIcon,
   type LucideIcon,
 } from "lucide-react";
+import { MotionConfig, motion, stagger, type Variants } from "motion/react";
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import {
@@ -138,6 +139,31 @@ function ChatEmptyState({ prompts, onSelect }: { prompts: SuggestedPrompt[]; onS
   );
 }
 
+// Each dot bobs a beat after the one before it.
+const typingDotsVariants: Variants = { animate: { transition: { delayChildren: stagger(0.1) } } };
+const typingDotVariants: Variants = {
+  animate: { y: [0, -4, 0], transition: { duration: 1, ease: "easeInOut", repeat: Infinity } },
+};
+
+// Devices that ask for reduced motion get still dots.
+function TypingIndicator() {
+  return (
+    <MotionConfig reducedMotion="user">
+      <motion.div
+        animate="animate"
+        className="flex w-fit items-center gap-1 rounded-full bg-muted px-4 py-3"
+        role="status"
+        variants={typingDotsVariants}
+      >
+        <span className="sr-only">The assistant is typing</span>
+        {[0, 1, 2].map((dot) => (
+          <motion.span className="size-2 rounded-full bg-muted-foreground" key={dot} variants={typingDotVariants} />
+        ))}
+      </motion.div>
+    </MotionConfig>
+  );
+}
+
 function PromptInputMic() {
   const { textInput } = usePromptInputController();
 
@@ -156,6 +182,16 @@ type ChatPanelProps = Pick<UseChatHelpers<UIMessage>, "messages" | "sendMessage"
 
 export function ChatPanel({ messages, sendMessage, status, stop, isAdmin, onNavigate }: ChatPanelProps) {
   const isResponding = status === "submitted" || status === "streaming";
+
+  // The typing indicator shows while the reply has no text coming in: before its first word and
+  // while a tool runs between steps. The stream also ends at a getUserLocation call and resumes once
+  // the browser answers it (ai-assistant-widget.tsx), so it shows during that wait too.
+  const lastMessage = messages.at(-1);
+  const lastPart = lastMessage?.role === "assistant" ? lastMessage.parts.at(-1) : undefined;
+  const isGettingLocation =
+    lastPart?.type === "tool-getUserLocation" && isToolUIPart(lastPart) && lastPart.state === "input-available";
+  const isTyping = (isResponding && lastPart?.type !== "text") || isGettingLocation;
+
   const handleSubmit = (message: PromptInputMessage) => {
     if (!message.text.trim()) return;
     sendMessage(message);
@@ -175,11 +211,14 @@ export function ChatPanel({ messages, sendMessage, status, stop, isAdmin, onNavi
               // Hold action buttons back until the whole reply has finished streaming.
               const isStreaming = isResponding && index === messages.length - 1;
               const buttons = isStreaming ? [] : getButtons(message);
+              const text = getMessageText(message);
+              // A reply that has only called tools so far has nothing to show. The typing indicator stands in for it.
+              if (!text && buttons.length === 0) return null;
 
               return (
                 <Message from={message.role} key={message.id}>
                   <MessageContent>
-                    <MessageResponse>{getMessageText(message)}</MessageResponse>
+                    {text && <MessageResponse>{text}</MessageResponse>}
                     {buttons.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {buttons.map(({ key, kind, label, href }) => {
@@ -200,6 +239,11 @@ export function ChatPanel({ messages, sendMessage, status, stop, isAdmin, onNavi
                 </Message>
               );
             })}
+            {isTyping && (
+              <Message from="assistant">
+                <TypingIndicator />
+              </Message>
+            )}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>

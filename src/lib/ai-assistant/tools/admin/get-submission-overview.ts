@@ -49,7 +49,8 @@ export const getSubmissionOverviewTool = tool({
     "the barangay has in each status, how many open complaints there are at each priority, and the submissions that " +
     "need attention first (the home page's Needs Attention list). These are every submission in the barangay, " +
     "whoever is handling it. Use it for questions like \"ilan ang pending na document requests?\", \"ilang " +
-    "high-priority complaints ang open?\" or \"ano ang kailangan kong asikasuhin ngayon?\".",
+    "high-priority complaints ang open?\" or \"ano ang kailangan kong asikasuhin ngayon?\". For how many were " +
+    "submitted in a month or over several months, or how that compares with the month before, use getAnalytics.",
   inputSchema: z.object({}),
   execute: async () => {
     const [documentRequests, complaints, courtReservations, businesses, openComplaints, needsAttention] =

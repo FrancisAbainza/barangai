@@ -1,5 +1,6 @@
 import type { AssistantToolContext } from "@/lib/ai-assistant/tools";
 import { buildFindAuditLogsTool } from "@/lib/ai-assistant/tools/admin/find-audit-logs";
+import { buildGetAnalyticsTool } from "@/lib/ai-assistant/tools/admin/get-analytics";
 import { buildGetHandledSubmissionsTool } from "@/lib/ai-assistant/tools/admin/get-handled-submissions";
 import { getSubmissionOverviewTool } from "@/lib/ai-assistant/tools/admin/get-submission-overview";
 import { buildNavigateToPageTool } from "@/lib/ai-assistant/tools/admin/navigate-to-page";
@@ -33,6 +34,8 @@ export function buildAdminTools(context: AssistantToolContext) {
     // How many of the residents' submissions are in each status, and what needs attention
     getSubmissionOverview: getSubmissionOverviewTool,
     openSubmissionDetails: openSubmissionDetailsTool,
+    // Analytics: a month's counts and breakdowns, and the 12 months up to it
+    getAnalytics: buildGetAnalyticsTool(),
     // News & Announcements
     findNews: findNewsTool,
     openNewsPosts: openNewsPostsTool,
