@@ -17,6 +17,7 @@ import {
   Shield,
   User,
   Settings,
+  type LucideIcon,
 } from "lucide-react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
@@ -24,6 +25,8 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
@@ -41,32 +44,47 @@ import { cn } from "@/lib/utils";
 
 const NOTIFICATIONS_HREF = "/portal/notifications";
 
-const sharedMenuItems = [
-  { title: "News & Announcements", href: "/portal/news", icon: Megaphone },
-  { title: "Document Request", href: "/portal/document-request", icon: FileText },
-  { title: "Community Hub", href: "/portal/community-hub", icon: Store },
-  { title: "Court Reservation", href: "/portal/court-reservation", icon: SportShoe },
-  { title: "Complaint", href: "/portal/complaint", icon: MessageSquareWarning },
-  { title: "Transparency", href: "/portal/transparency", icon: Eye },
-  { title: "About Us", href: "/portal/about-us", icon: Info },
-];
+type MenuItem = {
+  title: string;
+  href: string;
+  icon: LucideIcon;
+  // Who sees the item. Unset means everyone.
+  audience?: "resident" | "admin" | "superadmin";
+};
 
-const residentMenuItems = [
-  { title: "Home", href: "/portal", icon: Home },
-  { title: "Notifications", href: NOTIFICATIONS_HREF, icon: Bell },
-  ...sharedMenuItems,
-];
-
-const adminMenuItems = [
-  { title: "Home", href: "/portal", icon: Home },
-  ...sharedMenuItems,
-  { title: "User Management", href: "/portal/user-management", icon: Users },
-  { title: "Barangay Settings", href: "/portal/barangay-settings", icon: Settings },
-];
-
-const superAdminMenuItems = [
-  ...adminMenuItems,
-  { title: "Audit Logs", href: "/portal/audit-logs", icon: ScrollText },
+const menuGroups: { label: string; items: MenuItem[] }[] = [
+  {
+    label: "Overview",
+    items: [
+      { title: "Home", href: "/portal", icon: Home },
+      { title: "Notifications", href: NOTIFICATIONS_HREF, icon: Bell, audience: "resident" },
+    ],
+  },
+  {
+    label: "Services",
+    items: [
+      { title: "Document Request", href: "/portal/document-request", icon: FileText },
+      { title: "Complaint", href: "/portal/complaint", icon: MessageSquareWarning },
+      { title: "Court Reservation", href: "/portal/court-reservation", icon: SportShoe },
+    ],
+  },
+  {
+    label: "Community",
+    items: [
+      { title: "News & Announcements", href: "/portal/news", icon: Megaphone },
+      { title: "Community Hub", href: "/portal/community-hub", icon: Store },
+      { title: "Transparency", href: "/portal/transparency", icon: Eye },
+      { title: "About Us", href: "/portal/about-us", icon: Info },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { title: "User Management", href: "/portal/user-management", icon: Users, audience: "admin" },
+      { title: "Barangay Settings", href: "/portal/barangay-settings", icon: Settings, audience: "admin" },
+      { title: "Audit Logs", href: "/portal/audit-logs", icon: ScrollText, audience: "superadmin" },
+    ],
+  },
 ];
 
 export default function PortalSidebar() {
@@ -83,7 +101,12 @@ export default function PortalSidebar() {
 
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
   const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
-  const menuItems = isSuperAdmin ? superAdminMenuItems : isAdmin ? adminMenuItems : residentMenuItems;
+  const canSee = ({ audience }: MenuItem) =>
+    audience === "resident" ? !isAdmin : audience === "admin" ? isAdmin : audience === "superadmin" ? isSuperAdmin : true;
+  // Groups left with no items for this role (Administration for residents) are dropped.
+  const visibleGroups = menuGroups
+    .map((group) => ({ ...group, items: group.items.filter(canSee) }))
+    .filter((group) => group.items.length > 0);
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ["notifications", "unread-count"],
@@ -112,37 +135,42 @@ export default function PortalSidebar() {
           </SidebarHeader>
         )}
         {/* Navigation */}
-        <SidebarContent>
-          <SidebarMenu className="p-2">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              // Subpages (e.g. a post at /portal/news/[id]) keep their section active. Home is
-              // "/portal" itself, which every page is under, so it only matches exactly.
-              const isActive =
-                pathname === item.href || (item.href !== "/portal" && pathname.startsWith(`${item.href}/`));
+        <SidebarContent className="gap-0">
+          {visibleGroups.map((group) => (
+            <SidebarGroup key={group.label}>
+              <SidebarGroupLabel className="text-[0.65rem] uppercase tracking-wider text-sidebar-foreground/50">{group.label}</SidebarGroupLabel>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  // Subpages (e.g. a post at /portal/news/[id]) keep their section active. Home is
+                  // "/portal" itself, which every page is under, so it only matches exactly.
+                  const isActive =
+                    pathname === item.href || (item.href !== "/portal" && pathname.startsWith(`${item.href}/`));
 
-              return (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive}
-                    tooltip={collapsed ? item.title : undefined}
-                    className="gap-3"
-                  >
-                    <Link href={item.href} onClick={handleNavClick}>
-                      <Icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                  {item.href === NOTIFICATIONS_HREF && unreadCount > 0 && (
-                    <SidebarMenuBadge className="bg-primary text-primary-foreground peer-hover/menu-button:text-primary-foreground peer-data-active/menu-button:text-primary-foreground">
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </SidebarMenuBadge>
-                  )}
-                </SidebarMenuItem>
-              );
-            })}
-          </SidebarMenu>
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={collapsed ? item.title : undefined}
+                        className="gap-3"
+                      >
+                        <Link href={item.href} onClick={handleNavClick}>
+                          <Icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                      {item.href === NOTIFICATIONS_HREF && unreadCount > 0 && (
+                        <SidebarMenuBadge className="bg-primary text-primary-foreground peer-hover/menu-button:text-primary-foreground peer-data-active/menu-button:text-primary-foreground">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </SidebarMenuBadge>
+                      )}
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroup>
+          ))}
         </SidebarContent>
 
         {/* User Section */}
