@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { isToolUIPart, type UIMessage } from "ai";
@@ -35,7 +35,8 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { VoiceInputButton } from "@/components/ai-assistant/voice-input-button";
 import { Button } from "@/components/ui/button";
-import type { AssistantButton, AssistantButtonKind, ButtonToolOutput } from "@/lib/ai-assistant/tools/buttons";
+import { DIALOG_SEARCH_PARAM } from "@/lib/ai-assistant/portal-dialogs";
+import { isPortalHref, PORTAL_NAVIGATION_TARGETS } from "@/lib/ai-assistant/portal-navigation";
 
 function getMessageText(message: UIMessage): string {
   return message.parts
@@ -44,30 +45,29 @@ function getMessageText(message: UIMessage): string {
     .join("");
 }
 
-// A page button's icon goes after its label ("Go to Complaint →"), the rest before it.
-const BUTTON_ICONS: Record<AssistantButtonKind, LucideIcon> = {
-  page: ArrowRightIcon,
-  form: SquarePenIcon,
-  submission: FileTextIcon,
-  business: StoreIcon,
-  "news-post": MegaphoneIcon,
-  project: EyeIcon,
-};
-
-// The buttons the message's button tools returned (lib/ai-assistant/tools/buttons.ts), in the order
-// they were called. A target asked for twice gets one button. A page button is left out when
-// another button already goes to that page, so the model calling two tools for one intent doesn't
-// show two buttons to the same place.
-function getButtons(message: UIMessage): AssistantButton[] {
-  const buttons = new Map<string, AssistantButton>();
-  for (const part of message.parts) {
-    if (isToolUIPart(part) && part.state === "output-available") {
-      const output = part.output as Partial<ButtonToolOutput> | null;
-      for (const button of output?.buttons ?? []) buttons.set(button.key, button);
-    }
+// The reply's links to portal pages (lib/ai-assistant/tools/links.ts) show as buttons: to a form, to
+// one record on a page (a submission, business, post or project), or to the page itself, whose icon
+// goes after its label ("Document Request →"). Clicking one closes the chat so the user sees the
+// page. The model sometimes puts a made-up website address in front ("https://barangaymaduya.com/portal/news"),
+// so that's dropped. Any other link, or one still streaming in, stays plain text: the assistant
+// only links to the portal, so anything else is made up.
+function AssistantLink({ href = "", children, onNavigate }: { href?: string; children?: ReactNode; onNavigate: () => void }) {
+  const url = URL.canParse(href, "http://localhost") ? new URL(href, "http://localhost") : null;
+  const path = url ? url.pathname + url.search : "";
+  if (url && isPortalHref(path)) {
+    const isPage = Object.values(PORTAL_NAVIGATION_TARGETS).some((target) => target.href === path);
+    const Icon = url.searchParams.has(DIALOG_SEARCH_PARAM) ? SquarePenIcon : isPage ? ArrowRightIcon : EyeIcon;
+    return (
+      <Button asChild className="my-0.5 mr-1 max-w-full align-middle" size="sm">
+        <Link href={path} onClick={onNavigate}>
+          {!isPage && <Icon />}
+          <span className="truncate">{children}</span>
+          {isPage && <Icon />}
+        </Link>
+      </Button>
+    );
   }
-  const coveredPages = new Set([...buttons.values()].filter(({ kind }) => kind !== "page").map(({ page }) => page));
-  return [...buttons.values()].filter(({ kind, page }) => kind !== "page" || !coveredPages.has(page));
+  return <span>{children}</span>;
 }
 
 type SuggestedPrompt = { icon: LucideIcon; text: string };
@@ -207,34 +207,25 @@ export function ChatPanel({ messages, sendMessage, status, stop, isAdmin, onNavi
       ) : (
         <Conversation className="-mx-6 flex-1 px-6">
           <ConversationContent>
-            {messages.map((message, index) => {
-              // Hold action buttons back until the whole reply has finished streaming.
-              const isStreaming = isResponding && index === messages.length - 1;
-              const buttons = isStreaming ? [] : getButtons(message);
+            {messages.map((message) => {
               const text = getMessageText(message);
               // A reply that has only called tools so far has nothing to show. The typing indicator stands in for it.
-              if (!text && buttons.length === 0) return null;
+              if (!text) return null;
 
               return (
                 <Message from={message.role} key={message.id}>
                   <MessageContent>
-                    {text && <MessageResponse>{text}</MessageResponse>}
-                    {buttons.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {buttons.map(({ key, kind, label, href }) => {
-                          const Icon = BUTTON_ICONS[kind];
-                          return (
-                            <Button asChild className="max-w-full" key={key} size="sm">
-                              <Link href={href} onClick={onNavigate}>
-                                {kind !== "page" && <Icon />}
-                                <span className="truncate">{label}</span>
-                                {kind === "page" && <Icon />}
-                              </Link>
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    )}
+                    <MessageResponse
+                      components={{
+                        a: ({ href, children }) => (
+                          <AssistantLink href={href} onNavigate={onNavigate}>
+                            {children}
+                          </AssistantLink>
+                        ),
+                      }}
+                    >
+                      {text}
+                    </MessageResponse>
                   </MessageContent>
                 </Message>
               );

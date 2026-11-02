@@ -3,6 +3,8 @@ import { desc } from "drizzle-orm";
 import z from "zod";
 import { db } from "@/db/config";
 import { transparencyProjectsTable } from "@/db/schema";
+import { PORTAL_NAVIGATION_TARGETS } from "@/lib/ai-assistant/portal-navigation";
+import { markdownLink } from "@/lib/ai-assistant/tools/links";
 import { formatFee } from "@/lib/court-reservations";
 import { formatPhilippineDate } from "@/lib/utils";
 import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
@@ -22,14 +24,15 @@ function getBudgetTotal(projects: { budget: string | null }[]) {
   };
 }
 
-// Like findBusinesses, this shows no button; the model answers from its result and then calls
-// openTransparencyProjects. It lists every project and leaves the matching to the model, which can
+// Like findBusinesses, it lists every project and leaves the matching to the model, which can
 // tell that "road project" means a project titled "Concreting of Purok 3 Pathway".
 export const findTransparencyProjectsTool = tool({
   description:
     "List the barangay's projects posted on the Transparency page, newest first: each one's title, category, budget, " +
     "description and location, plus the total budget of all projects and of each category, added up for you. Use it " +
-    "for questions about the barangay's projects and how much they cost. Match the user's question to the projects yourself.",
+    "for questions about the barangay's projects and how much they cost, like \"ano ang mga project ng barangay " +
+    "ngayon?\", \"magkano ang budget ng road project?\" or \"magkano lahat ng ginastos sa infrastructure?\". Match " +
+    "the user's question to the projects yourself.",
   inputSchema: z.object({}),
   execute: async () => {
     const projects = await db
@@ -52,7 +55,7 @@ export const findTransparencyProjectsTool = tool({
       "Projects have no status, so don't say one is ongoing, finished or planned unless its description says so. posted is when it was added to the Transparency page.",
       projects.length > MAX_PROJECTS &&
         `Only the ${MAX_PROJECTS} newest of ${projects.length} projects are listed, but budgetTotals covers them all. If the answer may be among the rest, mention that the Transparency page lists them all.`,
-      "This result shows no button, so don't mention one unless you call openTransparencyProjects. If your answer is about specific projects (up to 3), call openTransparencyProjects with their ids next, so the user gets a button to open each one's full details.",
+      "Each project's link opens its full details, photos, attachments and location. Give the links of the ones your answer is about, up to 3.",
     ];
 
     return {
@@ -68,7 +71,6 @@ export const findTransparencyProjectsTool = tool({
         ),
       },
       projects: projects.slice(0, MAX_PROJECTS).map((project) => ({
-        id: project.id,
         title: project.title,
         category: project.category,
         budget: project.budget === null ? "Not listed" : formatFee(Number(project.budget)),
@@ -78,8 +80,8 @@ export const findTransparencyProjectsTool = tool({
             : project.description,
         location: project.location?.address || "Not listed",
         posted: formatPhilippineDate(project.createdAt),
+        link: markdownLink(`View ${project.title}`, `${PORTAL_NAVIGATION_TARGETS.transparency.href}/${project.id}`),
       })),
-      buttonShown: false,
       instruction: instructions.filter(Boolean).join(" "),
     };
   },

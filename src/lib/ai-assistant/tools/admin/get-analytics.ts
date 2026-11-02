@@ -71,8 +71,8 @@ export function buildGetAnalyticsTool() {
       'nakaraang buwan?", "anong klase ng complaint ang pinakamarami noong October?", "magkano ang kinita ng court ' +
       'noong September?", "ilan ang bagong users ngayong taon?" or "anong buwan ang may pinakamaraming request?". ' +
       "For how many submissions are in a status now, whenever they were submitted, use getSubmissionOverview instead. " +
-      'When the user only wants to see the Analytics page or its charts ("patingin ng analytics"), call navigateToPage ' +
-      "for analytics instead. " +
+      'When the user only wants to see the Analytics page or its charts ("patingin ng analytics"), link the page ' +
+      "instead. " +
       `The past 12 months are ${describePastMonths(currentMonth)}. For "ngayong buwan", "last month" or a month's ` +
       "name, use its value from this list.",
     inputSchema: z.object({
@@ -144,7 +144,7 @@ export function buildGetAnalyticsTool() {
         `When the user asks about high-priority complaints, count the Urgent ones too: tell them ${priorities.High + priorities.Urgent} of ${monthName}'s complaints are high priority, ${priorities.High} High and ${priorities.Urgent} Urgent.`,
         `courtReservations' approvedHoursBooked and approvedFees are from the reservations submitted in ${monthName} that were approved. Give the fees as the approved reservations' fees, even when the user asks how much the court earned.`,
         `trend has each month's counts${trend.length < report.trend.length ? `, from ${formatMonth(recordsStart)}, when the portal's records start` : ""}. span has the totals over ${spanMonths} and each kind's own busiest month in it (they can differ, so never say one month was the busiest for all of them unless busiestMonth says so for each): answer a total or the busiest month from span, never by adding up or comparing trend's numbers yourself. For a total over other months, call this tool again with month and fromMonth.`,
-        "This result shows no button, so don't mention one unless you call navigateToPage. If the user wants to see the charts or the page, call navigateToPage for analytics.",
+        "If the user wants to see the charts or the page, link the Analytics page.",
       ];
 
       return {
@@ -180,7 +180,6 @@ export function buildGetAnalyticsTool() {
           totals: Object.fromEntries(COUNT_KEYS.map((key) => [key, span.reduce((sum, row) => sum + row[key], 0)])),
           busiestMonth: Object.fromEntries(COUNT_KEYS.map((key) => [key, describeBusiest(span, key)])),
         },
-        buttonShown: false,
         instruction: instructions.join(" "),
       };
     },

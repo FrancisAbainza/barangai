@@ -20,17 +20,17 @@ import {
 } from "@/schemas/solo-parent-document-request-schema";
 import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
 
-// Form dialogs the AI assistant can open. Shared between the residents' and the admins'
-// openFormDialog tools (tools/resident/open-form-dialog.ts and tools/admin/open-form-dialog.ts,
-// for their input schemas/descriptions and their buttons) and the components hosting each dialog,
-// whose open state lives in the URL (`?dialog=<id>`, via useDialogParam in src/hooks/use-dialog-param.ts).
+// Form dialogs the AI assistant can link to. Shared between the getFormLink tool
+// (tools/get-form-link.ts, for its input schema, description and links) and the components hosting
+// each dialog, whose open state lives in the URL (`?dialog=<id>`, via useDialogParam in
+// src/hooks/use-dialog-param.ts).
 //
 // Only "create" forms belong here: dialogs that act on an existing record (edit,
 // delete, reject...) need a specific row and can't be opened from the chat.
 //
 // `page` is the portal page the dialog lives on. `audience` is who that page renders
 // the dialog for — e.g. document request forms only exist in the resident view — so it
-// decides which role's openFormDialog lists the form.
+// decides which role's getFormLink lists the form.
 // `prefill` lists the form fields the assistant can fill in from what the user said
 // (`?prefill=`, read with useDialogPrefill). Free text is a plain string so a value too
 // short for the form still gets filled in and the form's own validation flags it.

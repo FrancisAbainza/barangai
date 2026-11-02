@@ -13,7 +13,8 @@ export const getUserLocationTool = tool({
   description:
     "Get the user's current location from their device, so findBusinesses can list businesses nearest first. " +
     "Call it on its own, and only when the user asks what's nearest or close to them and hasn't shared their " +
-    "location in this conversation yet. Their browser may ask them for permission.",
+    "location in this conversation yet. Their browser may ask them for permission. If it fails, still call " +
+    "findBusinesses and answer with the addresses of the businesses that fit, mentioning you couldn't get their location.",
   inputSchema: z.object({}),
   // The model only needs to know it worked, so the coordinates aren't sent to OpenAI.
   toModelOutput: () => ({

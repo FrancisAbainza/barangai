@@ -3,8 +3,10 @@ import { asc, eq } from "drizzle-orm";
 import z from "zod";
 import { db } from "@/db/config";
 import { businessesTable } from "@/db/schema";
+import { PORTAL_NAVIGATION_TARGETS } from "@/lib/ai-assistant/portal-navigation";
 import type { AssistantToolContext } from "@/lib/ai-assistant/tools";
-import { formatOperatingHours } from "@/lib/business";
+import { markdownLink } from "@/lib/ai-assistant/tools/links";
+import { BUSINESS_SEARCH_PARAM, formatOperatingHours } from "@/lib/business";
 import { parseTimeInput } from "@/lib/court-reservations";
 import { distanceInMeters } from "@/lib/geolocation";
 import { getPhilippineTime } from "@/lib/utils";
@@ -30,17 +32,17 @@ function isOpenAt({ days, opens, closes }: OperatingHours, { day, minutes }: { d
   return (isOpenDay(day) && minutes >= open) || (isOpenDay(day - 1) && minutes < close);
 }
 
-// Like calculateCourtFee, this shows no button; the model answers from its result. It lists every
-// business and leaves the matching to the model, which can tell that a business described as
+// It lists every business and leaves the matching to the model, which can tell that a business described as
 // "lutong-bahay na ulam" is a karinderya. A keyword search can't, and with a category filter the
 // model filtered "any business or store" down to Others and found nothing.
 export function buildFindBusinessesTool({ userLocation }: AssistantToolContext) {
   return tool({
     description:
       "List the businesses verified in the Community Hub, the barangay's directory of local businesses, with their " +
-      "category, description, hours, whether they're open right now, contact number and address. Match the user's question to them yourself from " +
-      "their names, categories and descriptions. Once the user has shared their location (getUserLocation), the " +
-      "list is sorted nearest first and includes distances.",
+      "category, description, hours, whether they're open right now, contact number and address. Use it for " +
+      "questions like \"where's the nearest karinderya?\", \"is there a vulcanizing shop?\" or \"bukas pa ba sila?\". " +
+      "Match the user's question to them yourself from their names, categories and descriptions. Once the user has " +
+      "shared their location (getUserLocation), the list is sorted nearest first and includes distances.",
     inputSchema: z.object({}),
     execute: async () => {
       const rows = await db
@@ -72,14 +74,13 @@ export function buildFindBusinessesTool({ userLocation }: AssistantToolContext) 
         "openNow says whether a business is open at this moment, so use it instead of the hours to say whether one is open now.",
         businesses.length > MAX_BUSINESSES &&
           `Only the first ${MAX_BUSINESSES} of ${businesses.length} are listed. If the answer may be among the rest, mention that the Community Hub page lists them all.`,
-        "This result shows no button. If your answer is about specific businesses (up to 3), call openBusinessDetails with their ids next, so the user gets a button to open each one's full details.",
+        "Each business's link opens its full details, photos and location on a map. Give the links of the ones your answer is about, up to 3.",
       ];
 
       const now = getPhilippineTime();
       return {
         total: businesses.length,
         businesses: businesses.slice(0, MAX_BUSINESSES).map((business) => ({
-          id: business.id,
           name: business.name,
           category: business.category,
           description:
@@ -91,8 +92,12 @@ export function buildFindBusinessesTool({ userLocation }: AssistantToolContext) 
           contactNumber: business.contactNumber,
           address: business.location?.address || "Not listed",
           ...(business.distance !== null && { distance: formatDistance(business.distance) }),
+          // The dialog its card opens (LinkedBusinessDialog).
+          link: markdownLink(
+            `View ${business.name}`,
+            `${PORTAL_NAVIGATION_TARGETS["community-hub"].href}?${BUSINESS_SEARCH_PARAM}=${business.id}`,
+          ),
         })),
-        buttonShown: false,
         instruction: instructions.filter(Boolean).join(" "),
       };
     },

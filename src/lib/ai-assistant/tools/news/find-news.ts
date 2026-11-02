@@ -3,6 +3,8 @@ import { desc } from "drizzle-orm";
 import z from "zod";
 import { db } from "@/db/config";
 import { newsTable } from "@/db/schema";
+import { PORTAL_NAVIGATION_TARGETS } from "@/lib/ai-assistant/portal-navigation";
+import { markdownLink } from "@/lib/ai-assistant/tools/links";
 import { formatPhilippineDate } from "@/lib/utils";
 
 // The last few weeks of posts for most barangays, without filling the model's context.
@@ -10,15 +12,15 @@ const MAX_POSTS = 20;
 // Long enough to reach the date, time and area most announcements give.
 const MAX_CONTENT_LENGTH = 500;
 
-// Like findBusinesses, this shows no button; the model answers from its result and then calls
-// openNewsPosts. It lists the latest posts and leaves the matching to the model, which can tell that
+// Like findBusinesses, it lists the latest posts and leaves the matching to the model, which can tell that
 // a "scheduled power interruption" post answers "may brownout ba?". A keyword search can't.
 export const findNewsTool = tool({
   description:
     "List the latest posts on the barangay's News & Announcements page, pinned posts first: each one's title, " +
     "category (Announcement, Event or Emergency), whether it's pinned, when it was posted and the start of its content. " +
     "Use it for questions about announcements, events, emergencies and service interruptions such as brownouts or " +
-    "water interruptions. Match the user's question to the posts yourself.",
+    "water interruptions, like \"may brownout o water interruption ba ngayong linggo?\" or \"kailan ang susunod na " +
+    "event?\". Match the user's question to the posts yourself.",
   inputSchema: z.object({}),
   execute: async () => {
     const posts = await db
@@ -42,21 +44,20 @@ export const findNewsTool = tool({
       `A content that ends with "…" was cut off at ${MAX_CONTENT_LENGTH} characters, so the full post may have more details. Any other content is the whole post.`,
       posts.length === MAX_POSTS &&
         `Only the ${MAX_POSTS} latest posts are listed. If the answer may be in an older one, mention that the News & Announcements page lists them all.`,
-      "This result shows no button, so don't mention one unless you call openNewsPosts. If your answer is about specific posts (up to 3), call openNewsPosts with their ids next, so the user gets a button to open each full post.",
+      "Each post's link opens the full post with its photos and attachments. Give the links of the ones your answer is about, up to 3.",
     ];
 
     return {
       today: new Date().toLocaleDateString("en-US", { timeZone: "Asia/Manila", dateStyle: "full" }),
       posts: posts.map((post) => ({
-        id: post.id,
         title: post.title,
         category: post.category,
         pinned: post.pinned,
         posted: formatPhilippineDate(post.createdAt),
         content:
           post.content.length > MAX_CONTENT_LENGTH ? `${post.content.slice(0, MAX_CONTENT_LENGTH)}…` : post.content,
+        link: markdownLink(`View ${post.title}`, `${PORTAL_NAVIGATION_TARGETS.news.href}/${post.id}`),
       })),
-      buttonShown: false,
       instruction: instructions.filter(Boolean).join(" "),
     };
   },

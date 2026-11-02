@@ -39,8 +39,7 @@ function formatRange(range: CourtTimeRange): string {
   return range.start === 0 && range.end === MINUTES_PER_DAY ? "The whole day" : formatTimeRange(range);
 }
 
-// Like calculateCourtFee, this shows no button; the model answers from its result. It's built per
-// request because its description has today's date and the coming week: the model has no clock, and
+// It's built per request because its description has today's date and the coming week: the model has no clock, and
 // without them it sent dates from its training years (2023-10-28 for "sa Sabado"). In the `dates`
 // field's own description, it ignored them.
 // The model passes the hours the user asked about, and this cuts the open times to them. Given the
@@ -111,13 +110,12 @@ export function buildCheckCourtAvailabilityTool() {
           `Times today before ${formatCourtTime(earliestToday)} have passed, so they aren't in today's available times.`,
         dates.length > MAX_DATES &&
           `Only the first ${MAX_DATES} dates were checked. Tell the user they can check other dates with Court Availability on the Court Reservation page.`,
-        "If the user already said they want to reserve (e.g. \"gusto ko mag-reserve\") and allAvailable is true, call openFormDialog for the court reservation form now, before replying, with only the date and times they gave as prefill. Otherwise no button was shown, so if they may want to reserve, ask whether they'd like the reservation form instead of mentioning a button.",
+        "If the user already said they want to reserve (e.g. \"gusto ko mag-reserve\") and allAvailable is true, call getFormLink for the court reservation form now, before replying, with only the date and times they gave as prefill. Otherwise, if they may want to reserve, ask whether they'd like the reservation form.",
       ];
 
       return {
         hoursChecked: formatRange(hoursChecked),
         days,
-        buttonShown: false,
         instruction: instructions.filter(Boolean).join(" "),
       };
     },

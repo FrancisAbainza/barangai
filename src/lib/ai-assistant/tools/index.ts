@@ -7,34 +7,24 @@ import type { UserLocation } from "@/lib/ai-assistant/tools/get-user-location";
 // in it: they get separate tools, so no tool checks it.
 export type AssistantToolContext = {
   userId: string;
-  // Among admins, only super admins see every admin's audit logs and the Audit Logs page
-  // (findAuditLogs and the admins' navigateToPage).
+  // Among admins, only super admins see every admin's audit logs (findAuditLogs).
   isSuperAdmin: boolean;
   settings: BarangaySettingsValues;
   userLocation: UserLocation | null;
 };
 
-// Residents and admins have separate assistants, each with its own tools and system prompt
-// (RESIDENT_PROMPT and ADMIN_PROMPT in ../system-prompt.ts), and the route picks one by the user's
-// role. With one set of tools for both, they answered admins as if they were residents: "view my
-// complaints" got "Tap the button below to view your complaints", and "what is the status of my
-// complaints" found none, since admins don't file complaints.
-// - ./resident/index.ts (buildResidentTools) and ./admin/index.ts (buildAdminTools) list each
-//   role's tools. A tool that works differently for each role has a version in each folder, e.g.
-//   navigateToPage, whose pages and what they're for differ.
-// - Tools that work the same for both (news, transparency, the court and the Community Hub) are
-//   in the page folders below and in both lists.
+// Residents and admins have separate tool lists, and the route picks one by the user's role:
+// ./resident/index.ts (buildResidentTools) and ./admin/index.ts (buildAdminTools). With one set of
+// tools for both, "what is the status of my complaints" found none for admins, since admins don't
+// file complaints. A tool only one role has is in that role's folder. Tools both roles share are
+// in the folder of the portal page they're about, named like its route and `src/components/<page>/`
+// (news, transparency, the court and the Community Hub), or at the top when they span pages.
 //
-// There are three kinds of tools:
+// Each tool's description says what it's for and the questions it answers, so the system prompt
+// doesn't list the tools. Adding a tool means writing its file and adding it to each role's list.
 // - Lookup tools (find*, getMySubmissions, getHandledSubmissions, getSubmissionOverview, getAnalytics,
-//   findAuditLogs, calculateCourtFee, checkCourtAvailability) return data the model answers from, with an `instruction` for the reply
-//   and `buttonShown: false`, without which the reply sometimes pointed to a button that wasn't there.
-// - Button tools (navigateToPage, openFormDialog, open*) don't act by themselves. They're built with
-//   `buttonTool` (./buttons.ts) and return the buttons the chat panel shows under the reply.
+//   findAuditLogs, calculateCourtFee, checkCourtAvailability) return data the model answers from,
+//   with an `instruction` for the reply. Records come with a ready markdown `link` (./links.ts),
+//   which the chat panel shows as a button when the model puts it in its reply.
+// - getFormLink returns the link that opens a form, with what the user said filled in.
 // - getUserLocation, which the browser answers (see its file).
-// A tool about one portal page goes in that page's folder, named like the page's route and
-// `src/components/<page>/`, usually a lookup tool and the button tool the model calls after it
-// (findNews, then openNewsPosts). Tools that span pages stay at the top, or in ./resident and
-// ./admin when they're only for one role.
-// To add a tool, add it to the list of each role that gets it, and describe when to use it in that
-// role's system prompt.

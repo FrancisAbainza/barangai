@@ -62,8 +62,7 @@ function truncate(value: string | null) {
 // search every admin's entries, like on the page. Other admins only their own, like the Audit Logs
 // tab on their profile, since that's all getAuditLogs lets them read. It uses the page's filters
 // (getAuditLogsWhere) plus the admin who did it, and counts the matches itself, because the model
-// can't be trusted to count entries. Like findNews, it shows no button. It's built per request for
-// today's date, like checkCourtAvailability: the model has no clock.
+// can't be trusted to count entries. It's built per request for today's date, like checkCourtAvailability: the model has no clock.
 // The model fills in every input, even ones it's told to leave out: without "all", "ano ang mga
 // binago ngayong araw?" was searched with category "user" and action "updated", and found nothing.
 // So the filters have the page's "all", and an empty search or admin counts as none. Asked about
@@ -131,7 +130,8 @@ export function buildFindAuditLogsTool({ userId, isSuperAdmin }: AssistantToolCo
         : "Only the user's own changes are here, like on the Audit Logs tab on their profile: other admins' changes are only for super admins. ") +
       'Use it for questions like "sino ang nag-reject ng DR-12?", "sino ang nag-post ng announcement tungkol sa ' +
       'brownout?", "ano ang mga binago ko kahapon?", "who changed the clearance fees?" or "ilang complaint ang ' +
-      'na-resolve ngayong linggo?". ' +
+      'na-resolve ngayong linggo?". It\'s the only tool that says who posted a news post or project. A ' +
+      "submission's current status comes from the submission tools instead. " +
       `The past week is ${describePastWeek(today)}. For "ngayon", "kahapon" or a day of the week, use its date from this list. ` +
       `This week ("ngayong linggo") is ${toDateValue(weekStart)} to ${today}.`,
     // The other admins' schema is the super admins' without its two optional inputs.
@@ -236,8 +236,8 @@ export function buildFindAuditLogsTool({ userId, isSuperAdmin }: AssistantToolCo
         total > logs.length &&
           `Only the ${logs.length} most recent are listed. Whenever your answer lists them, or what the user asked about may be in an older one, tell them ${allEntriesPlace} has them all, or offer to narrow it down by date or category.`,
         isSuperAdmin
-          ? "This result shows no button, so don't mention one unless you call navigateToPage. If the user wants to see or browse the entries themselves, call navigateToPage for audit-logs."
-          : `This result shows no button, so don't mention one. If the user wants to see or browse the entries themselves, tell them they're on ${allEntriesPlace}.`,
+          ? "If the user wants to see or browse the entries themselves, link the Audit Logs page."
+          : `If the user wants to see or browse the entries themselves, tell them they're on ${allEntriesPlace}.`,
       ];
 
       return {
@@ -259,7 +259,6 @@ export function buildFindAuditLogsTool({ userId, isSuperAdmin }: AssistantToolCo
             })),
           }),
         })),
-        buttonShown: false,
         instruction: instructions.filter(Boolean).join(" "),
       };
     },

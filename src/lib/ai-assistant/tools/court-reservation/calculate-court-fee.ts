@@ -18,14 +18,15 @@ export function parseCourtEndTime(value: string): number | null {
   return minutes === 0 ? MINUTES_PER_DAY : minutes;
 }
 
-// Unlike navigateToPage and openFormDialog, this one shows no button; the model answers from
-// its result. It exists because the model miscounts day- and night-rate hours (it billed
-// 4:30 - 7:30 PM as two hours), so it runs the same per-hour billing as the reservation form.
+// The model miscounts day- and night-rate hours (it billed 4:30 - 7:30 PM as two hours), so this
+// runs the same per-hour billing as the reservation form.
 export function buildCalculateCourtFeeTool({ settings: { courtDayRate, courtNightRate } }: AssistantToolContext) {
   return tool({
     description:
-      "Calculate what a court reservation costs for specific times, using the same hour-by-hour billing as the " +
-      "reservation form. Give the start time and either the end time or the number of hours.",
+      "Calculate what a court reservation costs for specific times or a number of hours, using the same hour-by-hour " +
+      "billing as the reservation form. Always use it for a court fee, and answer with its total and breakdown: never " +
+      "work one out yourself, because an hour that crosses 6:00 AM or 6:00 PM is billed at the night rate. Give the " +
+      "start time and either the end time or the number of hours.",
     inputSchema: z.object({
       startTime: z.string().describe('Start time in 24-hour "HH:MM", e.g. "16:30" for 4:30 PM.'),
       endTime: z
@@ -61,10 +62,8 @@ export function buildCalculateCourtFeeTool({ settings: { courtDayRate, courtNigh
           (charge) => `${formatTimeRange(charge)}: ${charge.isDayRate ? "day" : "night"} rate, ${formatFee(charge.rate)}`,
         ),
         total: formatFee(calculateCourtFee(start, hours, courtDayRate, courtNightRate)),
-        // Without this the reply sometimes says "tap the button below" with no button.
-        buttonShown: false,
         instruction:
-          "Give the total and the breakdown. If the user already said they want to reserve, call openFormDialog for the court reservation form now. Otherwise no button was shown, so if they may want to reserve, ask whether they'd like the reservation form instead of mentioning a button.",
+          "Give the total and the breakdown. If the user already said they want to reserve, call getFormLink for the court reservation form now. Otherwise, if they may want to reserve, ask whether they'd like the reservation form.",
       };
     },
   });

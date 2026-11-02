@@ -1,7 +1,7 @@
 import type { Business, Complaint, CourtReservation, DocumentRequest } from "@/db/schema";
 import { getSubmissionDialogHref } from "@/lib/ai-assistant/portal-dialogs";
 import type { PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
-import type { AssistantButton } from "@/lib/ai-assistant/tools/buttons";
+import { markdownLink } from "@/lib/ai-assistant/tools/links";
 import { formatReferenceNumber as formatBusinessReference } from "@/lib/business";
 import { formatReferenceNumber as formatComplaintReference } from "@/lib/complaints";
 import {
@@ -13,9 +13,11 @@ import {
 import { formatReferenceNumber as formatDocumentRequestReference } from "@/lib/document-requests";
 import { formatPhilippineDate } from "@/lib/utils";
 
-// What the residents' getMySubmissions and openSubmissionDetails (resident/) and the admins'
-// getHandledSubmissions and openSubmissionDetails (admin/) have in common: the same four kinds of
-// submissions, shown to the model and opened the same way.
+// What the residents' getMySubmissions (resident/) and the admins' getHandledSubmissions (admin/)
+// have in common: the same four kinds of submissions, shown to the model the same way. Each one's
+// `link` goes to its page with `?view=<id>`, which opens its Submission Info dialog: the barangay's
+// reply and attachments, and for an admin, the actions to review it. The page loads it only if
+// the user may see it.
 
 // Per kind of submission, most recent first. More than a resident usually has.
 export const MAX_PER_KIND = 10;
@@ -31,6 +33,11 @@ export const LIST_DESCRIPTIONS = {
   businesses: { name: "Community Hub businesses", page: "community-hub" },
 } as const satisfies Record<string, { name: string; page: PortalNavigationTargetId }>;
 
+// e.g. "[View DR-12: Barangay Clearance request](/portal/document-request?view=12)"
+export function submissionLink(label: string, page: PortalNavigationTargetId, id: number): string {
+  return markdownLink(`View ${label}`, getSubmissionDialogHref(page, id));
+}
+
 function truncate(text: string | null) {
   if (!text) return undefined;
   return text.length > MAX_MESSAGE_LENGTH ? `${text.slice(0, MAX_MESSAGE_LENGTH)}…` : text;
@@ -38,8 +45,9 @@ function truncate(text: string | null) {
 
 // What the model gets for each kind of submission.
 export function formatDocumentRequest(request: DocumentRequest) {
+  const referenceNumber = formatDocumentRequestReference(request.id);
   return {
-    referenceNumber: formatDocumentRequestReference(request.id),
+    referenceNumber,
     documentType: request.documentType,
     purpose: request.purpose === "Other" ? request.otherPurpose : request.purpose,
     receiveVia: request.receiveVia,
@@ -50,12 +58,14 @@ export function formatDocumentRequest(request: DocumentRequest) {
     claimedAt: request.claimedAt ? formatPhilippineDate(request.claimedAt, true) : undefined,
     submitted: formatPhilippineDate(request.createdAt),
     lastUpdated: formatPhilippineDate(request.updatedAt),
+    link: submissionLink(`${referenceNumber}: ${request.documentType} request`, "document-request", request.id),
   };
 }
 
 export function formatComplaint(complaint: Complaint) {
+  const referenceNumber = formatComplaintReference(complaint.id);
   return {
-    referenceNumber: formatComplaintReference(complaint.id),
+    referenceNumber,
     subject: complaint.subject,
     category: complaint.category,
     status: complaint.status,
@@ -63,65 +73,35 @@ export function formatComplaint(complaint: Complaint) {
     dismissalReason: truncate(complaint.dismissalReason),
     submitted: formatPhilippineDate(complaint.createdAt),
     lastUpdated: formatPhilippineDate(complaint.updatedAt),
+    link: submissionLink(`${referenceNumber}: ${complaint.subject}`, "complaint", complaint.id),
   };
 }
 
 export function formatCourtReservation(reservation: CourtReservation) {
+  const referenceNumber = formatCourtReservationReference(reservation.id);
+  const date = formatReservationDate(reservation.date);
   return {
-    referenceNumber: formatCourtReservationReference(reservation.id),
-    date: formatReservationDate(reservation.date),
+    referenceNumber,
+    date,
     time: formatReservationTime(reservation),
     purpose: reservation.purpose,
     total: formatFee(Number(reservation.totalAmount)),
     status: reservation.status,
     rejectionReason: truncate(reservation.rejectionReason),
     submitted: formatPhilippineDate(reservation.createdAt),
+    link: submissionLink(`${referenceNumber}: Court reservation on ${date}`, "court-reservation", reservation.id),
   };
 }
 
 export function formatBusiness(business: Business) {
+  const referenceNumber = formatBusinessReference(business.id);
   return {
-    referenceNumber: formatBusinessReference(business.id),
+    referenceNumber,
     name: business.name,
     category: business.category,
     status: business.status,
     rejectionReason: truncate(business.rejectionReason),
     submitted: formatPhilippineDate(business.createdAt),
-  };
-}
-
-// The reference number prefixes (createReferenceNumbers in each domain's lib) and the page whose
-// `?view=<id>` opens that kind of submission's Submission Info dialog.
-const REFERENCE_PREFIX_PAGES = {
-  DR: "document-request",
-  CP: "complaint",
-  CR: "court-reservation",
-  CH: "community-hub",
-} as const satisfies Record<string, PortalNavigationTargetId>;
-
-// e.g. "dr12" → { referenceNumber: "DR-12", page: "document-request", id: 12 }, or null if it
-// isn't a reference number.
-export function parseReferenceNumber(referenceNumber: string) {
-  const match = referenceNumber.trim().toUpperCase().match(/^(DR|CP|CR|CH)-?(\d+)$/);
-  if (!match) return null;
-  const prefix = match[1] as keyof typeof REFERENCE_PREFIX_PAGES;
-  const id = Number(match[2]);
-  return { referenceNumber: `${prefix}-${id}`, page: REFERENCE_PREFIX_PAGES[prefix], id };
-}
-
-// The button that opens a submission's Submission Info dialog on its page.
-export function getSubmissionButton(submission: {
-  referenceNumber: string;
-  label: string;
-  page: PortalNavigationTargetId;
-  id: number;
-}): AssistantButton {
-  const { referenceNumber, label, page, id } = submission;
-  return {
-    key: `submission-${referenceNumber}`,
-    kind: "submission",
-    page,
-    label: `View ${referenceNumber}: ${label}`,
-    href: getSubmissionDialogHref(page, id),
+    link: submissionLink(`${referenceNumber}: ${business.name}`, "community-hub", business.id),
   };
 }
