@@ -27,11 +27,19 @@ The portal is a Next.js 16 (App Router) app for Barangay Maduya, City of Carmona
 | [Barangay settings and About Us](features/barangay-settings.md) | Fees, rates, contact details, goal/mission/vision, officials and the knowledge base |
 | [Profiles and Resident Credentials](features/profiles.md) | The profile page, the resident profile form and what it unlocks |
 | [Home pages](features/home.md) | The resident and admin home pages and the Needs Attention queue |
-| [Notifications](features/notifications.md) | When residents are notified, links and retention |
+| [Notifications](features/notifications.md) | When residents are notified, links, phone notifications and retention |
 | [Audit logs](features/audit-logs.md) | What's logged, how entries are built and who can read them |
 | [Analytics](features/analytics.md) | The monthly report and how records are counted |
 | [User management](features/user-management.md) | Roles, bans, account deletion, the deleted-users archive and the Clerk webhook |
 | [Public site](features/public-site.md) | The signed-out pages, redirects, sharing metadata and the legal pages |
+
+## Walkthroughs
+
+Line-by-line traces of the code behind one flow, in the order it runs, jumping between files when the code does. Each one gives the date its line numbers were checked.
+
+| Document | What it covers |
+|---|---|
+| [Phone notifications](walkthroughs/phone-notifications.md) | A resident turning phone notifications on, and an admin's status change being pushed to their phone and opened |
 
 ## AI
 

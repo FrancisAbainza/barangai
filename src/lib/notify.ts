@@ -1,9 +1,11 @@
 // Server-only — never import in Client Components.
+import { after } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/config";
 import { notificationsTable, type Notification } from "@/db/schema";
 import { getUserDisplayInfoMap } from "@/lib/clerk-users";
-import { DELETED_NOTIFICATION_STATUS } from "@/lib/notifications";
+import { DELETED_NOTIFICATION_STATUS, getNotificationHref } from "@/lib/notifications";
+import { sendPushNotifications } from "@/lib/push";
 import { isAdminRole } from "@/lib/roles";
 
 type NotificationTarget = {
@@ -41,6 +43,12 @@ async function notify(
   await db
     .insert(notificationsTable)
     .values(recipients.map((recipient) => ({ ...recipient, type, referenceId, status })));
+
+  // Phone notifications go out after the response, so the admin doesn't wait on the push services.
+  const url = getNotificationHref({ type, referenceId, status });
+  after(() =>
+    sendPushNotifications(recipients.map(({ userId, message }) => ({ userId, body: message, url })))
+  );
 }
 
 // Called by the domain `set*Status` actions after an admin changes a submission's status.

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AiAssistantWidget } from "@/components/ai-assistant-widget";
 import PortalHeader from "@/components/portal-header";
 import PortalSidebar from "@/components/portal-sidebar";
+import { PushSubscriptionSync } from "@/components/push-subscription-sync";
 import { ThemePreferenceSync } from "@/components/theme-preference-sync";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
@@ -23,6 +24,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       </SidebarInset>
       <AiAssistantWidget />
       <ThemePreferenceSync />
+      <PushSubscriptionSync />
     </SidebarProvider>
   );
 }

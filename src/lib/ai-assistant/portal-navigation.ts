@@ -70,7 +70,7 @@ export const PORTAL_NAVIGATION_TARGETS = {
     href: "/portal/notifications",
     for: {
       resident:
-        "View updates on the status of your document requests, community hub businesses, court reservations, and complaints.",
+        "View updates on the status of your document requests, community hub businesses, court reservations, and complaints, and turn on phone notifications for them.",
     },
   },
   analytics: {

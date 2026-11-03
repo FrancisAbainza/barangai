@@ -15,6 +15,7 @@ import {
   newsReactionsTable,
   newsTable,
   notificationsTable,
+  pushSubscriptionsTable,
   residentProfilesTable,
   transparencyProjectCommentsTable,
   transparencyProjectReactionsTable,
@@ -396,6 +397,7 @@ export async function deleteAllUserData(userId: string) {
     db.delete(businessesTable).where(eq(businessesTable.ownerId, userId)),
     db.delete(courtReservationsTable).where(eq(courtReservationsTable.requesterId, userId)),
     db.delete(notificationsTable).where(eq(notificationsTable.userId, userId)),
+    db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.userId, userId)),
     db.delete(userPreferencesTable).where(eq(userPreferencesTable.userId, userId)),
     db.delete(userSnapshotsTable).where(eq(userSnapshotsTable.userId, userId)),
   ]);

@@ -39,6 +39,7 @@ Create a `.env` file in the project root. `.env*` files are gitignored.
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Cloud → APIs & Services → Credentials | Every map (`APIProvider`) |
 | `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` | Google Cloud → Map Management → Map IDs | Every map (advanced markers need a Map ID) |
 | `OPENAI_API_KEY` | OpenAI → API keys | `@ai-sdk/openai` (read from the environment) |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | `npx web-push generate-vapid-keys`, once | Phone notifications (`src/lib/push.ts`, `PushNotificationToggle`). Optional: without them the toggle is hidden and only in-app notifications are sent |
 
 The `NEXT_PUBLIC_` variables are inlined into the browser bundle at build time, so restart `npm run dev` (or rebuild) after changing them.
 

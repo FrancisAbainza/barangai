@@ -58,7 +58,7 @@ src/
 ├── hooks/                         use-dialog-param, use-view-param, use-directions, use-mobile
 ├── lib/
 │   ├── <domain>.ts                Pure helpers per domain: badges, labels, reference numbers, formatting
-│   ├── auth.ts, clerk-users.ts, notify.ts, audit.ts, r2.ts   Server-only
+│   ├── auth.ts, clerk-users.ts, notify.ts, push.ts, audit.ts, r2.ts   Server-only
 │   ├── storage.ts                 Client upload/fetch/delete wrappers and the upload prefixes
 │   ├── data.ts                    Barangay name, logo, city, default fees and contact details
 │   └── ai-assistant/              The assistant's prompt, knowledge base search, tools and link registries
@@ -234,7 +234,7 @@ The browser is assumed to be on Philippine time, so client code uses plain local
 
 These import secrets or the database and must never be imported into a client component. Importing their types with `import type` is fine.
 
-- `src/lib/r2.ts`, `src/lib/auth.ts`, `src/lib/clerk-users.ts`, `src/lib/notify.ts`, `src/lib/audit.ts`
+- `src/lib/r2.ts`, `src/lib/auth.ts`, `src/lib/clerk-users.ts`, `src/lib/notify.ts`, `src/lib/push.ts`, `src/lib/audit.ts`
 - `src/lib/ai-assistant/knowledge-base-search.ts`, `src/lib/ai-assistant/system-prompt.ts`, `src/lib/ai-assistant/tools/`
 - `src/db/config.ts`
 

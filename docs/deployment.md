@@ -18,6 +18,8 @@ Production should use its own instances, separate from development:
 
 Set every variable from [Getting started](getting-started.md#2-environment-variables) on the host. The `NEXT_PUBLIC_` ones are inlined at build time, so rebuild after changing them.
 
+Generate a separate VAPID key pair for production (`npx web-push generate-vapid-keys`) and keep it. Replacing it later turns phone notifications off for every resident until they turn them on again.
+
 ## Steps
 
 1. **Database.** Push the schema to the production database before the code that needs it goes live:

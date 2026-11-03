@@ -264,6 +264,20 @@ A singleton row with `id = 1`. `getBarangaySettings()` returns the defaults from
 
 Indexed on (`userId`, `createdAt`).
 
+#### `push_subscriptions`
+
+One row per browser that turned on phone notifications (see [Notifications](features/notifications.md#phone-notifications)). A browser belongs to the user who last opened the portal in it.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | integer | |
+| `userId` | varchar | Who gets the pushes. Indexed |
+| `endpoint` | text, unique | The push service URL that identifies the browser |
+| `p256dh`, `auth` | text | The browser's keys for encrypting the payload |
+| `createdAt` | timestamp | |
+
+Rows are deleted when the push service reports the subscription gone (404/410), when the user turns phone notifications off, and when the user is deleted.
+
 #### `audit_logs`
 
 | Column | Type | Notes |

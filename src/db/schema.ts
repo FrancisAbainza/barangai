@@ -346,6 +346,28 @@ export const notificationsTable = pgTable(
 
 export type Notification = typeof notificationsTable.$inferSelect;
 
+// A browser that turned on phone notifications, so each notification is also sent to it as a
+// Web Push (sendPushNotifications in src/lib/push.ts). `endpoint` is the push service URL that
+// identifies the browser, and `p256dh`/`auth` are the keys the payload is encrypted with. A
+// browser belongs to the user who last opened the portal in it (PushSubscriptionSync), so a
+// shared phone gets only the current user's notifications. The row is deleted when the push
+// service says the subscription is gone.
+export const pushSubscriptionsTable = pgTable(
+  "push_subscriptions",
+  {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    userId: varchar({ length: 255 }).notNull(),
+    endpoint: text().notNull(),
+    p256dh: text().notNull(),
+    auth: text().notNull(),
+    createdAt: timestamp().notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("push_subscriptions_endpoint_idx").on(table.endpoint),
+    index("push_subscriptions_user_id_idx").on(table.userId),
+  ]
+);
+
 // Mirror of Clerk users, kept in sync via the `user.created`/`user.updated` webhooks
 // so a last-known snapshot is available when `user.deleted` fires (Clerk's delete
 // webhook payload only contains the user id, nothing else). `deletedAt` is the

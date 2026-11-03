@@ -1,6 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/page-header";
+import PushNotificationToggle from "@/components/notifications/push-notification-toggle";
 import ResidentNotifications from "@/components/notifications/resident-notifications";
 import { READ_NOTIFICATION_RETENTION_DAYS } from "@/lib/notifications";
 import { Bell } from "lucide-react";
@@ -14,6 +15,7 @@ export default function NotificationsPage() {
         title="Notifications"
         description={`Updates on the status of your requests and submissions. Read notifications are deleted after ${READ_NOTIFICATION_RETENTION_DAYS} days.`}
       />
+      <PushNotificationToggle />
       <ResidentNotifications />
     </div>
   );

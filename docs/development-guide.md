@@ -121,7 +121,7 @@ See [AI assistant](ai-assistant.md#adding-a-form-the-assistant-can-open). In sho
 - **`new Date("YYYY-MM-DD")` is UTC midnight**, 8 AM in the Philippines. Use `parseDateValue` on the client and `+08:00` on the server.
 - **Numeric columns come back as strings** (`totalAmount`, `budget`).
 - **`useSearchParams` needs a Suspense boundary.** The portal layout has one. A page outside `/portal` that uses `useDialogParam` or `useViewParam` needs its own.
-- **Server-only modules** (`src/lib/auth.ts`, `clerk-users.ts`, `notify.ts`, `audit.ts`, `r2.ts`, `src/db/config.ts`, the assistant's prompt, search and tools) must not be imported into client components. `import type` is fine.
+- **Server-only modules** (`src/lib/auth.ts`, `clerk-users.ts`, `notify.ts`, `push.ts`, `audit.ts`, `r2.ts`, `src/db/config.ts`, the assistant's prompt, search and tools) must not be imported into client components. `import type` is fine.
 - **R2 files aren't deleted with their rows.** Every delete path has to remove them itself (see [File storage](file-storage.md#deleting)).
 - **Role changes made in the Clerk Dashboard skip the app's side effects** (clearing Resident Credentials, the audit log).
 - **Recharts doesn't draw zero-value bars** or their labels, and sorts legends by name unless given `itemSorter`.

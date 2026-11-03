@@ -122,6 +122,7 @@ The redirects come from `src/proxy.ts`, except the profile page's, which the pag
 | See the Needs Attention queue | No | Yes | Yes | `getNeedsAttentionQueue`, `getAdminPendingCounts` |
 | Read audit logs | No | Own entries, on their profile | Everyone's: Audit Logs, any admin's profile, and each record's "Audit Logs" menu item | `getAuditLogs` |
 | Receive notifications | Yes | No | No | `notify` in `src/lib/notify.ts` skips admins |
+| Turn on phone notifications | Yes | No | No | On the Notifications page (`PushNotificationToggle`). Pushes go only to notification recipients |
 
 Making someone an admin or super admin deletes their Resident Credentials and valid ID photos. Admins' changes to submissions, posts, settings, officials, the knowledge base and accounts are written to the audit logs, and actions residents can also call (deleting a submission, editing a business) are logged only when an admin calls them. See [Audit logs](features/audit-logs.md).
 

@@ -1,9 +1,9 @@
 import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import type { UserJSON } from "@clerk/backend";
 import type { NextRequest } from "next/server";
-import { isNull } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { db } from "@/db/config";
-import { userSnapshotsTable } from "@/db/schema";
+import { pushSubscriptionsTable, userSnapshotsTable } from "@/db/schema";
 
 function extractFullName(user: Pick<UserJSON, "first_name" | "last_name" | "username">) {
   return [user.first_name, user.last_name].filter(Boolean).join(" ") || user.username || "Unknown";
@@ -58,6 +58,9 @@ export async function POST(req: NextRequest) {
           set: { deletedAt: now, updatedAt: now },
           setWhere: isNull(userSnapshotsTable.deletedAt),
         });
+
+      // Their submissions outlive the account, so a later status change would still reach their phones.
+      await db.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.userId, userId));
     }
   }
 
