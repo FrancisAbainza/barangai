@@ -14,10 +14,12 @@ import {
   newsCommentsTable,
   newsReactionsTable,
   newsTable,
+  notificationsTable,
   residentProfilesTable,
   transparencyProjectCommentsTable,
   transparencyProjectReactionsTable,
   transparencyProjectsTable,
+  userPreferencesTable,
   userSnapshotsTable,
 } from "@/db/schema";
 import { getAuthRole, requireAdmin, requireSuperAdmin } from "@/lib/auth";
@@ -77,6 +79,7 @@ export async function getUsers({
   search?: string;
   role?: string;
 } = {}): Promise<UsersPage> {
+  await requireAdmin();
   const client = await clerkClient();
   const query = search?.trim() || undefined;
 
@@ -392,6 +395,8 @@ export async function deleteAllUserData(userId: string) {
     db.delete(transparencyProjectCommentsTable).where(eq(transparencyProjectCommentsTable.userId, userId)),
     db.delete(businessesTable).where(eq(businessesTable.ownerId, userId)),
     db.delete(courtReservationsTable).where(eq(courtReservationsTable.requesterId, userId)),
+    db.delete(notificationsTable).where(eq(notificationsTable.userId, userId)),
+    db.delete(userPreferencesTable).where(eq(userPreferencesTable.userId, userId)),
     db.delete(userSnapshotsTable).where(eq(userSnapshotsTable.userId, userId)),
   ]);
 

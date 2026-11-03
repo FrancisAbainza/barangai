@@ -1,7 +1,7 @@
 "use server";
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import { getAuthRole, requireAdmin } from "@/lib/auth";
+import { getAuthRole, requireAdmin, requireSubmitter } from "@/lib/auth";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfo, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
 import { documentRequestsTable, type DocumentRequest } from "@/db/schema";
@@ -30,8 +30,7 @@ export type CreateDocumentRequestInput = {
 };
 
 export async function createDocumentRequest(data: CreateDocumentRequestInput) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const { userId } = await requireSubmitter();
 
   const isPickup = data.receiveVia === PICKUP_DELIVERY_METHOD;
   await db.insert(documentRequestsTable).values({
@@ -187,12 +186,10 @@ export async function getDocumentRequests({
     conditions.push(eq(documentRequestsTable.receiveVia, receiveVia));
   }
   if (dateFrom) {
-    conditions.push(gte(documentRequestsTable.createdAt, new Date(dateFrom)));
+    conditions.push(gte(documentRequestsTable.createdAt, new Date(`${dateFrom}T00:00:00+08:00`)));
   }
   if (dateTo) {
-    const end = new Date(dateTo);
-    end.setHours(23, 59, 59, 999);
-    conditions.push(lte(documentRequestsTable.createdAt, end));
+    conditions.push(lte(documentRequestsTable.createdAt, new Date(`${dateTo}T23:59:59.999+08:00`)));
   }
 
   const trimmedSearch = search?.trim();

@@ -4,7 +4,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { and, asc, count, desc, eq, gte, ilike, inArray, like, lte, ne, notInArray, or, sql } from "drizzle-orm";
-import { getAuthRole, requireAdmin } from "@/lib/auth";
+import { getAuthRole, requireAdmin, requireSubmitter } from "@/lib/auth";
 import { deleteNotificationsFor, notifyDeletion, notifyStatusChange } from "@/lib/notify";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfo, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { logAudit } from "@/lib/audit";
@@ -97,8 +97,7 @@ export type CreateComplaintInput = {
 };
 
 export async function createComplaint(data: CreateComplaintInput) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const { userId } = await requireSubmitter();
 
   await db.insert(complaintsTable).values({
     complainantId: userId,
@@ -376,12 +375,10 @@ export async function getComplaints({
     conditions.push(eq(complaintsTable.status, status));
   }
   if (dateFrom) {
-    conditions.push(gte(complaintsTable.createdAt, new Date(dateFrom)));
+    conditions.push(gte(complaintsTable.createdAt, new Date(`${dateFrom}T00:00:00+08:00`)));
   }
   if (dateTo) {
-    const end = new Date(dateTo);
-    end.setHours(23, 59, 59, 999);
-    conditions.push(lte(complaintsTable.createdAt, end));
+    conditions.push(lte(complaintsTable.createdAt, new Date(`${dateTo}T23:59:59.999+08:00`)));
   }
 
   const trimmedSearch = search?.trim();

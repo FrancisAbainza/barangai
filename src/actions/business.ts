@@ -133,12 +133,10 @@ export async function getBusinesses({
     );
   }
   if (dateFrom) {
-    conditions.push(gte(businessesTable.createdAt, new Date(dateFrom)));
+    conditions.push(gte(businessesTable.createdAt, new Date(`${dateFrom}T00:00:00+08:00`)));
   }
   if (dateTo) {
-    const end = new Date(dateTo);
-    end.setHours(23, 59, 59, 999);
-    conditions.push(lte(businessesTable.createdAt, end));
+    conditions.push(lte(businessesTable.createdAt, new Date(`${dateTo}T23:59:59.999+08:00`)));
   }
 
   const trimmedSearch = search?.trim();
@@ -238,7 +236,7 @@ export async function getBusinessStats(): Promise<BusinessStats> {
 
   const [totalResult, pendingResult] = await Promise.all([
     db.select({ count: count() }).from(businessesTable),
-    db.select({ count: count() }).from(businessesTable).where(ne(businessesTable.status, "Verified")),
+    db.select({ count: count() }).from(businessesTable).where(eq(businessesTable.status, "Pending")),
   ]);
 
   return {

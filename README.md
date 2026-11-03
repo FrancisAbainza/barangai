@@ -149,7 +149,7 @@ Create a bucket and an API token with read and write access to it. Files are upl
 
 ### 6. Google Maps
 
-Enable the **Maps JavaScript API** and **Geocoding API** for your API key, and create a **Map ID** in Google Cloud's Map Management.
+Enable the **Maps JavaScript API**, **Geocoding API** and **Routes API** (for the Community Hub's directions) for your API key, and create a **Map ID** in Google Cloud's Map Management.
 
 ### 7. Run
 
@@ -188,6 +188,7 @@ src/
 
 ## Documentation
 
+- [Developer documentation](docs/README.md): setup, architecture, auth and roles, the database, file storage, every feature, the AI features, UI conventions, recipes for common changes, deployment and known issues
 - [Portal user manual (PDF)](docs/barangay-maduya-portal-user-manual.pdf): how residents and staff use each page
 - [AI assistant](docs/ai-assistant.md): how the assistant is put together and how to add forms, pages and tools
 - [CLAUDE.md](CLAUDE.md): a detailed architecture overview

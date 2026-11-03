@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { MoreHorizontal, Trash2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import DeleteUserDataDialog from "@/components/user-management/delete-user-data-dialog";
+import { isSuperAdminRole } from "@/lib/roles";
 
 interface DeletedUserActionsMenuProps {
   userId: string;
@@ -19,6 +21,8 @@ interface DeletedUserActionsMenuProps {
 
 export default function DeletedUserActionsMenu({ userId, userName }: DeletedUserActionsMenuProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { user } = useUser();
+  const isSuperAdmin = isSuperAdminRole(user?.publicMetadata?.role as string | undefined);
 
   return (
     <>
@@ -36,25 +40,29 @@ export default function DeletedUserActionsMenu({ userId, userName }: DeletedUser
               View Profile
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem
-            variant="destructive"
-            onSelect={(e) => {
-              e.preventDefault();
-              setDeleteDialogOpen(true);
-            }}
-          >
-            <Trash2 />
-            Delete All User Data
-          </DropdownMenuItem>
+          {isSuperAdmin && (
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={(e) => {
+                e.preventDefault();
+                setDeleteDialogOpen(true);
+              }}
+            >
+              <Trash2 />
+              Delete All User Data
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <DeleteUserDataDialog
-        userId={userId}
-        userName={userName}
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-      />
+      {isSuperAdmin && (
+        <DeleteUserDataDialog
+          userId={userId}
+          userName={userName}
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+        />
+      )}
     </>
   );
 }

@@ -31,10 +31,8 @@ export const businessFormSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   category: z.enum(BUSINESS_CATEGORIES),
-  contactNumber: z
-    .string()
-    .min(10, "Enter a valid contact number")
-    .max(13, "Enter a valid contact number"),
+  // 10 to 12 digits, with an optional leading + for numbers like +639171234567.
+  contactNumber: z.string().regex(/^\+?\d{10,12}$/, "Enter a valid contact number"),
   socialMediaLink: z.string().url("Enter a valid URL").optional().or(z.literal("")),
   operatingHours: operatingHoursSchema,
   photos: z.array(z.custom<MediaItem>()).max(10, "Only up to 10 photos are allowed").optional(),

@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { getAuthRole } from "@/lib/auth";
+import { getAuthRole, requireAdmin } from "@/lib/auth";
 import { getAuditChanges, logAudit } from "@/lib/audit";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfo, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { db } from "@/db/config";
@@ -39,8 +39,7 @@ const NEWS_AUDIT_LABELS = {
 };
 
 export async function createNews(data: CreateNewsInput) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const userId = await requireAdmin();
 
   const [news] = await db
     .insert(newsTable)

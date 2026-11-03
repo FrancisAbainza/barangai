@@ -2,7 +2,9 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/config";
 import { notificationsTable, type Notification } from "@/db/schema";
+import { getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { DELETED_NOTIFICATION_STATUS } from "@/lib/notifications";
+import { isAdminRole } from "@/lib/roles";
 
 type NotificationTarget = {
   userId: string;
@@ -16,19 +18,24 @@ type NotificationTarget = {
 // `subject` completes "Your <subject> <change>.", e.g. `Barangay Clearance request`.
 // `followerIds` (complaint followers) get "A <subject> you're following <change>." instead.
 // Never sent to the user making the change (admins can submit court reservations and businesses
-// too, and residents can delete their own submissions).
+// too, and residents can delete their own submissions), or to admins, who can't open
+// /portal/notifications.
 async function notify(
   { userId, followerIds = [], actorId, type, referenceId, subject }: NotificationTarget,
   status: string,
   change: string
 ) {
-  const recipients = [
+  const candidates = [
     { userId, message: `Your ${subject} ${change}.` },
     ...followerIds.map((followerId) => ({
       userId: followerId,
       message: `A ${subject} you're following ${change}.`,
     })),
   ].filter((recipient) => recipient.userId !== actorId);
+  if (candidates.length === 0) return;
+
+  const users = await getUserDisplayInfoMap(candidates.map((recipient) => recipient.userId));
+  const recipients = candidates.filter((recipient) => !isAdminRole(users.get(recipient.userId)?.role));
   if (recipients.length === 0) return;
 
   await db

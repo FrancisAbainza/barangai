@@ -1,7 +1,7 @@
 "use server";
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import { getAuthRole, requireAdmin } from "@/lib/auth";
+import { getAuthRole, requireAdmin, requireSubmitter } from "@/lib/auth";
 import { notifyDeletion, notifyStatusChange } from "@/lib/notify";
 import { DELETED_USER_DISPLAY_INFO, getUserDisplayInfo, getUserDisplayInfoMap } from "@/lib/clerk-users";
 import { logAudit } from "@/lib/audit";
@@ -23,6 +23,9 @@ import { getBarangaySettings } from "@/actions/settings";
 
 // Time ranges (minutes after midnight) already held by approved reservations on `date`.
 export async function getTakenTimeRanges(date: string, excludeReservationId?: number): Promise<CourtTimeRange[]> {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
   const conditions = [eq(courtReservationsTable.date, date), eq(courtReservationsTable.status, "Approved")];
   if (excludeReservationId !== undefined) {
     conditions.push(ne(courtReservationsTable.id, excludeReservationId));
@@ -48,8 +51,7 @@ export type CreateCourtReservationInput = {
 // Messages the user should read are returned as `{ error }` instead of thrown, because production
 // builds replace a thrown server action error's message with a generic one.
 export async function createCourtReservation(data: CreateCourtReservationInput) {
-  const { userId, isAdmin } = await getAuthRole();
-  if (!userId) throw new Error("Unauthorized");
+  const { userId, isAdmin } = await requireSubmitter();
 
   if (
     !Number.isInteger(data.startTime) ||

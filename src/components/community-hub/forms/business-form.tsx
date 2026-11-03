@@ -97,17 +97,25 @@ export default function BusinessForm({ defaultValues, onSubmit, onCancel }: Busi
           )}
         />
 
-        <Field data-invalid={!!errors.contactNumber}>
-          <FieldLabel htmlFor="contactNumber">Contact Number</FieldLabel>
-          <Input
-            {...register("contactNumber")}
-            id="contactNumber"
-            type="tel"
-            placeholder="e.g. 09171234567"
-            aria-invalid={!!errors.contactNumber}
-          />
-          <FieldError errors={[errors.contactNumber]} />
-        </Field>
+        <Controller
+          name="contactNumber"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="contactNumber">Contact Number</FieldLabel>
+              <Input
+                {...field}
+                id="contactNumber"
+                type="tel"
+                maxLength={13}
+                placeholder="e.g. 09171234567"
+                onChange={(e) => field.onChange(e.target.value.replace(/[^\d+]/g, ""))}
+                aria-invalid={fieldState.invalid}
+              />
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
 
         <Field data-invalid={!!errors.socialMediaLink}>
           <FieldLabel htmlFor="socialMediaLink">
