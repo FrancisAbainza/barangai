@@ -41,6 +41,7 @@ import { barangayLogoSrc, barangayName } from "@/lib/data";
 import { isAdminRole, isSuperAdminRole } from "@/lib/roles";
 import { getUnreadNotificationCount } from "@/actions/notifications";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
 import { cn } from "@/lib/utils";
 
 const NOTIFICATIONS_HREF = "/portal/notifications";
@@ -195,6 +196,7 @@ export default function PortalSidebar() {
                 </p>
               </div>
             )}
+            <LanguageToggle className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" />
             <ThemeToggle />
           </div>
         </SidebarFooter>

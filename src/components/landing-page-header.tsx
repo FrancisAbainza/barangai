@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { Separator } from "./ui/separator";
 import { barangayCity, barangayLogoSrc, barangayName } from "@/lib/data";
+import { LanguageToggle } from "./language-toggle";
 
 const publicNavLinks = [
   { href: "/", label: "Home", icon: Home },
@@ -56,6 +57,7 @@ export default function LandingPageHeader() {
             </Link>
           ))}
           <div className="flex items-center gap-2.5">
+            <LanguageToggle showLabel />
             <SignInButton mode="modal">
               <Button
                 variant="outline"
@@ -74,78 +76,81 @@ export default function LandingPageHeader() {
           </div>
         </nav>
 
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="lg:hidden">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-72 p-0 flex flex-col">
-            {/* Sidebar-style branding header */}
-            <SheetHeader className="flex flex-col items-center gap-2 border-b border-border py-4 px-4">
-              <Image
-                src={barangayLogoSrc}
-                alt={`${barangayName} logo`}
-                width={100}
-                height={100}
-              />
-              <SheetTitle className="text-sm font-semibold">
-                {barangayName} Website
-              </SheetTitle>
-            </SheetHeader>
-
-            {/* Navigation — sidebar menu style */}
-            <nav className="flex-1 flex flex-col gap-1 p-2">
-              {publicNavLinks.map(({ href, label, icon: Icon }) => {
-                const isActive = pathname === href;
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setIsSheetOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    {label}
-                  </Link>
-                );
-              })}
-            </nav>
-
-            <Separator />
-
-            {/* CTA footer */}
-            <div className="px-4 pb-4">
-              <p className="text-xs text-muted-foreground mb-3 text-center">
-                Log in to access barangay services
-              </p>
-              <div className="flex flex-col gap-2">
-                {/* Close the sheet first so its focus trap doesn't block the Clerk modal */}
-                <SignInButton mode="modal">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-sm px-8 bg-transparent"
-                    onClick={() => setIsSheetOpen(false)}
-                  >
-                    Log in
-                  </Button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <Button size="sm" className="text-sm px-8" onClick={() => setIsSheetOpen(false)}>
-                    Register
-                  </Button>
-                </SignUpButton>
+        <div className="flex items-center gap-1 lg:hidden">
+          <LanguageToggle />
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0 flex flex-col">
+              {/* Sidebar-style branding header */}
+              <SheetHeader className="flex flex-col items-center gap-2 border-b border-border py-4 px-4">
+                <Image
+                  src={barangayLogoSrc}
+                  alt={`${barangayName} logo`}
+                  width={100}
+                  height={100}
+                />
+                <SheetTitle className="text-sm font-semibold">
+                  {barangayName} Website
+                </SheetTitle>
+              </SheetHeader>
+  
+              {/* Navigation — sidebar menu style */}
+              <nav className="flex-1 flex flex-col gap-1 p-2">
+                {publicNavLinks.map(({ href, label, icon: Icon }) => {
+                  const isActive = pathname === href;
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setIsSheetOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </nav>
+  
+              <Separator />
+  
+              {/* CTA footer */}
+              <div className="px-4 pb-4">
+                <p className="text-xs text-muted-foreground mb-3 text-center">
+                  Log in to access barangay services
+                </p>
+                <div className="flex flex-col gap-2">
+                  {/* Close the sheet first so its focus trap doesn't block the Clerk modal */}
+                  <SignInButton mode="modal">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-sm px-8 bg-transparent"
+                      onClick={() => setIsSheetOpen(false)}
+                    >
+                      Log in
+                    </Button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <Button size="sm" className="text-sm px-8" onClick={() => setIsSheetOpen(false)}>
+                      Register
+                    </Button>
+                  </SignUpButton>
+                </div>
               </div>
-            </div>
-          </SheetContent>
-        </Sheet>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </header>
   );

@@ -159,3 +159,20 @@
      Force all four sides even so the content is centered. */
   padding: 12px !important;
 }
+
+/* Google Translate (Filipino toggle): hide its top banner, gadget and hover tooltip, and undo the
+   40px it pushes the page down for the banner. */
+.goog-te-banner-frame,
+.skiptranslate,
+#goog-gt-tt {
+  display: none !important;
+}
+body {
+  top: 0px !important;
+}
+/* The highlight it draws on translated text under the cursor. */
+.goog-text-highlight,
+.VIpgJd-yAWNEb-VIpgJd-fmcmS-sn54Q {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}

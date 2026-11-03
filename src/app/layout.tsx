@@ -9,6 +9,7 @@ import { QueryProvider } from "@/components/query-provider";
 import LandingHotlineBar from "@/components/landing-hotline-bar";
 import LandingPageHeader from "@/components/landing-page-header";
 import { ThemeProvider } from "@/components/theme-provider";
+import { GoogleTranslate } from "@/components/google-translate";
 
 const roboto = Roboto({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -71,6 +72,7 @@ export default function RootLayout({
                 </Show>
                 {children}
                 <Toaster />
+                <GoogleTranslate />
               </QueryProvider>
             </TooltipProvider>
           </ThemeProvider>
