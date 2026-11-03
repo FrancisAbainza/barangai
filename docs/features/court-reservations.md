@@ -2,6 +2,8 @@
 
 Residents book the barangay court for whole hours and pay through GCash, and admins approve or reject each booking. Admins can also book the court directly. Page: `/portal/court-reservation`.
 
+For the code that runs when a resident reserves the court and an admin approves it, in order and line by line, see [Court reservations, line by line](../walkthroughs/court-reservations.md).
+
 ## How times are stored
 
 A reservation has a `date` (`"YYYY-MM-DD"`), a `startTime` in minutes after midnight (0–1439) and a `durationHours`. It can start at any minute, lasts a whole number of hours, and must end by midnight of its date:

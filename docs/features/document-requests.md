@@ -2,6 +2,8 @@
 
 Residents request barangay documents online, and admins prepare them and release them at the hall or as a downloadable soft copy. Page: `/portal/document-request`.
 
+For the code that runs when a resident requests a document and an admin releases it, in order and line by line, see [Document requests, line by line](../walkthroughs/document-requests.md).
+
 ## Document types
 
 Each type has its own form, dialog and Zod schema (`src/schemas/<type>-document-request-schema.ts`). All of them create a row in `document_requests` through `createDocumentRequest`.

@@ -40,6 +40,11 @@ Line-by-line traces of the code behind one flow, in the order it runs, jumping b
 | Document | What it covers |
 |---|---|
 | [Phone notifications](walkthroughs/phone-notifications.md) | A resident turning phone notifications on, and an admin's status change being pushed to their phone and opened |
+| [Document requests](walkthroughs/document-requests.md) | A resident requesting a Barangay Clearance with a GCash receipt, an admin marking it Processing and then Ready for Pickup with the soft copy, and the resident opening it, which marks it Claimed |
+| [Complaints](walkthroughs/complaints.md) | Filing a complaint (AI category and priority, the nearby-duplicate check), a second resident following it instead, an admin resolving it, and the AI response plan |
+| [Court reservations](walkthroughs/court-reservations.md) | A resident reserving the court (hour-by-hour pricing, clash checks in the form and on the server) and an admin approving it |
+| [Community Hub businesses](walkthroughs/community-hub-businesses.md) | A resident submitting a business, an admin verifying it, and the owner editing it, which sends it back for review |
+| [AI assistant](walkthroughs/ai-assistant.md) | A message going through the chat route (knowledge base search, tools, system prompt, steps), a form link opening the form prefilled, and the browser answering `getUserLocation` for the nearest business |
 
 ## AI
 

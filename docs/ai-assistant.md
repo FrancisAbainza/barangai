@@ -42,6 +42,8 @@ The assistant sends the user to a page, a form or a record by writing a markdown
 4. Because of `stopWhen: stepCountIs(8)`, the model gets more steps in the same stream and writes its reply from the results. The extra steps cover a lookup followed by `getFormLink`, e.g. `calculateCourtFee` then the reservation form for "how much is 8 to 11 AM? I'd like to reserve", and a message asking for several things at once.
 5. `ChatPanel` renders the reply as it streams, and each complete link to a portal page shows as a button. Clicking one navigates with `next/link` and closes the widget (`onNavigate`).
 
+For the code that runs, in order and line by line, when a resident asks for a form and when they ask for the nearest business, see [AI assistant, line by line](walkthroughs/ai-assistant.md).
+
 ## Links
 
 The assistant used to show buttons through tools of their own (`navigateToPage`, `openFormDialog` and an `open*` tool per kind of record), which the model had to call after answering. When it didn't, it still told the user to "tap the button below", and there was no button: after a how-to answer about 1 run in 4, and after other lookups now and then, despite a rule against it in the system prompt and in each result. Every new kind of record also needed another button tool and more rules about when to call it.

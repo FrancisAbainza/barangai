@@ -2,6 +2,8 @@
 
 A directory and map of local businesses. Residents submit their own businesses with a permit, admins verify them, and verified businesses are listed for everyone signed in. Page: `/portal/community-hub`.
 
+For the code that runs when a resident submits or edits a business and an admin verifies it, in order and line by line, see [Community Hub businesses, line by line](../walkthroughs/community-hub-businesses.md).
+
 ## A business
 
 The form (`BusinessForm`, `businessFormSchema` in `src/schemas/business-schema.ts`):

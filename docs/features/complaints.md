@@ -2,6 +2,8 @@
 
 Residents report problems pinned to a map. The AI suggests a category and priority, nearby duplicates can be followed instead of re-filed, and admins resolve or dismiss each one, optionally with an AI-written response plan. Page: `/portal/complaint`.
 
+For the code that runs when a resident files or follows a complaint and an admin resolves it, in order and line by line, see [Complaints, line by line](../walkthroughs/complaints.md).
+
 ## Filing a complaint
 
 The form (`ComplaintForm`, `complaintFormSchema`) asks for:
