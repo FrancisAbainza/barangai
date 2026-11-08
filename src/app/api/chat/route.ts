@@ -42,6 +42,7 @@ export async function POST(req: Request) {
       { barangay: barangayOfficials, sk: skOfficials },
       isAdmin,
       isSuperAdmin,
+      userId,
     ),
     // Skips a getUserLocation call the browser never answered, e.g. when the user sent another
     // message instead of responding to the permission prompt. OpenAI rejects a call with no result.

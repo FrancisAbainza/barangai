@@ -72,12 +72,13 @@ const AUDIENCE_NAMES: Record<PortalAudience, string> = {
 // The pages the user's role can open, as links, and the ones it can't, by name: left out unnamed, a
 // request for a page the role can't open got the closest one that was listed ("go to the audit
 // logs page" got About Us).
-function formatPages(audience: PortalAudience): string {
+function formatPages(audience: PortalAudience, userId: string): string {
   const ids = Object.keys(PORTAL_NAVIGATION_TARGETS) as PortalNavigationTargetId[];
   const pages = ids.flatMap((id) => {
     const { label, href } = PORTAL_NAVIGATION_TARGETS[id];
     const description = describePortalPage(id, audience);
-    return description ? [`- ${markdownLink(label, href)}: ${description}`] : [];
+    const pageHref = id === "my-profile" ? `${href}/${encodeURIComponent(userId)}` : href;
+    return description ? [`- ${markdownLink(label, pageHref)}: ${description}`] : [];
   });
   const unavailable = ids
     .filter((id) => !describePortalPage(id, audience))
@@ -144,13 +145,14 @@ export function buildSystemPrompt(
   officials: { barangay: Official[]; sk: Official[] },
   isAdmin: boolean,
   isSuperAdmin: boolean,
+  userId: string,
 ): string {
   const audience: PortalAudience = isSuperAdmin ? "superAdmin" : isAdmin ? "admin" : "resident";
   return [
     buildInstructions(isAdmin),
     isAdmin && ADMIN_NOTES,
     describeRole(isAdmin, isSuperAdmin),
-    formatPages(audience),
+    formatPages(audience, userId),
     `Barangay settings:\n${formatBarangaySettings(settings)}`,
     `Barangay officials:\n${formatOfficials(officials.barangay)}`,
     `Sangguniang Kabataan (SK) officials:\n${formatOfficials(officials.sk)}`,

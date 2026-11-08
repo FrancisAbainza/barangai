@@ -65,6 +65,14 @@ export const PORTAL_NAVIGATION_TARGETS = {
       admin: "Learn about the barangay's officials, goal, mission, and vision.",
     },
   },
+  "my-profile": {
+    label: "My Profile",
+    href: "/portal/profile",
+    for: {
+      resident: "View your profile and update your Resident Credentials.",
+      admin: "View your own profile, including your posts and audit log.",
+    },
+  },
   notifications: {
     label: "Notifications",
     href: "/portal/notifications",
