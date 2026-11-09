@@ -56,7 +56,7 @@ export default function ResidentProfileSection({
         (defaultValues?.validIdBack as MediaItem[]) ?? []
       );
 
-      await saveResidentProfile(userId, {
+      await saveResidentProfile({
         ...data,
         validIdFront: uploadedValidIdFront,
         validIdBack: uploadedValidIdBack,

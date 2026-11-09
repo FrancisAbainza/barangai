@@ -1,5 +1,6 @@
 import type { User } from "@clerk/nextjs/server";
 import ProfileHeader from "@/components/profile/profile-header";
+import AdminProfileSection from "@/components/profile/admin-profile-section";
 import ResidentProfileSection from "@/components/profile/resident-profile-section";
 import ProfileTabs from "@/components/profile/profile-tabs";
 import type { MediaItem } from "@/components/file-uploader";
@@ -22,7 +23,12 @@ export default function OwnProfileView({
     <div className="mx-auto w-full max-w-7xl space-y-6">
       <ProfileHeader profileUser={profileUser} />
 
-      {!isAdmin && (
+      {isAdmin ? (
+        <AdminProfileSection
+          firstName={profileUser.firstName ?? ""}
+          lastName={profileUser.lastName ?? ""}
+        />
+      ) : (
         <ResidentProfileSection
           userId={profileUser.id}
           defaultValues={{

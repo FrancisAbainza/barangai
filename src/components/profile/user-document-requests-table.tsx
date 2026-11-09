@@ -1,5 +1,6 @@
 "use client";
 
+import { FileText } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import EmptyState from "@/components/empty-state";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import DocumentRequestActionsMenu from "@/components/document-request/document-request-actions-menu";
 import { getDocumentRequestsByUser } from "@/actions/document-requests";
@@ -32,6 +34,16 @@ export default function UserDocumentRequestsTable({ userId }: { userId: string }
 
   const requests = data?.pages.flatMap((page) => page.items) ?? [];
 
+  if (!isLoading && requests.length === 0) {
+    return (
+      <EmptyState
+        icon={FileText}
+        title="No document requests found"
+        description="Your document requests will appear here once submitted."
+      />
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
       <Table>
@@ -49,12 +61,6 @@ export default function UserDocumentRequestsTable({ userId }: { userId: string }
             <TableRow>
               <TableCell colSpan={5}>
                 <Skeleton className="h-5 w-full" />
-              </TableCell>
-            </TableRow>
-          ) : requests.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
-                No requests yet.
               </TableCell>
             </TableRow>
           ) : (

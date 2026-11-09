@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDays } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import EmptyState from "@/components/empty-state";
 import LoadMoreTrigger from "@/components/load-more-trigger";
 import CourtReservationActionsMenu from "@/components/court-reservation/court-reservation-actions-menu";
 import { getCourtReservationsByUser } from "@/actions/court-reservations";
@@ -38,6 +40,16 @@ export default function UserCourtReservationsTable({ userId }: { userId: string 
 
   const reservations = data?.pages.flatMap((page) => page.items) ?? [];
 
+  if (!isLoading && reservations.length === 0) {
+    return (
+      <EmptyState
+        icon={CalendarDays}
+        title="No court reservations found"
+        description="Your court reservations will appear here once submitted."
+      />
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-sm [&_thead]:bg-muted/50 [&_th]:text-muted-foreground">
       <Table>
@@ -57,12 +69,6 @@ export default function UserCourtReservationsTable({ userId }: { userId: string 
             <TableRow>
               <TableCell colSpan={7}>
                 <Skeleton className="h-5 w-full" />
-              </TableCell>
-            </TableRow>
-          ) : reservations.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
-                No reservations yet.
               </TableCell>
             </TableRow>
           ) : (

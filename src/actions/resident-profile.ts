@@ -6,6 +6,10 @@ import { residentProfilesTable, type ResidentProfile } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getAuthRole } from "@/lib/auth";
 import type { ResidentProfileFormValues } from "@/schemas/resident-profile-schema";
+import {
+  adminProfileFormSchema,
+  type AdminProfileFormValues,
+} from "@/schemas/admin-profile-schema";
 import type { MediaItem } from "@/components/file-uploader";
 
 type SaveResidentProfileInput = Omit<ResidentProfileFormValues, "validIdFront" | "validIdBack"> & {
@@ -27,10 +31,9 @@ export async function getResidentProfile(userId: string): Promise<ResidentProfil
   return profile ?? null;
 }
 
-export async function saveResidentProfile(userId: string, data: SaveResidentProfileInput) {
-  const { userId: authUserId } = await auth();
-  if (!authUserId) throw new Error("Unauthorized");
-  if (authUserId !== userId) throw new Error("Forbidden");
+export async function saveResidentProfile(data: SaveResidentProfileInput) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
 
   const client = await clerkClient();
   await client.users.updateUser(userId, {
@@ -57,4 +60,14 @@ export async function saveResidentProfile(userId: string, data: SaveResidentProf
     .insert(residentProfilesTable)
     .values({ userId, ...values })
     .onConflictDoUpdate({ target: residentProfilesTable.userId, set: values });
+}
+
+export async function updateAdminProfile(data: AdminProfileFormValues) {
+  const { userId, isAdmin } = await getAuthRole();
+  if (!userId) throw new Error("Unauthorized");
+  if (!isAdmin) throw new Error("Forbidden");
+
+  const { firstName, lastName } = adminProfileFormSchema.parse(data);
+  const client = await clerkClient();
+  await client.users.updateUser(userId, { firstName, lastName });
 }
