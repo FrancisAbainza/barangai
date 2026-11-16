@@ -42,6 +42,7 @@ import { isAdminRole, isSuperAdminRole, roleLabel } from "@/lib/roles";
 import { setTransparencyProjectReaction } from "@/actions/transparency";
 import type { TransparencyProjectPage, TransparencyProjectWithAuthor } from "@/actions/transparency";
 import { MediaGrid, AttachmentList } from "@/components/media-gallery";
+import { ExpandableDescription } from "@/components/expandable-description";
 import MapView from "@/components/map-view";
 import type { LocationValue } from "@/components/map-picker";
 import { TRANSPARENCY_CATEGORIES } from "@/schemas/transparency-schema";
@@ -359,9 +360,7 @@ export default function TransparencyProjectCard({ project }: { project: Transpar
 
         <h3 className="font-bold text-base">{project.title}</h3>
 
-        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap wrap-break-word">
-          {project.description}
-        </p>
+        <ExpandableDescription text={project.description} />
 
         {(formattedBudget || project.location) && (
           <div className="flex flex-wrap items-center gap-3 text-sm">

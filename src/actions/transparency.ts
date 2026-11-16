@@ -131,7 +131,7 @@ export async function deleteTransparencyProject(id: number) {
   });
 }
 
-const TRANSPARENCY_PAGE_SIZE = 10;
+const TRANSPARENCY_PAGE_SIZE = 5;
 
 export type TransparencyProjectPage = {
   items: TransparencyProjectWithAuthor[];

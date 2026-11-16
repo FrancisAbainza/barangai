@@ -93,7 +93,7 @@ export async function updateNews(id: number, data: CreateNewsInput) {
   });
 }
 
-const NEWS_PAGE_SIZE = 10;
+const NEWS_PAGE_SIZE = 5;
 
 export type NewsPage = {
   items: NewsWithAuthor[];

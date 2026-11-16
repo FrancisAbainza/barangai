@@ -21,6 +21,7 @@ import { isAdminRole, isSuperAdminRole, roleLabel } from "@/lib/roles";
 import { setNewsReaction } from "@/actions/news";
 import type { NewsPage, NewsWithAuthor } from "@/actions/news";
 import { MediaGrid, AttachmentList } from "@/components/media-gallery";
+import { ExpandableDescription } from "@/components/expandable-description";
 import EditNewsDialog from "./edit-news-dialog";
 import DeleteNewsDialog from "./delete-news-dialog";
 import CommentsDialog from "./comments-dialog";
@@ -291,9 +292,7 @@ export default function NewsCard({ news }: { news: NewsWithAuthor }) {
 
         <h3 className="font-bold text-base">{news.title}</h3>
 
-        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap wrap-break-word">
-          {news.content}
-        </p>
+        <ExpandableDescription text={news.content} />
 
         <MediaGrid media={news.media} />
 
