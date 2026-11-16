@@ -58,7 +58,8 @@ function RangeList({ title, ranges, emptyText, dotClassName }: {
 }
 
 export default function CourtAvailabilityDialog({ open, onOpenChange }: CourtAvailabilityDialogProps) {
-  const [date, setDate] = useState(() => toDateValue(new Date()));
+  const [today] = useState(() => new Date());
+  const [date, setDate] = useState(() => toDateValue(today));
 
   const { data: takenRanges = [], isLoading } = useQuery({
     queryKey: ["court-reservation-taken-ranges", date],
@@ -80,7 +81,14 @@ export default function CourtAvailabilityDialog({ open, onOpenChange }: CourtAva
 
         <div className="space-y-1.5">
           <Label htmlFor="availability-date">Date</Label>
-          <DatePicker id="availability-date" value={date} onChange={setDate} required />
+          <DatePicker
+            id="availability-date"
+            value={date}
+            onChange={setDate}
+            required
+            disabledDays={{ before: today }}
+            startMonth={today}
+          />
         </div>
 
         {isLoading ? (
