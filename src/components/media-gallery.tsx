@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Download, FileText, Play } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Carousel,
@@ -86,6 +86,59 @@ function MediaViewerDialog({
   );
 }
 
+function GalleryVideo({
+  src,
+  active,
+  viewerOpen,
+  onLoadedMetadata,
+}: {
+  src: string;
+  active: boolean;
+  viewerOpen: boolean;
+  onLoadedMetadata?: (width: number, height: number) => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !active || viewerOpen || typeof IntersectionObserver === "undefined") {
+      video?.pause();
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        void video.play().catch((error: unknown) => {
+          if (error instanceof DOMException && ["AbortError", "NotAllowedError"].includes(error.name)) return;
+          console.error("Unable to autoplay gallery video", error);
+        });
+      } else {
+        video.pause();
+      }
+    });
+
+    observer.observe(video);
+    return () => {
+      observer.disconnect();
+      video.pause();
+    };
+  }, [active, viewerOpen]);
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      controls
+      preload="metadata"
+      playsInline
+      onLoadedMetadata={(event) =>
+        onLoadedMetadata?.(event.currentTarget.videoWidth, event.currentTarget.videoHeight)
+      }
+      className="relative h-full w-full bg-black object-contain"
+    />
+  );
+}
+
 export function MediaGrid({ media }: { media: GalleryItem[] }) {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [api, setApi] = useState<CarouselApi>();
@@ -118,63 +171,56 @@ export function MediaGrid({ media }: { media: GalleryItem[] }) {
 
             return (
               <CarouselItem key={index} className="pl-0">
-                <button
-                  type="button"
-                  onClick={() => setViewerOpen(true)}
-                  style={{ aspectRatio }}
-                  className="group relative block max-h-145 w-full cursor-pointer overflow-hidden border-0 p-0"
-                >
-                  {item.type === "video" ? (
-                    <>
-                      <video
-                        src={url}
-                        preload="metadata"
-                        onLoadedMetadata={
-                          isFirst
-                            ? (e) =>
-                                setAspectRatio(
-                                  clampAspectRatio(e.currentTarget.videoWidth, e.currentTarget.videoHeight)
-                                )
-                            : undefined
-                        }
-                        className="relative h-full w-full bg-black object-contain"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="rounded-full bg-white/80 p-3">
-                          <Play className="size-5 fill-current" />
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {/* Blurred backdrop fills the letterbox around a contained image */}
-                      <Image
-                        src={url}
-                        alt=""
-                        aria-hidden
-                        fill
-                        className="scale-110 object-cover opacity-60 blur-2xl"
-                        unoptimized
-                      />
-                      <Image
-                        src={url}
-                        alt={item.name}
-                        fill
-                        className="object-contain"
-                        unoptimized
-                        onLoad={
-                          isFirst
-                            ? (e) =>
-                                setAspectRatio(
-                                  clampAspectRatio(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)
-                                )
-                            : undefined
-                        }
-                      />
-                    </>
-                  )}
-                  <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/5" />
-                </button>
+                {item.type === "video" ? (
+                  <div
+                    style={{ aspectRatio }}
+                    className="relative block max-h-145 w-full overflow-hidden bg-black"
+                  >
+                    <GalleryVideo
+                      src={url}
+                      active={index === current}
+                      viewerOpen={viewerOpen}
+                      onLoadedMetadata={
+                        isFirst
+                          ? (width, height) => setAspectRatio(clampAspectRatio(width, height))
+                          : undefined
+                      }
+                    />
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setViewerOpen(true)}
+                    style={{ aspectRatio }}
+                    className="group relative block max-h-145 w-full cursor-pointer overflow-hidden border-0 p-0"
+                  >
+                    {/* Blurred backdrop fills the letterbox around a contained image */}
+                    <Image
+                      src={url}
+                      alt=""
+                      aria-hidden
+                      fill
+                      className="scale-110 object-cover opacity-60 blur-2xl"
+                      unoptimized
+                    />
+                    <Image
+                      src={url}
+                      alt={item.name}
+                      fill
+                      className="object-contain"
+                      unoptimized
+                      onLoad={
+                        isFirst
+                          ? (e) =>
+                              setAspectRatio(
+                                clampAspectRatio(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)
+                              )
+                          : undefined
+                      }
+                    />
+                    <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/5" />
+                  </button>
+                )}
               </CarouselItem>
             );
           })}
