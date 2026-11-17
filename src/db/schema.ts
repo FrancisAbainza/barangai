@@ -34,8 +34,8 @@ import {
   barangayHotline2,
   barangayMission,
   barangayVision,
-  type ClearancePurposeFees,
-} from "@/lib/data";
+} from "@/lib/barangay-data";
+import type { ClearancePurposeFees } from "@/schemas/clearance-document-request-schema";
 import { KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS } from "@/lib/ai-assistant/knowledge-base";
 import type { AuditAction, AuditChange, AuditEntityType } from "@/lib/audit-logs";
 

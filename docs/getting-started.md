@@ -132,7 +132,7 @@ Open [http://localhost:3000](http://localhost:3000).
    npm run backfill:user-snapshots
    ```
 
-4. **Fill in Barangay Settings** (`/portal/barangay-settings`). Until the first save there's no settings row, and every page uses the defaults in `src/lib/data.ts` (including a placeholder GCash number). Set the GCash number, clearance fees, court rates, goal, mission, vision and contact details.
+4. **Fill in Barangay Settings** (`/portal/barangay-settings`). Until the first save there's no settings row, and every page uses the domain defaults (including a placeholder GCash number). Set the GCash number, clearance fees, court rates, goal, mission, vision and contact details.
 5. **Add officials** for the Barangay and SK sections. They appear on the landing page, About Us and in the assistant's answers.
 6. **Upload the knowledge base.** Upload `docs/barangay-maduya-portal-user-manual.pdf` (and any other barangay PDFs) on the AI Assistant Knowledge Base card. Without a document, the assistant can't answer how-to questions.
 7. **Try both roles.** Sign up a second account in a private window to see the resident view. A resident must complete Resident Credentials on their profile before the document request, complaint and court reservation forms open.

@@ -10,7 +10,7 @@ Each type has its own form, dialog and Zod schema (`src/schemas/<type>-document-
 
 | Type | Dialog id (`?dialog=`) | Purposes | Extra fields |
 |---|---|---|---|
-| Barangay Clearance | `clearance-request` | Paid: Clearance for Local Employment, Bank / Loan Requirements, Business Clearance. Free: Scholarship, Financial Support, Hospital Support, PAO (Public Attorney's Office) | GCash payment receipt (1 image) |
+| Barangay Clearance | `clearance-request` | Paid: Clearance for Local Employment, Bank / Loan Requirements, and Small, Medium or Large Business Clearance. Free: Scholarship, Financial Support, Hospital Support, PAO (Public Attorney's Office) | GCash payment receipt (1 image) |
 | Certificate of Residency | `residency-request` | Employment, School, Loan or Bank Transaction, Government Transaction, Travel, Medical or Financial Assistance, Other | |
 | Certificate of No Objection | `no-objection-request` | Business Permit Application, Construction or Renovation, Tricycle / Vehicle Operation, Special Event or Gathering, Use of Public Space or Road, Other | |
 | Certificate of Indigency | `indigency-request` | Medical, Financial, Educational Assistance / Scholarship, Burial, Government Subsidy Application, Other | Situation description, 1–5 supporting documents |
@@ -21,7 +21,7 @@ Choosing "Other" requires typing the purpose, which is stored in `otherPurpose`.
 
 ### Clearance fees and payment
 
-The clearance's paid purposes have admin-editable fees in Barangay Settings (`clearancePurposeFees`, defaults ₱60, ₱80 and ₱1,000 in `src/lib/data.ts`). Free purposes are always ₱0 (`isFreeClearancePurpose`). The form shows each purpose with its fee and the GCash number to pay.
+The paid and free clearance purposes, along with `isFreeClearancePurpose`, are defined in `src/schemas/clearance-document-request-schema.ts`. Paid purposes have admin-editable fees in Barangay Settings (`clearancePurposeFees`, defaulting to ₱60, ₱80, ₱280, ₱530 and ₱1,030 in `src/lib/document-requests.ts`). Free purposes are always ₱0. The form shows each purpose with its fee and the GCash number to pay.
 
 The receipt is required for a paid purpose delivered as an Online Soft Copy, and optional for a pickup, where the resident can pay at the hall. The other document types are free and have no payment field.
 

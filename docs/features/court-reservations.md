@@ -92,6 +92,6 @@ See [AI assistant](../ai-assistant.md#court-fees).
 |---|---|
 | `src/actions/court-reservations.ts` | `getTakenTimeRanges`, `createCourtReservation`, the list and by-id actions, `setCourtReservationStatus`, `deleteCourtReservation` |
 | `src/lib/court-reservations.ts` | Time math, billing, free ranges, formatting, `formatReferenceNumber` (`CR-<id>`) |
-| `src/lib/data.ts` | `DEFAULT_COURT_DAY_RATE`, `DEFAULT_COURT_NIGHT_RATE` |
+| `src/lib/court-reservations.ts` | Time math, billing, free ranges, formatting, reference numbers and default court rates |
 | `src/schemas/court-reservation-schema.ts` | The statuses and `getCourtReservationFormSchema(isAdmin)` |
 | `src/components/court-reservation/` | Views, the reservation and availability dialogs, forms, the actions menu |

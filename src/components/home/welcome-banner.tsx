@@ -2,7 +2,7 @@
 
 import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
-import { barangayLogoSrc, barangayName } from "@/lib/data";
+import { barangayLogoSrc, barangayName } from "@/lib/barangay-data";
 
 interface WelcomeBannerProps {
   description?: string;

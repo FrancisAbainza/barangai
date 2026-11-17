@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import NewsCard from "@/components/news/news-card";
 import { getNewsById } from "@/actions/news";
 import { fetchFile } from "@/lib/storage";
-import { barangayName } from "@/lib/data";
+import { barangayName } from "@/lib/barangay-data";
 
 async function getOrigin() {
   const headersList = await headers();

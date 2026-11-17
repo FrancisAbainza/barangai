@@ -9,15 +9,12 @@ import {
   getCourtReservationFormSchema,
   CourtReservationFormValues,
 } from "@/schemas/court-reservation-schema";
-import {
-  DEFAULT_COURT_DAY_RATE,
-  DEFAULT_COURT_NIGHT_RATE,
-  DEFAULT_GCASH_NUMBER,
-  GCASH_ACCOUNT_NAME,
-} from "@/lib/data";
+import { DEFAULT_GCASH_NUMBER } from "@/lib/barangay-data";
 import {
   COURT_DAY_HOURS,
   COURT_NIGHT_HOURS,
+  DEFAULT_COURT_DAY_RATE,
+  DEFAULT_COURT_NIGHT_RATE,
   formatCourtTime,
   formatFee,
   formatTimeRange,
@@ -265,7 +262,7 @@ export default function CourtReservationForm({
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel>GCash Payment</FieldLabel>
                 <FieldDescription>
-                  Send {formatFee(totalAmount)} to GCash {gcashNumber} ({GCASH_ACCOUNT_NAME}),
+                  Send {formatFee(totalAmount)} to GCash {gcashNumber},
                   then upload a screenshot of the receipt.
                 </FieldDescription>
                 <FileUploader

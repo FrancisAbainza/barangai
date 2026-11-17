@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
-import { barangayLogoSrc, barangayName } from "@/lib/data";
+import { barangayLogoSrc, barangayName } from "@/lib/barangay-data";
 
 export default function PortalHeader() {
   const { toggleSidebar } = useSidebar();

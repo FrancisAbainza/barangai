@@ -1,7 +1,7 @@
 import AboutHero from "@/components/about-us/about-hero";
 import GoalMissionVisionSection from "@/components/about-us/goal-mission-vision-section";
 import OfficialsCarousel from "@/components/about-us/officials-carousel";
-import { barangayName } from "@/lib/data";
+import { barangayName } from "@/lib/barangay-data";
 
 export default function AboutUsPage() {
   return (

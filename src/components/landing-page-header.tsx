@@ -10,7 +10,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { Separator } from "./ui/separator";
-import { barangayCity, barangayLogoSrc, barangayName } from "@/lib/data";
+import { barangayCity, barangayLogoSrc, barangayName } from "@/lib/barangay-data";
 import { LanguageToggle } from "./language-toggle";
 
 const publicNavLinks = [

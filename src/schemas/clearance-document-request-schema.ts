@@ -1,10 +1,31 @@
 import z from "zod";
 import { checkPreferredClaimAt } from "@/schemas/preferred-claim-schema";
 import type { MediaItem } from "@/components/file-uploader";
-import { CLEARANCE_PURPOSES, isFreeClearancePurpose } from "@/lib/data";
 import { ONLINE_SOFT_COPY_DELIVERY_METHOD } from "@/lib/document-requests";
 
-export { CLEARANCE_PURPOSES };
+// Paid purposes have admin-editable fees in barangay_settings; free purposes are always ₱0.
+export const PAID_CLEARANCE_PURPOSES = [
+  "Clearance for Local Employment",
+  "Bank / Loan Requirements",
+  "Business Clearance - Small Business",
+  "Business Clearance - Medium Business",
+  "Business Clearance - Large Business",
+] as const;
+
+export const FREE_CLEARANCE_PURPOSES = [
+  "Scholarship",
+  "Financial Support",
+  "Hospital Support",
+  "PAO (Public Attorney's Office)",
+] as const;
+
+export const CLEARANCE_PURPOSES = [...PAID_CLEARANCE_PURPOSES, ...FREE_CLEARANCE_PURPOSES] as const;
+
+export type ClearancePurposeFees = Record<(typeof PAID_CLEARANCE_PURPOSES)[number], number>;
+
+export function isFreeClearancePurpose(purpose: string): boolean {
+  return (FREE_CLEARANCE_PURPOSES as readonly string[]).includes(purpose);
+}
 
 export const CLEARANCE_DELIVERY_METHODS = ["Pickup at Barangay Hall", "Online Soft Copy"] as const;
 

@@ -14,13 +14,11 @@ import {
   barangayHotline2,
   barangayMission,
   barangayVision,
-  DEFAULT_CLEARANCE_PURPOSE_FEES,
-  DEFAULT_COURT_DAY_RATE,
-  DEFAULT_COURT_NIGHT_RATE,
   DEFAULT_GCASH_NUMBER,
-  PAID_CLEARANCE_PURPOSES,
-  type ClearancePurposeFees,
-} from "@/lib/data";
+} from "@/lib/barangay-data";
+import { DEFAULT_CLEARANCE_PURPOSE_FEES } from "@/lib/document-requests";
+import { DEFAULT_COURT_DAY_RATE, DEFAULT_COURT_NIGHT_RATE } from "@/lib/court-reservations";
+import { PAID_CLEARANCE_PURPOSES, type ClearancePurposeFees } from "@/schemas/clearance-document-request-schema";
 
 export type BarangaySettingsValues = {
   gcashNumber: string;
@@ -56,7 +54,10 @@ export async function getBarangaySettings(): Promise<BarangaySettingsValues> {
 
   return {
     gcashNumber: settings.gcashNumber,
-    clearancePurposeFees: settings.clearancePurposeFees,
+    clearancePurposeFees: {
+      ...DEFAULT_CLEARANCE_PURPOSE_FEES,
+      ...settings.clearancePurposeFees,
+    },
     courtDayRate: settings.courtDayRate,
     courtNightRate: settings.courtNightRate,
     goal: settings.goal,

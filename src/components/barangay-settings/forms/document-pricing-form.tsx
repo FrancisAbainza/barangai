@@ -6,7 +6,7 @@ import {
   documentRequestSettingsFormSchema,
   DocumentRequestSettingsFormValues,
 } from "@/schemas/settings-schema";
-import { PAID_CLEARANCE_PURPOSES } from "@/lib/data";
+import { PAID_CLEARANCE_PURPOSES } from "@/schemas/clearance-document-request-schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";

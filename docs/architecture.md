@@ -60,9 +60,10 @@ src/
 │   ├── <domain>.ts                Pure helpers per domain: badges, labels, reference numbers, formatting
 │   ├── auth.ts, clerk-users.ts, notify.ts, push.ts, audit.ts, r2.ts   Server-only
 │   ├── storage.ts                 Client upload/fetch/delete wrappers and the upload prefixes
-│   ├── data.ts                    Barangay name, logo, city, default fees and contact details
+│   ├── barangay-data.ts           Barangay identity and contact, About Us and GCash defaults
+│   ├── document-requests.ts       Document request helpers and clearance fee defaults
 │   └── ai-assistant/              The assistant's prompt, knowledge base search, tools and link registries
-├── schemas/<name>-schema.ts       Zod form schemas, plus the enum value lists the DB enums are built from
+├── schemas/<name>-schema.ts       Zod form schemas and domain value lists, including clearance purposes
 └── proxy.ts                       Clerk middleware ("proxy" is Next 16's name for middleware)
 scripts/backfill-user-snapshots.ts
 types/globals.d.ts                 Clerk session claim types

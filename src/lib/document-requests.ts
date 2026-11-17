@@ -1,5 +1,14 @@
 import type { DocumentRequest } from "@/db/schema";
 import { createReferenceNumbers } from "@/lib/reference-numbers";
+import type { ClearancePurposeFees } from "@/schemas/clearance-document-request-schema";
+
+export const DEFAULT_CLEARANCE_PURPOSE_FEES: ClearancePurposeFees = {
+  "Clearance for Local Employment": 60,
+  "Bank / Loan Requirements": 80,
+  "Business Clearance - Small Business": 280,
+  "Business Clearance - Medium Business": 530,
+  "Business Clearance - Large Business": 1030,
+};
 
 export function statusBadgeVariant(status: DocumentRequest["status"]) {
   if (status === "Ready for Pickup") return "default";

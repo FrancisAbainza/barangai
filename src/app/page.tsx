@@ -27,7 +27,7 @@ import { Float, ReducedMotionConfig, Reveal, RevealGroup, RevealItem } from "@/c
 import NewsCarousel from "@/components/landing/news-carousel";
 import OfficialsShowcase from "@/components/landing/officials-showcase";
 import SectionIntro from "@/components/landing/section-intro";
-import { barangayCity, barangayLogoSrc, barangayName } from "@/lib/data";
+import { barangayCity, barangayLogoSrc, barangayName } from "@/lib/barangay-data";
 import { cn, toTelHref } from "@/lib/utils";
 
 type Service = {

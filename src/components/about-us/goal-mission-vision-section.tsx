@@ -1,6 +1,6 @@
 import { Eye, Flag, Target, type LucideIcon } from "lucide-react";
 import { getBarangaySettings } from "@/actions/settings";
-import { barangayName } from "@/lib/data";
+import { barangayName } from "@/lib/barangay-data";
 import { cn } from "@/lib/utils";
 import GoldTrim from "./gold-trim";
 import SectionHeading from "./section-heading";

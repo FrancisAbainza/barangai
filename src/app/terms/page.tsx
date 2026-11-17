@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ScrollText } from "lucide-react";
 import LegalPage, { LegalContact, LegalSection } from "@/components/legal/legal-page";
-import { barangayCity, barangayName } from "@/lib/data";
+import { barangayCity, barangayName } from "@/lib/barangay-data";
 
 export default function TermsPage() {
   return (

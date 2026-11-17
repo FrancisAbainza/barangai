@@ -93,7 +93,7 @@ A new kind of resident submission touches most of the system. Copy the closest e
 
 ### Add a barangay setting
 
-1. Add the column to `barangaySettingsTable` with a default from `src/lib/data.ts`, and push.
+1. Add the column to `barangaySettingsTable` with a default from the relevant domain module (`src/lib/barangay-data.ts`, `src/lib/document-requests.ts`, `src/lib/court-reservations.ts` or another domain module), and push.
 2. Add it to `BarangaySettingsValues`, `DEFAULT_SETTINGS` and the mapping in `getBarangaySettings` (`src/actions/settings.ts`), and a label to `SETTINGS_AUDIT_LABELS`.
 3. Add it to a settings card's form and schema (`src/schemas/settings-schema.ts`), and to the object that card is keyed on in `barangay-settings.tsx`.
 4. Read it where it's needed with `getBarangaySettings()`. Server-rendered pages refresh through the existing `revalidatePath("/", "layout")`.

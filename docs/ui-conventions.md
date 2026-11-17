@@ -9,7 +9,7 @@ How the interface is built and the shared components to reach for before writing
 - **Tailwind CSS v4** through `@tailwindcss/postcss`, with theme tokens as CSS variables in `src/app/globals.css`. Merge class names with `cn()` (`clsx` + `tailwind-merge`).
 - **Icons** come from `lucide-react`. **Toasts** use `toast.success` / `toast.error` / `toast.info` from `sonner`, rendered by the `Toaster` in the root layout.
 - **Mobile:** `useIsMobile()` (`src/hooks/use-mobile.ts`) switches at 768px, the same as Tailwind's `md`. The portal sidebar is hidden below `md` and `PortalHeader` provides the menu button instead.
-- **Barangay constants:** import the name, logo and city from `src/lib/data.ts` instead of typing them. Contact details, fees and rates are admin-editable, so read them from `getBarangaySettings()`.
+- **Barangay constants:** import the name, logo and city from `src/lib/barangay-data.ts` instead of typing them. Contact details, fees and rates are admin-editable, so read them from `getBarangaySettings()`.
 
 ### Shared components
 

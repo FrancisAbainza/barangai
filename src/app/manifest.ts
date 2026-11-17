@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { barangayName } from "@/lib/data";
+import { barangayName } from "@/lib/barangay-data";
 
 // Lets the site be added to a phone's Home Screen as an app. iPhones need that before they can
 // receive phone notifications (see PushNotificationToggle).

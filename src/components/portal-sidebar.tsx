@@ -37,7 +37,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import Image from "next/image";
-import { barangayLogoSrc, barangayName } from "@/lib/data";
+import { barangayLogoSrc, barangayName } from "@/lib/barangay-data";
 import { isAdminRole, isSuperAdminRole } from "@/lib/roles";
 import { getUnreadNotificationCount } from "@/actions/notifications";
 import { ThemeToggle } from "@/components/theme-toggle";

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { barangayLogoSrc, barangayName } from "@/lib/data";
+import { barangayLogoSrc, barangayName } from "@/lib/barangay-data";
 import GoldTrim from "./gold-trim";
 
 // A large version of the officials' nameplates: brand-blue plate, white type, gold trim.

@@ -1,6 +1,6 @@
 import TransparencyProjectList from "@/components/transparency/transparency-project-list";
 import PageHeader from "@/components/page-header";
-import { barangayName } from "@/lib/data";
+import { barangayName } from "@/lib/barangay-data";
 import { Eye } from "lucide-react";
 
 export default function TransparencyPage() {

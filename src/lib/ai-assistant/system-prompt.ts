@@ -9,7 +9,8 @@ import {
 } from "@/lib/ai-assistant/portal-navigation";
 import { markdownLink } from "@/lib/ai-assistant/tools/links";
 import { COURT_DAY_HOURS, COURT_NIGHT_HOURS, formatFee } from "@/lib/court-reservations";
-import { barangayName, FREE_CLEARANCE_PURPOSES, GCASH_ACCOUNT_NAME, PAID_CLEARANCE_PURPOSES } from "@/lib/data";
+import { barangayName } from "@/lib/barangay-data";
+import { FREE_CLEARANCE_PURPOSES, PAID_CLEARANCE_PURPOSES } from "@/schemas/clearance-document-request-schema";
 
 // What the assistant helps with: each role's own part, then what both share. Questions outside it
 // get turned away, so a tool for something new needs its area here too.
@@ -106,14 +107,17 @@ function noKnowledgeBase(isAdmin: boolean): string {
 function formatBarangaySettings(settings: BarangaySettingsValues): string {
   const hotlines = [settings.hotline1, settings.hotline2].filter(Boolean).join(", ");
   const paidClearanceFees = PAID_CLEARANCE_PURPOSES.map(
-    (purpose) => `${purpose} ${formatFee(settings.clearancePurposeFees[purpose])}`,
+    (purpose) => {
+      const baseFee = settings.clearancePurposeFees[purpose];
+      return `${purpose} ${formatFee(baseFee)}`;
+    },
   ).join(", ");
 
   return [
     `- Hotlines: ${hotlines}`,
     `- Email: ${settings.email}`,
     `- Address: ${settings.address}`,
-    `- GCash number for paying barangay clearance fees and court reservations: ${settings.gcashNumber} (account name: ${GCASH_ACCOUNT_NAME})`,
+    `- GCash number for paying barangay clearance fees and court reservations: ${settings.gcashNumber}`,
     `- Barangay clearance fees by purpose: ${paidClearanceFees}. Free for: ${FREE_CLEARANCE_PURPOSES.join(", ")}.`,
     `- Court reservation rates: ${formatFee(settings.courtDayRate)} per hour from ${COURT_DAY_HOURS}, ${formatFee(settings.courtNightRate)} per hour from ${COURT_NIGHT_HOURS}. An hour that crosses 6:00 AM or 6:00 PM is charged the night rate.`,
     `- Goal: ${settings.goal}`,

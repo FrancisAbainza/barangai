@@ -6,16 +6,16 @@ Barangay Settings (`/portal/barangay-settings`, admins only) is where staff edit
 
 All the plain settings live in one row of `barangay_settings`, always with `id = 1`.
 
-- **Reading.** `getBarangaySettings()` (`src/actions/settings.ts`) returns the row, or the defaults from `src/lib/data.ts` when it doesn't exist yet. It has no auth check, since the public pages need it.
+- **Reading.** `getBarangaySettings()` (`src/actions/settings.ts`) returns the row, or the defaults from `src/lib/barangay-data.ts`, `src/lib/document-requests.ts` and `src/lib/court-reservations.ts` when it doesn't exist yet. It has no auth check, since the public pages need it.
 - **Writing.** `updateBarangaySettings(partial)` requires an admin, merges the partial object into the current values and upserts the row. Each settings card submits only its own fields, so saving one card can't overwrite another.
 - **Refreshing.** After saving, it calls `revalidatePath("/", "layout")`, because the landing page, About Us, the legal pages and the hotline bar render settings on the server. Client pages refetch through the `["barangay-settings"]` query.
-- **Logging.** It logs one `updated` audit entry listing each changed field, including each clearance fee (`Clearance Fee (Business Clearance)`), or nothing if no value changed.
+- **Logging.** It logs one `updated` audit entry listing each changed field, including each clearance fee, or nothing if no value changed.
 
 ### The cards
 
 | Card | Fields | Validation | Where the values appear |
 |---|---|---|---|
-| Document Pricing | GCash number, the three paid clearance fees | GCash number 10–13 characters, fees ≥ 0 | Barangay Clearance form (fees and GCash number), Court Reservation form (GCash number) |
+| Document Pricing | GCash number, the five paid clearance fees | GCash number 10–13 characters, fees ≥ 0 | Barangay Clearance form (fees and GCash number), Court Reservation form (GCash number) |
 | Court Reservation Fees | Day rate (6 AM–6 PM), night rate | ≥ 0 | Court Reservation form, the fee stored with each new reservation |
 | Goal, Mission & Vision | Goal, mission, vision | Required, ≤ 2000 characters each | Landing page, About Us |
 | Contact Information | Hotline 1, hotline 2 (optional), email, address | Phone numbers are 7–20 characters of digits, spaces and `()+-` | The signed-out hotline bar, the landing page hero and footer, the Privacy and Terms pages |
@@ -29,18 +29,15 @@ Each card's form is keyed on its own values (`key={JSON.stringify(pricing)}`), s
 
 ### Defaults
 
-The barangay's name, logo and city are constants in `src/lib/data.ts`. The rest of `data.ts` holds the fallback values used before the first save and as the database column defaults:
+Barangay identity and fallback contact/About Us details are in `src/lib/barangay-data.ts`. The settings fallbacks are grouped by domain:
 
-| Constant | Default |
+| Source | Defaults |
 |---|---|
-| `DEFAULT_GCASH_NUMBER` | `0917-123-4567` (a placeholder) |
-| `DEFAULT_CLEARANCE_PURPOSE_FEES` | Local Employment ₱60, Bank / Loan ₱80, Business ₱1,000 |
-| `DEFAULT_COURT_DAY_RATE`, `DEFAULT_COURT_NIGHT_RATE` | ₱50, ₱100 per hour |
-| `barangayHotline1`, `barangayHotline2`, `barangayEmail`, `barangayAddress` | The barangay's real contact details |
-| `barangayGoal`, `barangayMission`, `barangayVision` | The barangay's statements |
-| `GCASH_ACCOUNT_NAME` | "Barangay Maduya", shown next to the GCash number |
+| `src/lib/document-requests.ts` | `DEFAULT_CLEARANCE_PURPOSE_FEES` (Local Employment ₱60, Bank / Loan ₱80, Small Business ₱280, Medium Business ₱530, Large Business ₱1,030) |
+| `src/lib/court-reservations.ts` | `DEFAULT_COURT_DAY_RATE` (₱50) and `DEFAULT_COURT_NIGHT_RATE` (₱100 per hour) |
+| `src/lib/barangay-data.ts` | Name, logo, city, placeholder `DEFAULT_GCASH_NUMBER`, fallback contact details and goal/mission/vision |
 
-Components should import the name, logo and city from `data.ts`, and read anything admins can edit from `getBarangaySettings()`.
+Clearance purpose options and their free/paid classification are in `src/schemas/clearance-document-request-schema.ts`. Components should import the name, logo and city from `barangay-data.ts`, and read anything admins can edit from `getBarangaySettings()`.
 
 ## Officials
 
@@ -73,6 +70,6 @@ Upload the portal user manual (`docs/barangay-maduya-portal-user-manual.pdf`) he
 | `src/actions/knowledge-base.ts` | `getKnowledgeBaseDocuments`, `addKnowledgeBaseDocument`, `deleteKnowledgeBaseDocument` |
 | `src/schemas/settings-schema.ts` | One schema per settings card |
 | `src/schemas/about-us-schema.ts` | The official form |
-| `src/lib/data.ts` | Constants and defaults |
+| `src/lib/barangay-data.ts`, `src/lib/document-requests.ts` | Barangay details and domain defaults |
 | `src/components/barangay-settings/` | The page, its forms, `OfficialsList`, the official dialogs, `KnowledgeBaseManager` |
 | `src/components/about-us/`, `src/components/landing/officials-showcase.tsx` | Where officials and the statements are shown |

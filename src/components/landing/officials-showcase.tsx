@@ -12,7 +12,7 @@ import { Carousel, CarouselContent, CarouselItem, useCarousel } from "@/componen
 import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal, RevealGroup, RevealItem } from "@/components/landing/animations";
 import CarouselArrows from "@/components/landing/carousel-arrows";
-import { barangayLogoSrc } from "@/lib/data";
+import { barangayLogoSrc } from "@/lib/barangay-data";
 import { cn } from "@/lib/utils";
 import { fetchFile } from "@/lib/storage";
 import type { Official } from "@/db/schema";

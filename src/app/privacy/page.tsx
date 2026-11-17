@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import LegalPage, { LegalContact, LegalSection } from "@/components/legal/legal-page";
-import { barangayName } from "@/lib/data";
+import { barangayName } from "@/lib/barangay-data";
 import { READ_NOTIFICATION_RETENTION_DAYS } from "@/lib/notifications";
 
 export default function PrivacyPage() {

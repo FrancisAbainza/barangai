@@ -1,15 +1,15 @@
 import z from "zod";
+import { PAID_CLEARANCE_PURPOSES } from "@/schemas/clearance-document-request-schema";
 
 export const documentRequestSettingsFormSchema = z.object({
   gcashNumber: z
     .string()
     .min(10, "Enter a valid GCash number")
     .max(13, "Enter a valid GCash number"),
-  clearancePurposeFees: z.object({
-    "Clearance for Local Employment": z.number().nonnegative("Fee must be zero or greater"),
-    "Bank / Loan Requirements": z.number().nonnegative("Fee must be zero or greater"),
-    "Business Clearance": z.number().nonnegative("Fee must be zero or greater"),
-  }),
+  clearancePurposeFees: z.record(
+    z.enum(PAID_CLEARANCE_PURPOSES),
+    z.number().nonnegative("Fee must be zero or greater")
+  ),
 });
 
 export type DocumentRequestSettingsFormValues = z.infer<typeof documentRequestSettingsFormSchema>;

@@ -3,7 +3,7 @@ import { inArray } from "drizzle-orm";
 import { sendNotification, WebPushError } from "web-push";
 import { db } from "@/db/config";
 import { pushSubscriptionsTable } from "@/db/schema";
-import { barangayEmail, barangayName } from "@/lib/data";
+import { barangayEmail, barangayName } from "@/lib/barangay-data";
 
 export type PushMessage = {
   userId: string;

@@ -1,6 +1,6 @@
 import NewsList from "@/components/news/news-list";
 import PageHeader from "@/components/page-header";
-import { barangayName } from "@/lib/data";
+import { barangayName } from "@/lib/barangay-data";
 import { Megaphone } from "lucide-react";
 
 export default function NewsPage() {

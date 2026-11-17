@@ -223,7 +223,7 @@ A mirror of each Clerk user, kept by `/api/webhooks/clerk` and `npm run backfill
 
 #### `barangay_settings`
 
-A singleton row with `id = 1`. `getBarangaySettings()` returns the defaults from `src/lib/data.ts` when the row doesn't exist, and `updateBarangaySettings` upserts it.
+A singleton row with `id = 1`. `getBarangaySettings()` returns the defaults from `src/lib/barangay-data.ts`, `src/lib/document-requests.ts` and `src/lib/court-reservations.ts` when the row doesn't exist, and `updateBarangaySettings` upserts it.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -334,7 +334,7 @@ Most tables export a row type (`export type Complaint = typeof complaintsTable.$
 | `Omit<MediaItem, "file">` | `src/components/file-uploader.tsx` | `{ key?: string; name: string; type: "image" \| "video" \| "document"; size?: number; contentType?: string }`. `key` is the R2 object key |
 | `LocationValue` | `src/components/map-picker.tsx` | `{ coordinates: { lat: number; lng: number }; address: string }`. `address` is `""` when reverse geocoding failed |
 | `OperatingHours` | `src/schemas/business-schema.ts` | `{ days: ("Mon" \| … \| "Sun")[]; opens: "HH:MM"; closes: "HH:MM" }`. A closing time at or before the opening time runs past midnight |
-| `ClearancePurposeFees` | `src/lib/data.ts` | `{ "Clearance for Local Employment": number; "Bank / Loan Requirements": number; "Business Clearance": number }` |
+| `ClearancePurposeFees` | `src/schemas/clearance-document-request-schema.ts` | A numeric fee for each paid clearance purpose |
 | `ComplaintAiInsight` | `src/schemas/complaint-schema.ts` | `{ budgetEstimate, estimatedManpower, estimatedTimeframe, suggestedSolution, preventionAdvice: string; requiredResources: string[]; publicSafetyRisk: "None" \| "Low" \| "Medium" \| "High" }` |
 | `AuditChange` | `src/lib/audit-logs.ts` | `{ label: string; from: string \| null; to: string \| null }` |
 

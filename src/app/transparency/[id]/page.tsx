@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import TransparencyProjectCard from "@/components/transparency/transparency-project-card";
 import { getTransparencyProjectById } from "@/actions/transparency";
 import { fetchFile } from "@/lib/storage";
-import { barangayName } from "@/lib/data";
+import { barangayName } from "@/lib/barangay-data";
 
 async function getOrigin() {
   const headersList = await headers();

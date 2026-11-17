@@ -8,13 +8,10 @@ import {
   ClearanceDocumentRequestFormValues,
   CLEARANCE_PURPOSES,
   CLEARANCE_DELIVERY_METHODS,
-} from "@/schemas/clearance-document-request-schema";
-import {
-  DEFAULT_CLEARANCE_PURPOSE_FEES,
-  DEFAULT_GCASH_NUMBER,
-  GCASH_ACCOUNT_NAME,
   isFreeClearancePurpose,
-} from "@/lib/data";
+} from "@/schemas/clearance-document-request-schema";
+import { DEFAULT_GCASH_NUMBER } from "@/lib/barangay-data";
+import { DEFAULT_CLEARANCE_PURPOSE_FEES } from "@/lib/document-requests";
 import { getBarangaySettings } from "@/actions/settings";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -145,7 +142,7 @@ export default function ClearanceDocumentRequestForm({
                   {isPickup && <span className="font-normal text-muted-foreground"> (optional)</span>}
                 </FieldLabel>
                 <FieldDescription>
-                  Send payment to GCash {gcashNumber} ({GCASH_ACCOUNT_NAME}), then upload a
+                  Send payment to GCash {gcashNumber}, then upload a
                   screenshot of the receipt.
                   {isPickup && " For pickups, you can also pay when you claim the document."}
                 </FieldDescription>

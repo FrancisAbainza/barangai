@@ -3,7 +3,7 @@
 import { openai } from "@ai-sdk/openai";
 import { transcribe } from "ai";
 import { getAuthRole } from "@/lib/auth";
-import { barangayName } from "@/lib/data";
+import { barangayName } from "@/lib/barangay-data";
 
 // The client caps recordings at 60s at a low bitrate (~240 KB), well under the 1 MB server action body limit.
 const MAX_AUDIO_BYTES = 1024 * 1024;
