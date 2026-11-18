@@ -6,6 +6,9 @@ import {
   formatFee,
   formatTimeRange,
   getCourtHourCharges,
+  COURT_CLOSE,
+  COURT_LAST_START,
+  COURT_OPEN_START,
   MINUTES_PER_DAY,
   parseTimeInput,
 } from "@/lib/court-reservations";
@@ -25,7 +28,7 @@ export function buildCalculateCourtFeeTool({ settings: { courtDayRate, courtNigh
     description:
       "Calculate what a court reservation costs for specific times or a number of hours, using the same hour-by-hour " +
       "billing as the reservation form. Always use it for a court fee, and answer with its total and breakdown: never " +
-      "work one out yourself, because an hour that crosses 6:00 AM or 6:00 PM is billed at the night rate. Give the " +
+      "work one out yourself, because an hour that crosses 6:00 PM is billed at the night rate. Give the " +
       "start time and either the end time or the number of hours.",
     inputSchema: z.object({
       startTime: z.string().describe('Start time in 24-hour "HH:MM", e.g. "16:30" for 4:30 PM.'),
@@ -38,6 +41,9 @@ export function buildCalculateCourtFeeTool({ settings: { courtDayRate, courtNigh
     execute: async ({ startTime, endTime, durationHours }) => {
       const start = parseTimeInput(startTime.padStart(5, "0"));
       if (start === null) return { error: 'Send startTime in 24-hour "HH:MM", e.g. "16:30".' };
+      if (start < COURT_OPEN_START || start > COURT_LAST_START) {
+        return { error: "Court reservations may start only from 8:00 AM to 9:00 PM." };
+      }
 
       const end =
         endTime !== undefined
@@ -46,8 +52,8 @@ export function buildCalculateCourtFeeTool({ settings: { courtDayRate, courtNigh
             ? start + durationHours * 60
             : null;
       if (end === null) return { error: 'Send endTime in 24-hour "HH:MM", or durationHours.' };
-      if (end <= start || end > MINUTES_PER_DAY) {
-        return { error: "Court reservations must end by 12:00 AM (midnight) of the day they start. Tell the user this time can't be booked." };
+      if (end <= start || end > COURT_CLOSE) {
+        return { error: "Court reservations must end by 10:00 PM. Tell the user this time can't be booked." };
       }
 
       const hours = (end - start) / 60;

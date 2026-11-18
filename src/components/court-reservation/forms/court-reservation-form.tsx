@@ -13,6 +13,9 @@ import { DEFAULT_GCASH_NUMBER } from "@/lib/barangay-data";
 import {
   COURT_DAY_HOURS,
   COURT_NIGHT_HOURS,
+  COURT_CLOSE,
+  COURT_OPERATING_HOURS,
+  COURT_OPEN_START,
   DEFAULT_COURT_DAY_RATE,
   DEFAULT_COURT_NIGHT_RATE,
   formatCourtTime,
@@ -20,7 +23,6 @@ import {
   formatTimeRange,
   getCourtHourCharges,
   maxDurationHours,
-  MINUTES_PER_DAY,
   parseTimeInput,
   rangesOverlap,
 } from "@/lib/court-reservations";
@@ -99,11 +101,11 @@ export default function CourtReservationForm({
   const nightRate = settings?.courtNightRate ?? DEFAULT_COURT_NIGHT_RATE;
 
   const durationOptions = Array.from(
-    { length: startTime === null ? 24 : maxDurationHours(startTime) },
+    { length: startTime === null ? 14 : maxDurationHours(startTime) },
     (_, i) => i + 1
   );
   const selectedRange =
-    startTime !== null && startTime + durationHours * 60 <= MINUTES_PER_DAY
+    startTime !== null && startTime >= COURT_OPEN_START && startTime + durationHours * 60 <= COURT_CLOSE
       ? { start: startTime, end: startTime + durationHours * 60 }
       : null;
   const charges = selectedRange
@@ -138,7 +140,7 @@ export default function CourtReservationForm({
                 value={field.value}
                 onChange={field.onChange}
                 required
-                disabledDays={{ before: today }}
+                disabledDays={[{ before: today }, { dayOfWeek: [5] }]}
                 startMonth={today}
                 aria-invalid={fieldState.invalid}
               />
@@ -170,6 +172,8 @@ export default function CourtReservationForm({
                     id="startTime"
                     value={field.value}
                     onChange={field.onChange}
+                    minTime="08:00"
+                    maxTime="21:00"
                     aria-invalid={fieldState.invalid || !!conflict}
                   />
                 </Field>
@@ -209,9 +213,13 @@ export default function CourtReservationForm({
           <FieldError errors={[errors.startTime, errors.durationHours]} />
           
           <FieldDescription>
-            {COURT_DAY_HOURS}: {formatFee(dayRate)}/hour &middot; {COURT_NIGHT_HOURS}:{" "}
-            {formatFee(nightRate)}/hour. An hour that crosses 6:00 AM or 6:00 PM is charged the night rate, even if
-            only 1 minute of it is nighttime.
+            <span className="block">Court hours: {COURT_OPERATING_HOURS}</span>
+            <span className="block">
+              Day rate ({COURT_DAY_HOURS}): {formatFee(dayRate)}/hour
+            </span>
+            <span className="block">
+              Night rate ({COURT_NIGHT_HOURS}): {formatFee(nightRate)}/hour
+            </span>
           </FieldDescription>
           
           {selectedRange && (

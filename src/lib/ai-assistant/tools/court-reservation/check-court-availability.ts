@@ -6,6 +6,8 @@ import {
   formatCourtTime,
   formatTimeRange,
   getFreeRanges,
+  COURT_CLOSE,
+  COURT_OPEN_START,
   MINUTES_PER_DAY,
   parseTimeInput,
   rangesOverlap,
@@ -74,10 +76,13 @@ export function buildCheckCourtAvailabilityTool() {
         .describe('The end of those times in 24-hour "HH:MM", e.g. "12:00", "18:00", or "24:00" for midnight.'),
     }),
     execute: async ({ dates, startTime, endTime }) => {
-      const start = startTime ? parseTimeInput(startTime.padStart(5, "0")) : 0;
-      const end = endTime ? parseCourtEndTime(endTime) : MINUTES_PER_DAY;
+      const start = startTime ? parseTimeInput(startTime.padStart(5, "0")) : COURT_OPEN_START;
+      const end = endTime ? parseCourtEndTime(endTime) : COURT_CLOSE;
       if (start === null || end === null || end <= start) {
         return { error: 'Send startTime and endTime in 24-hour "HH:MM", with endTime after startTime, or leave them out for the whole day.' };
+      }
+      if (start < COURT_OPEN_START || end > COURT_CLOSE) {
+        return { error: "Court availability is from 8:00 AM to 10:00 PM." };
       }
       const hoursChecked = { start, end };
 

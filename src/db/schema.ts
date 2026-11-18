@@ -304,7 +304,7 @@ export const courtReservationsTable = pgTable("court_reservations", {
   requesterId: varchar({ length: 255 }).notNull(),
   date: date().notNull(),
   // Minutes after midnight (0-1439); the reservation runs for `durationHours` whole hours
-  // from there and must end by midnight (see src/lib/court-reservations.ts).
+  // from there and must end by 10:00 PM (see src/lib/court-reservations.ts).
   startTime: integer().notNull(),
   durationHours: integer().notNull(),
   purpose: varchar({ length: 255 }).notNull(),

@@ -2,7 +2,10 @@ import z from "zod";
 import type { MediaItem } from "@/components/file-uploader";
 import {
   isPastCourtReservationStartTime,
-  MINUTES_PER_DAY,
+  isFridayCourtReservationDate,
+  COURT_CLOSE,
+  COURT_LAST_START,
+  COURT_OPEN_START,
   parseTimeInput,
 } from "@/lib/court-reservations";
 
@@ -28,6 +31,10 @@ export function getCourtReservationFormSchema(isAdmin: boolean) {
             .max(1, "Only 1 file is allowed"),
     })
     .refine(
+      ({ date }) => !isFridayCourtReservationDate(date),
+      { path: ["date"], message: "Court reservations are not available on Fridays." }
+    )
+    .refine(
       ({ date, startTime }) => {
         const start = parseTimeInput(startTime);
         return start === null || !isPastCourtReservationStartTime(date, start);
@@ -35,11 +42,18 @@ export function getCourtReservationFormSchema(isAdmin: boolean) {
       { path: ["startTime"], message: "Start time must be in the future." }
     )
     .refine(
+      ({ startTime }) => {
+        const start = parseTimeInput(startTime);
+        return start === null || (start >= COURT_OPEN_START && start <= COURT_LAST_START);
+      },
+      { path: ["startTime"], message: "Reservations may start from 8:00 AM to 9:00 PM" }
+    )
+    .refine(
       ({ startTime, durationHours }) => {
         const start = parseTimeInput(startTime);
-        return start === null || start + durationHours * 60 <= MINUTES_PER_DAY;
+        return start === null || start + durationHours * 60 <= COURT_CLOSE;
       },
-      { path: ["durationHours"], message: "Reservations must end by 12:00 AM (midnight)" }
+      { path: ["durationHours"], message: "Reservations must end by 10:00 PM" }
     );
 }
 

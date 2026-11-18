@@ -8,28 +8,18 @@ import DatePicker from "@/components/date-picker";
 import { toDateValue } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getTakenTimeRanges } from "@/actions/court-reservations";
+import CourtAvailabilityGraph from "@/components/court-reservation/dialogs/court-availability-graph";
 import {
   formatTimeRange,
   getFreeRanges,
-  MINUTES_PER_DAY,
+  COURT_CLOSE,
+  COURT_OPEN_START,
   type CourtTimeRange,
 } from "@/lib/court-reservations";
 
 interface CourtAvailabilityDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-const TIMELINE_TICKS = [
-  { minutes: 0, label: "12 AM" },
-  { minutes: 6 * 60, label: "6 AM" },
-  { minutes: 12 * 60, label: "12 PM" },
-  { minutes: 18 * 60, label: "6 PM" },
-  { minutes: MINUTES_PER_DAY, label: "12 AM" },
-];
-
-function toPercent(minutes: number) {
-  return `${(minutes / MINUTES_PER_DAY) * 100}%`;
 }
 
 function RangeList({ title, ranges, emptyText, dotClassName }: {
@@ -67,7 +57,18 @@ export default function CourtAvailabilityDialog({ open, onOpenChange }: CourtAva
     enabled: open && !!date,
   });
 
-  const freeRanges = getFreeRanges(takenRanges);
+  const operatingTakenRanges = takenRanges
+    .map((range) => ({
+      start: Math.max(range.start, COURT_OPEN_START),
+      end: Math.min(range.end, COURT_CLOSE),
+    }))
+    .filter((range) => range.end > range.start);
+  const freeRanges = getFreeRanges(operatingTakenRanges)
+    .map((range) => ({
+      start: Math.max(range.start, COURT_OPEN_START),
+      end: Math.min(range.end, COURT_CLOSE),
+    }))
+    .filter((range) => range.end > range.start);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,7 +87,7 @@ export default function CourtAvailabilityDialog({ open, onOpenChange }: CourtAva
             value={date}
             onChange={setDate}
             required
-            disabledDays={{ before: today }}
+            disabledDays={[{ before: today }, { dayOfWeek: [5] }]}
             startMonth={today}
           />
         </div>
@@ -98,29 +99,7 @@ export default function CourtAvailabilityDialog({ open, onOpenChange }: CourtAva
           </div>
         ) : (
           <>
-            <div className="space-y-1">
-              <div className="relative h-6 overflow-hidden rounded-md border border-emerald-600/30 bg-emerald-500/15">
-                {takenRanges.map((range) => (
-                  <div
-                    key={range.start}
-                    title={formatTimeRange(range)}
-                    className="absolute inset-y-0 bg-destructive/70"
-                    style={{ left: toPercent(range.start), width: toPercent(range.end - range.start) }}
-                  />
-                ))}
-              </div>
-              <div className="relative h-4 text-[10px] text-muted-foreground">
-                {TIMELINE_TICKS.map((tick, i) => (
-                  <span
-                    key={i}
-                    className="absolute -translate-x-1/2 first:translate-x-0 last:-translate-x-full"
-                    style={{ left: toPercent(tick.minutes) }}
-                  >
-                    {tick.label}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <CourtAvailabilityGraph bookedRanges={operatingTakenRanges} />
 
             <div className="grid grid-cols-2 gap-4 rounded-lg border p-3">
               <RangeList
@@ -131,7 +110,7 @@ export default function CourtAvailabilityDialog({ open, onOpenChange }: CourtAva
               />
               <RangeList
                 title="Booked"
-                ranges={takenRanges}
+                ranges={operatingTakenRanges}
                 emptyText="No bookings yet."
                 dotClassName="border-destructive/30 bg-destructive"
               />

@@ -11,10 +11,13 @@ import { and, asc, count, desc, eq, inArray, like, ne, or, sql } from "drizzle-o
 import type { MediaItem } from "@/components/file-uploader";
 import {
   calculateCourtFee,
+  isFridayCourtReservationDate,
   formatReferenceNumber,
   formatReservationDate,
   getReservationRange,
-  MINUTES_PER_DAY,
+  COURT_CLOSE,
+  COURT_LAST_START,
+  COURT_OPEN_START,
   rangesOverlap,
   referenceNumberSearchPattern,
   type CourtTimeRange,
@@ -53,14 +56,23 @@ export type CreateCourtReservationInput = {
 export async function createCourtReservation(data: CreateCourtReservationInput) {
   const { userId, isAdmin } = await requireSubmitter();
 
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
+    return { error: "Invalid reservation date." };
+  }
+
+  if (isFridayCourtReservationDate(data.date)) {
+    return { error: "Court reservations are not available on Fridays." };
+  }
+
   if (
     !Number.isInteger(data.startTime) ||
     !Number.isInteger(data.durationHours) ||
-    data.startTime < 0 ||
+    data.startTime < COURT_OPEN_START ||
+    data.startTime > COURT_LAST_START ||
     data.durationHours < 1 ||
-    data.startTime + data.durationHours * 60 > MINUTES_PER_DAY
+    data.startTime + data.durationHours * 60 > COURT_CLOSE
   ) {
-    return { error: "Invalid reservation time. Reservations must end by midnight." };
+    return { error: "Invalid reservation time. Reservations are available from 8:00 AM to 10:00 PM." };
   }
 
   const range = getReservationRange(data);

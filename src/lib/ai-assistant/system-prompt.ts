@@ -119,7 +119,7 @@ function formatBarangaySettings(settings: BarangaySettingsValues): string {
     `- Address: ${settings.address}`,
     `- GCash number for paying barangay clearance fees and court reservations: ${settings.gcashNumber}`,
     `- Barangay clearance fees by purpose: ${paidClearanceFees}. Free for: ${FREE_CLEARANCE_PURPOSES.join(", ")}.`,
-    `- Court reservation rates: ${formatFee(settings.courtDayRate)} per hour from ${COURT_DAY_HOURS}, ${formatFee(settings.courtNightRate)} per hour from ${COURT_NIGHT_HOURS}. An hour that crosses 6:00 AM or 6:00 PM is charged the night rate.`,
+    `- Court reservation rates: ${formatFee(settings.courtDayRate)} per hour from ${COURT_DAY_HOURS}, ${formatFee(settings.courtNightRate)} per hour from ${COURT_NIGHT_HOURS}. An hour that crosses 6:00 PM is charged the night rate.`,
     `- Goal: ${settings.goal}`,
     `- Mission: ${settings.mission}`,
     `- Vision: ${settings.vision}`,

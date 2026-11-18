@@ -1,6 +1,6 @@
 import type { CourtReservation } from "@/db/schema";
 import { createReferenceNumbers } from "@/lib/reference-numbers";
-import { getPhilippineTime } from "@/lib/utils";
+import { getPhilippineTime, parseDateValue } from "@/lib/utils";
 
 export function statusBadgeVariant(status: CourtReservation["status"]) {
   if (status === "Approved") return "default";
@@ -18,12 +18,16 @@ export function handlerLabel(status: CourtReservation["status"]) {
 export const { formatReferenceNumber, referenceNumberSearchPattern } = createReferenceNumbers("CR");
 
 // Reservation times are stored as minutes after midnight. A reservation lasts a whole
-// number of hours but can start at any minute, and must end by midnight of its date.
+// number of hours and is limited to 8:00 AM through 10:00 PM.
 export const MINUTES_PER_DAY = 24 * 60;
-export const COURT_DAY_START = 6 * 60;
+export const COURT_OPEN_START = 8 * 60;
+export const COURT_LAST_START = 21 * 60;
+export const COURT_CLOSE = 22 * 60;
+export const COURT_OPERATING_HOURS = "8:00 AM - 10:00 PM";
+export const COURT_DAY_START = COURT_OPEN_START;
 export const COURT_DAY_END = 18 * 60;
-export const COURT_DAY_HOURS = "6:00 AM - 6:00 PM";
-export const COURT_NIGHT_HOURS = "6:00 PM - 6:00 AM";
+export const COURT_DAY_HOURS = "8:00 AM - 6:00 PM";
+export const COURT_NIGHT_HOURS = "6:00 PM - 10:00 PM";
 export const DEFAULT_COURT_DAY_RATE = 50;
 export const DEFAULT_COURT_NIGHT_RATE = 100;
 
@@ -32,8 +36,14 @@ export function isPastCourtReservationStartTime(date: string, startTime: number)
   return date === now.date && startTime < now.minutes;
 }
 
+export function isFridayCourtReservationDate(date: string | Date): boolean {
+  if (typeof date === "string" && !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const parsed = typeof date === "string" ? parseDateValue(date) : date;
+  return parsed.getDay() === 5;
+}
+
 export function getCourtRateForHour(hour: number, dayRate: number, nightRate: number): number {
-  return hour >= 6 && hour < 18 ? dayRate : nightRate;
+  return hour >= COURT_DAY_START / 60 && hour < COURT_DAY_END / 60 ? dayRate : nightRate;
 }
 
 export type CourtTimeRange = { start: number; end: number };
@@ -50,7 +60,7 @@ export function rangesOverlap(a: CourtTimeRange, b: CourtTimeRange): boolean {
 }
 
 export function maxDurationHours(startTime: number): number {
-  return Math.floor((MINUTES_PER_DAY - startTime) / 60);
+  return Math.floor((COURT_CLOSE - startTime) / 60);
 }
 
 export type CourtHourCharge = CourtTimeRange & { isDayRate: boolean; rate: number };
