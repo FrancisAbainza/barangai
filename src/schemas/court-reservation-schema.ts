@@ -1,6 +1,10 @@
 import z from "zod";
 import type { MediaItem } from "@/components/file-uploader";
-import { MINUTES_PER_DAY, parseTimeInput } from "@/lib/court-reservations";
+import {
+  isPastCourtReservationStartTime,
+  MINUTES_PER_DAY,
+  parseTimeInput,
+} from "@/lib/court-reservations";
 
 export const COURT_RESERVATION_STATUSES = ["Pending", "Approved", "Rejected"] as const;
 
@@ -23,6 +27,13 @@ export function getCourtReservationFormSchema(isAdmin: boolean) {
             .min(1, "Upload your GCash payment screenshot")
             .max(1, "Only 1 file is allowed"),
     })
+    .refine(
+      ({ date, startTime }) => {
+        const start = parseTimeInput(startTime);
+        return start === null || !isPastCourtReservationStartTime(date, start);
+      },
+      { path: ["startTime"], message: "Start time must be in the future." }
+    )
     .refine(
       ({ startTime, durationHours }) => {
         const start = parseTimeInput(startTime);

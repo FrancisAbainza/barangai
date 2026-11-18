@@ -20,9 +20,7 @@ export default function PreferredClaimField({ value, onChange, error }: Preferre
     const fifteenMinutesFromNow = now.minutes + 15;
     const earliestOfficeTime = Math.max(fifteenMinutesFromNow, 8 * 60);
     const candidateMinutes = Math.ceil(earliestOfficeTime / 30) * 30;
-    console.log(Math.max(now.minutes + 15, 8 * 60))
-    console.log(Math.max(now.minutes + 15, 8 * 60) / 30)
-    console.log(Math.ceil(Math.max(now.minutes + 15, 8 * 60) / 30) * 30)
+
     if (candidateMinutes <= 17 * 60) {
       const hours = Math.floor(candidateMinutes / 60);
       const minutes = candidateMinutes % 60;

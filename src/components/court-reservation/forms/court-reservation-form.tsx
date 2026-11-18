@@ -74,6 +74,7 @@ export default function CourtReservationForm({
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<CourtReservationFormValues>({
+ 
     resolver: zodResolver(getCourtReservationFormSchema(isAdmin)),
     defaultValues: { ...baseDefaults, ...defaultValues },
   });
@@ -163,13 +164,13 @@ export default function CourtReservationForm({
               name="startTime"
               control={control}
               render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+                <Field data-invalid={fieldState.invalid || !!conflict}>
                   <FieldLabel htmlFor="startTime">Start Time</FieldLabel>
                   <TimePicker
                     id="startTime"
                     value={field.value}
                     onChange={field.onChange}
-                    aria-invalid={fieldState.invalid}
+                    aria-invalid={fieldState.invalid || !!conflict}
                   />
                 </Field>
               )}
@@ -205,12 +206,14 @@ export default function CourtReservationForm({
             />
           </div>
 
+          <FieldError errors={[errors.startTime, errors.durationHours]} />
+          
           <FieldDescription>
             {COURT_DAY_HOURS}: {formatFee(dayRate)}/hour &middot; {COURT_NIGHT_HOURS}:{" "}
             {formatFee(nightRate)}/hour. An hour that crosses 6:00 AM or 6:00 PM is charged the night rate, even if
             only 1 minute of it is nighttime.
           </FieldDescription>
-
+          
           {selectedRange && (
             <p className="text-sm">
               Ends at <span className="font-medium">{formatCourtTime(selectedRange.end)}</span>
@@ -232,7 +235,7 @@ export default function CourtReservationForm({
               This overlaps an existing reservation ({formatTimeRange(conflict)}).
             </p>
           )}
-          <FieldError errors={[errors.startTime, errors.durationHours]} />
+          
         </div>
 
         {charges.length > 0 && (

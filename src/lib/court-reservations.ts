@@ -1,5 +1,6 @@
 import type { CourtReservation } from "@/db/schema";
 import { createReferenceNumbers } from "@/lib/reference-numbers";
+import { getPhilippineTime } from "@/lib/utils";
 
 export function statusBadgeVariant(status: CourtReservation["status"]) {
   if (status === "Approved") return "default";
@@ -25,6 +26,11 @@ export const COURT_DAY_HOURS = "6:00 AM - 6:00 PM";
 export const COURT_NIGHT_HOURS = "6:00 PM - 6:00 AM";
 export const DEFAULT_COURT_DAY_RATE = 50;
 export const DEFAULT_COURT_NIGHT_RATE = 100;
+
+export function isPastCourtReservationStartTime(date: string, startTime: number): boolean {
+  const now = getPhilippineTime();
+  return date === now.date && startTime < now.minutes;
+}
 
 export function getCourtRateForHour(hour: number, dayRate: number, nightRate: number): number {
   return hour >= 6 && hour < 18 ? dayRate : nightRate;
