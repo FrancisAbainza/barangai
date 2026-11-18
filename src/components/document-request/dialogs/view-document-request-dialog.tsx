@@ -180,7 +180,9 @@ export default function ViewDocumentRequestDialog({
               <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
                 <div className="flex items-center gap-2">
                   <PackageCheck className="size-4 text-primary" />
-                  <p className="text-sm font-semibold text-primary">Ready for Pickup</p>
+                  <p className="text-sm font-semibold text-primary">
+                    {request.status === "Expired" ? "Expired - Pickup Details" : "Ready for Pickup"}
+                  </p>
                 </div>
 
                 {request.pickupMessage && <p className="text-sm">{request.pickupMessage}</p>}

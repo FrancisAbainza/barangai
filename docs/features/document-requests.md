@@ -36,20 +36,24 @@ Every form asks how the resident wants to receive the document:
 
 ```
 Pending ──► Processing ──► Ready for Pickup ──► Claimed
+                                      └────────► Expired
    └──────────────┴──────────► Rejected
 ```
 
-Admins can set statuses with the actions menu's **Set status**, subject to the Claimed transition rule below. Setting a status:
+Pickup requests still in Ready for Pickup expire after seven elapsed days. An hourly scheduled job marks them Expired; online soft copies are not affected. The job uses `readyForPickupAt` for requests marked ready after deployment, and falls back to `updatedAt` for requests already waiting when the feature is deployed.
+
+Admins can set statuses with the actions menu's **Set status**, subject to the Claimed transition rule below. Expired is assigned only by the scheduled job. Setting a status:
 
 | Status | What happens |
 |---|---|
 | Pending | Clears `handlerId`. Clears any pickup and rejection details |
 | Processing | Sets `handlerId` to the admin |
-| Ready for Pickup | Opens the **Pickup Details** dialog: a message for the requester (required) and up to 5 attachments (`document-requests/pickup-attachments`). For a soft copy, the attachment is the document. Coming back from Claimed skips the dialog and keeps the details |
+| Ready for Pickup | Opens the **Pickup Details** dialog: a message for the requester (required) and up to 5 attachments (`document-requests/pickup-attachments`). For a soft copy, the attachment is the document. Coming back from Claimed skips the dialog and keeps the details. Starts or restarts the seven-day pickup window |
 | Claimed | Available only for pickup requests already marked Ready for Pickup. Sets `claimedAt` and keeps the pickup details |
+| Expired | Set automatically for an unclaimed hall pickup after seven days. The pickup details remain visible until the status is changed |
 | Rejected | Opens the rejection dialog: a reason (required) and up to 5 attachments |
 
-Moving away from Ready for Pickup/Claimed or Rejected clears that status's message and deletes its attachments from R2 (the actions menu does this before calling `setDocumentRequestStatus`).
+Moving away from Ready for Pickup/Claimed/Expired or Rejected clears that status's message and deletes its attachments from R2 (the actions menu does this before calling `setDocumentRequestStatus`).
 
 **Soft copies are claimed automatically.** When the requester opens the Submission Info of their own Ready for Pickup soft copy, the dialog calls `claimSoftCopyDocumentRequest`, which marks it Claimed. Opening it is how they receive it. The action only updates a row that's the caller's own, Ready for Pickup and a soft copy, so calling it on anything else does nothing. This change isn't audit logged and sends no notification.
 
@@ -77,6 +81,7 @@ Moving away from Ready for Pickup/Claimed or Rejected clears that status's messa
 | Event | Notification to the requester | Audit log |
 |---|---|---|
 | Status changed by an admin | "Your Barangay Clearance request is now Ready for Pickup." | `status-changed`, with the message as a change |
+| Pickup request expires | none | none |
 | Deleted by an admin | "Your … request was deleted." | `deleted` |
 | Deleted by the requester | none | none |
 | Soft copy auto-claimed | none | none |
@@ -91,6 +96,8 @@ Moving away from Ready for Pickup/Claimed or Rejected clears that status's messa
 | File | What it does |
 |---|---|
 | `src/actions/document-requests.ts` | All the server actions |
+| `src/app/api/cron/expire-document-requests/route.ts` | Expires unclaimed hall pickups after seven days |
+| `vercel.json` | Hourly schedule for the expiration job |
 | `src/lib/document-requests.ts` | `statusBadgeVariant`, `handlerLabel`, `formatReferenceNumber` (`DR-<id>`), the delivery method constants |
 | `src/schemas/*-document-request-schema.ts` | One form schema per type, with its purpose list |
 | `src/schemas/preferred-claim-schema.ts` | `checkPreferredClaimAt` |

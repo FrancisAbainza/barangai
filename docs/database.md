@@ -75,9 +75,10 @@ The four kinds of resident submission share a shape: a `status` enum, a `handler
 | `supportingDocuments` | json `MediaItem[]` | Indigency, Solo Parent and Medical / Lab Assistance |
 | `receiveVia` | varchar | `"Pickup at Barangay Hall"` or `"Online Soft Copy"` |
 | `preferredClaimAt` | timestamp, null | Only for pickups |
-| `status` | `document_request_status` | Default `Pending` |
+| `status` | `document_request_status` | Default `Pending`; includes `Expired` for unclaimed hall pickups |
 | `handlerId` | varchar, null | |
-| `pickupMessage`, `pickupAttachments` | text, json | Set with Ready for Pickup, kept through Claimed |
+| `readyForPickupAt` | timestamp, null | Set when a request enters Ready for Pickup; used for pickup expiration |
+| `pickupMessage`, `pickupAttachments` | text, json | Set with Ready for Pickup, kept through Claimed or Expired |
 | `rejectionReason`, `rejectionAttachments` | text, json | Set with Rejected |
 | `claimedAt` | timestamp, null | Only while Claimed |
 

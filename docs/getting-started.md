@@ -32,6 +32,7 @@ Create a `.env` file in the project root. `.env*` files are gitignored.
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk Dashboard → API keys | Clerk in the browser |
 | `CLERK_SECRET_KEY` | Clerk Dashboard → API keys | Clerk on the server (`auth()`, `clerkClient`) |
 | `CLERK_WEBHOOK_SIGNING_SECRET` | Clerk Dashboard → Webhooks → your endpoint → Signing secret | `src/app/api/webhooks/clerk/route.ts` (`verifyWebhook`) |
+| `CRON_SECRET` | Generate a long random secret and configure it in the Vercel project environment | Authorizes the scheduled document-request expiration endpoint |
 | `DATABASE_URL` | Neon → Connection details (the pooled connection string works) | `src/db/config.ts`, `drizzle.config.ts` |
 | `R2_ACCOUNT_ID` | Cloudflare dashboard → R2 → Account ID | `src/lib/r2.ts` (builds the S3 endpoint) |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | R2 → Manage API tokens → a token with Object Read & Write on the bucket | `src/lib/r2.ts` |

@@ -139,6 +139,7 @@ export const documentRequestStatusEnum = pgEnum("document_request_status", [
   "Processing",
   "Ready for Pickup",
   "Claimed",
+  "Expired",
   "Rejected",
 ]);
 
@@ -156,6 +157,7 @@ export const documentRequestsTable = pgTable("document_requests", {
   preferredClaimAt: timestamp(),
   status: documentRequestStatusEnum().notNull().default("Pending"),
   handlerId: varchar({ length: 255 }),
+  readyForPickupAt: timestamp(),
   pickupMessage: text(),
   pickupAttachments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
   rejectionReason: text(),

@@ -13,7 +13,7 @@ export const DEFAULT_CLEARANCE_PURPOSE_FEES: ClearancePurposeFees = {
 export function statusBadgeVariant(status: DocumentRequest["status"]) {
   if (status === "Ready for Pickup") return "default";
   if (status === "Claimed") return "secondary";
-  if (status === "Rejected") return "destructive";
+  if (status === "Rejected" || status === "Expired") return "destructive";
   return "outline";
 }
 

@@ -286,12 +286,16 @@ export async function setDocumentRequestStatus(
   details?: DocumentRequestStatusDetails
 ) {
   const handlerId = await requireAdmin();
+  if (status === "Expired") {
+    throw new Error("Document requests can only be marked as Expired automatically.");
+  }
 
   const [existing] = await db
     .select()
     .from(documentRequestsTable)
     .where(eq(documentRequestsTable.id, id));
   if (!existing) throw new Error("Document request not found");
+  if (existing.status === status) return;
   if (status === "Claimed" && existing.status !== "Ready for Pickup") {
     throw new Error("Only requests that are Ready for Pickup can be marked as Claimed.");
   }
@@ -301,6 +305,8 @@ export async function setDocumentRequestStatus(
     .set({
       status,
       handlerId: status === "Pending" ? null : handlerId,
+      readyForPickupAt:
+        status === "Ready for Pickup" && existing.receiveVia === PICKUP_DELIVERY_METHOD ? new Date() : null,
       claimedAt: status === "Claimed" ? new Date() : null,
       updatedAt: new Date(),
       // Claimed, and Ready for Pickup set back from Claimed (no details), keep the existing pickup
@@ -357,7 +363,7 @@ export async function claimSoftCopyDocumentRequest(id: number) {
 
   await db
     .update(documentRequestsTable)
-    .set({ status: "Claimed", claimedAt: new Date(), updatedAt: new Date() })
+    .set({ status: "Claimed", readyForPickupAt: null, claimedAt: new Date(), updatedAt: new Date() })
     .where(
       and(
         eq(documentRequestsTable.id, id),

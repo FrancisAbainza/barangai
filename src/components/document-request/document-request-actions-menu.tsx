@@ -47,9 +47,14 @@ export default function DocumentRequestActionsMenu({
 
   const { mutate: changeStatus, isPending: isChangingStatus } = useMutation({
     mutationFn: async (status: DocumentRequest["status"]) => {
-      // Claimed keeps the pickup attachments, so only delete them when leaving both statuses.
-      const hasPickupAttachments = request.status === "Ready for Pickup" || request.status === "Claimed";
-      if (hasPickupAttachments && status !== "Ready for Pickup" && status !== "Claimed") {
+      // Claimed and Expired keep the pickup attachments; delete them when leaving those statuses.
+      const hasPickupAttachments =
+        request.status === "Ready for Pickup" || request.status === "Claimed" || request.status === "Expired";
+      const isReplacingExpiredPickupDetails = request.status === "Expired" && status === "Ready for Pickup";
+      if (
+        hasPickupAttachments &&
+        ((status !== "Ready for Pickup" && status !== "Claimed") || isReplacingExpiredPickupDetails)
+      ) {
         const pickupAttachments = request.pickupAttachments as MediaItem[];
         const keys = pickupAttachments.map((item) => item.key).filter(Boolean) as string[];
         await Promise.all(keys.map((key) => deleteFile(key)));
@@ -119,8 +124,9 @@ export default function DocumentRequestActionsMenu({
                   {documentRequestStatusEnum.enumValues
                     .filter(
                       (status) =>
-                        status !== "Claimed" ||
-                        (request.receiveVia === PICKUP_DELIVERY_METHOD && request.status === "Ready for Pickup")
+                        status !== "Expired" &&
+                        (status !== "Claimed" ||
+                          (request.receiveVia === PICKUP_DELIVERY_METHOD && request.status === "Ready for Pickup"))
                     )
                     .map((status) => (
                       <DropdownMenuItem

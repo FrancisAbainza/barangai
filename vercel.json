@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/expire-document-requests",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}
