@@ -42,9 +42,14 @@ export default function CourtFeesForm({
                 min="0"
                 step="0.01"
                 value={field.value ?? ""}
-                onChange={(e) =>
-                  field.onChange(e.target.value === "" ? undefined : e.target.valueAsNumber)
-                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  field.onChange(
+                    value === "" || Number.isNaN(e.target.valueAsNumber)
+                      ? null
+                      : e.target.valueAsNumber
+                  );
+                }}
                 aria-invalid={fieldState.invalid}
               />
               <FieldError errors={[fieldState.error]} />
@@ -65,9 +70,14 @@ export default function CourtFeesForm({
                 min="0"
                 step="0.01"
                 value={field.value ?? ""}
-                onChange={(e) =>
-                  field.onChange(e.target.value === "" ? undefined : e.target.valueAsNumber)
-                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  field.onChange(
+                    value === "" || Number.isNaN(e.target.valueAsNumber)
+                      ? null
+                      : e.target.valueAsNumber
+                  );
+                }}
                 aria-invalid={fieldState.invalid}
               />
               <FieldError errors={[fieldState.error]} />

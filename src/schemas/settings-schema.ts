@@ -8,15 +8,15 @@ export const documentRequestSettingsFormSchema = z.object({
     .max(13, "Enter a valid GCash number"),
   clearancePurposeFees: z.record(
     z.enum(PAID_CLEARANCE_PURPOSES),
-    z.number().nonnegative("Fee must be zero or greater")
+    z.number({ error: "Enter a fee" }).nonnegative("Fee must be zero or greater")
   ),
 });
 
 export type DocumentRequestSettingsFormValues = z.infer<typeof documentRequestSettingsFormSchema>;
 
 export const courtFeesFormSchema = z.object({
-  courtDayRate: z.number().nonnegative("Rate must be zero or greater"),
-  courtNightRate: z.number().nonnegative("Rate must be zero or greater"),
+  courtDayRate: z.number({ error: "Enter a rate" }).nonnegative("Rate must be zero or greater"),
+  courtNightRate: z.number({ error: "Enter a rate" }).nonnegative("Rate must be zero or greater"),
 });
 
 export type CourtFeesFormValues = z.infer<typeof courtFeesFormSchema>;
