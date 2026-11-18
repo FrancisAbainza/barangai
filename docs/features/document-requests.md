@@ -10,7 +10,7 @@ Each type has its own form, dialog and Zod schema (`src/schemas/<type>-document-
 
 | Type | Dialog id (`?dialog=`) | Purposes | Extra fields |
 |---|---|---|---|
-| Barangay Clearance | `clearance-request` | Paid: Clearance for Local Employment, Bank / Loan Requirements, and Small, Medium or Large Business Clearance. Free: Scholarship, Financial Support, Hospital Support, PAO (Public Attorney's Office) | GCash payment receipt (1 image) |
+| Barangay Clearance | `clearance-request` | Paid: Clearance for Local Employment, Bank / Loan Requirements, and Small, Medium or Large Business Clearance. Free: Scholarship, Financial Support, Hospital Support, PAO (Public Attorney's Office). Paid clearances are also free for eligible PWDs, Senior Citizens, 4Ps beneficiaries, Solo Parents, and Pregnant Women | Eligibility declaration and up to 5 proof files when requesting a free clearance; otherwise a GCash payment receipt (1 image) |
 | Certificate of Residency | `residency-request` | Employment, School, Loan or Bank Transaction, Government Transaction, Travel, Medical or Financial Assistance, Other | |
 | Certificate of No Objection | `no-objection-request` | Business Permit Application, Construction or Renovation, Tricycle / Vehicle Operation, Special Event or Gathering, Use of Public Space or Road, Other | |
 | Certificate of Indigency | `indigency-request` | Medical, Financial, Educational Assistance / Scholarship, Burial, Government Subsidy Application, Other | Situation description, 1–5 supporting documents |
@@ -23,7 +23,7 @@ Choosing "Other" requires typing the purpose, which is stored in `otherPurpose`.
 
 The paid and free clearance purposes, along with `isFreeClearancePurpose`, are defined in `src/schemas/clearance-document-request-schema.ts`. Paid purposes have admin-editable fees in Barangay Settings (`clearancePurposeFees`, defaulting to ₱60, ₱80, ₱280, ₱530 and ₱1,030 in `src/lib/document-requests.ts`). Free purposes are always ₱0. The form shows each purpose with its fee and the GCash number to pay.
 
-The receipt is required for a paid purpose delivered as an Online Soft Copy, and optional for a pickup, where the resident can pay at the hall. The other document types are free and have no payment field.
+For a paid purpose, residents who declare that they are a PWD, Senior Citizen, 4Ps beneficiary, Solo Parent, or Pregnant Woman can request a fee waiver by uploading supporting proof. The waived request does not need a payment receipt. Otherwise, the receipt is required for an Online Soft Copy and optional for a pickup, where the resident can pay at the hall. The other document types are free and have no payment field.
 
 ### Delivery
 
@@ -74,7 +74,7 @@ Moving away from Ready for Pickup/Claimed/Expired or Rejected clears that status
 - A table of every request (20 per page, `getDocumentRequests`) with filters: search (requester name or email, or reference number), document type, status, delivery method, date range, newest/oldest, and "Only show requests I'm handling".
 - The actions menu: **Submission Info**, **Set status**, **Delete request** (any status), and for super admins **Audit Logs** for this record.
 
-**Submission Info** (`ViewDocumentRequestDialog`) has two tabs: Request Info (reference number, status, who's handling it, purpose, description, payment receipt, supporting documents, delivery method, preferred claim time, and the pickup or rejection details) and Requester Info (the requester's Resident Credentials, including the valid ID photos).
+**Submission Info** (`ViewDocumentRequestDialog`) has two tabs: Request Info (reference number, status, who's handling it, purpose, free-certification eligibility and its proof, description, payment receipt, supporting documents, delivery method, preferred claim time, and the pickup or rejection details) and Requester Info (the requester's Resident Credentials, including the valid ID photos).
 
 ## Side effects
 

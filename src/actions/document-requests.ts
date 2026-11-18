@@ -23,6 +23,7 @@ export type CreateDocumentRequestInput = {
   situationDescription?: string;
   paymentReceipt?: Omit<MediaItem, "file">[];
   supportingDocuments?: Omit<MediaItem, "file">[];
+  eligibleForFreeCertification?: boolean;
   receiveVia: string;
   // Only stored for pickups. Forms convert their local "YYYY-MM-DDTHH:MM" to a Date in the
   // browser, since the server runs in UTC. An unpicked "" arrives as null.
@@ -31,6 +32,13 @@ export type CreateDocumentRequestInput = {
 
 export async function createDocumentRequest(data: CreateDocumentRequestInput) {
   const { userId } = await requireSubmitter();
+
+  if (
+    data.eligibleForFreeCertification &&
+    (data.documentType !== "Barangay Clearance" || !data.supportingDocuments?.length)
+  ) {
+    throw new Error("Free certification eligibility requires supporting documents.");
+  }
 
   const isPickup = data.receiveVia === PICKUP_DELIVERY_METHOD;
   await db.insert(documentRequestsTable).values({
@@ -41,6 +49,7 @@ export async function createDocumentRequest(data: CreateDocumentRequestInput) {
     situationDescription: data.situationDescription,
     paymentReceipt: data.paymentReceipt ?? [],
     supportingDocuments: data.supportingDocuments ?? [],
+    eligibleForFreeCertification: data.eligibleForFreeCertification ?? false,
     receiveVia: data.receiveVia,
     preferredClaimAt: isPickup ? data.preferredClaimAt : null,
   });

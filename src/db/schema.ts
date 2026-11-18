@@ -152,6 +152,7 @@ export const documentRequestsTable = pgTable("document_requests", {
   situationDescription: text(),
   paymentReceipt: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
   supportingDocuments: json().$type<Omit<MediaItem, "file">[]>().notNull().default([]),
+  eligibleForFreeCertification: boolean().notNull().default(false),
   receiveVia: varchar({ length: 255 }).notNull(),
   // Only set for "Pickup at Barangay Hall".
   preferredClaimAt: timestamp(),

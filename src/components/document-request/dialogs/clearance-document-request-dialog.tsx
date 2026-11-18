@@ -32,11 +32,20 @@ export default function ClearanceDocumentRequestDialog({
           return { ...item, key, file: undefined };
         })
       );
+      const supportingDocuments = await Promise.all(
+        data.supportingDocuments.map(async (item) => {
+          if (!item.file) return item;
+          const key = await uploadFile(item.file, "document-requests/supporting-documents");
+          return { ...item, key, file: undefined };
+        })
+      );
 
       await createDocumentRequest({
         documentType: "Barangay Clearance",
         purpose: data.purpose,
         paymentReceipt,
+        supportingDocuments,
+        eligibleForFreeCertification: data.eligibleForFreeCertification,
         receiveVia: data.receiveVia,
         preferredClaimAt: new Date(data.preferredClaimAt),
       });

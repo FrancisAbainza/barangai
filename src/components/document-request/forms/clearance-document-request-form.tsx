@@ -40,6 +40,8 @@ function formatFee(amount: number) {
 const baseDefaults: ClearanceDocumentRequestFormValues = {
   purpose: CLEARANCE_PURPOSES[0],
   paymentReceipt: [],
+  eligibleForFreeCertification: false,
+  supportingDocuments: [],
   receiveVia: CLEARANCE_DELIVERY_METHODS[0],
   preferredClaimAt: "",
 };
@@ -60,7 +62,8 @@ export default function ClearanceDocumentRequestForm({
   });
 
   const purpose = watch("purpose");
-  const isFree = isFreeClearancePurpose(purpose);
+  const eligibleForFreeCertification = watch("eligibleForFreeCertification");
+  const feeIsWaived = isFreeClearancePurpose(purpose) || eligibleForFreeCertification;
   const isPickup = watch("receiveVia") === PICKUP_DELIVERY_METHOD;
 
   const { data: settings } = useQuery({
@@ -79,8 +82,14 @@ export default function ClearanceDocumentRequestForm({
     <form
       className="min-w-0"
       onSubmit={handleSubmit((data) =>
-        // Drop a receipt uploaded before switching to a free purpose.
-        onSubmit(isFree ? { ...data, paymentReceipt: [] } : data)
+        onSubmit({
+          ...data,
+          paymentReceipt:
+            isFreeClearancePurpose(data.purpose) || data.eligibleForFreeCertification
+              ? []
+              : data.paymentReceipt,
+          supportingDocuments: data.eligibleForFreeCertification ? data.supportingDocuments : [],
+        })
       )}
     >
       <fieldset disabled={isSubmitting} className="space-y-4">
@@ -97,16 +106,69 @@ export default function ClearanceDocumentRequestForm({
                 <SelectContent>
                   {CLEARANCE_PURPOSES.map((option) => (
                     <SelectItem key={option} value={option}>
-                      {option} — {feeLabel(option)}
+                      {option} — {eligibleForFreeCertification ? "Free" : feeLabel(option)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <FieldDescription>Amount due: {feeLabel(purpose)}</FieldDescription>
+              <FieldDescription>
+                Amount due: {feeIsWaived ? "Free" : feeLabel(purpose)}
+              </FieldDescription>
               <FieldError errors={[fieldState.error]} />
             </Field>
           )}
         />
+
+        <Controller
+          name="eligibleForFreeCertification"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel>Are you eligible for a free certification?</FieldLabel>
+              <FieldDescription>
+                Free certification is available for PWDs, Senior Citizens, 4Ps beneficiaries,
+                Solo Parents, and Pregnant Women.
+              </FieldDescription>
+              <Select
+                value={field.value ? "yes" : "no"}
+                onValueChange={(value) => field.onChange(value === "yes")}
+              >
+                <SelectTrigger aria-invalid={fieldState.invalid}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no">No</SelectItem>
+                  <SelectItem value="yes">Yes</SelectItem>
+                </SelectContent>
+              </Select>
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
+
+        {eligibleForFreeCertification && (
+          <Controller
+            name="supportingDocuments"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel>Supporting Documents</FieldLabel>
+                <FieldDescription>
+                  Upload proof of your eligibility, such as a PWD ID, Senior Citizen ID, 4Ps
+                  certificate, Solo Parent ID, or proof of pregnancy. Images or documents, up to 5
+                  files.
+                </FieldDescription>
+                <FileUploader
+                  files={field.value}
+                  onFilesChange={field.onChange}
+                  maxFiles={5}
+                  accept={["images", "documents"]}
+                />
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
+          />
+        )}
 
         <Controller
           name="receiveVia"
@@ -131,7 +193,7 @@ export default function ClearanceDocumentRequestForm({
           )}
         />
 
-        {!isFree && (
+        {!feeIsWaived && (
           <Controller
             name="paymentReceipt"
             control={control}

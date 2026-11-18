@@ -33,16 +33,34 @@ export const clearanceDocumentRequestFormSchema = z
   .object({
     purpose: z.enum(CLEARANCE_PURPOSES),
     paymentReceipt: z.array(z.custom<MediaItem>()).max(1, "Only one receipt image is allowed"),
+    eligibleForFreeCertification: z.boolean(),
+    supportingDocuments: z.array(z.custom<MediaItem>()).max(5, "Only up to 5 files are allowed"),
     receiveVia: z.enum(CLEARANCE_DELIVERY_METHODS),
     preferredClaimAt: z.string(),
   })
-  .refine(
-    (data) =>
-      isFreeClearancePurpose(data.purpose) ||
-      data.receiveVia !== ONLINE_SOFT_COPY_DELIVERY_METHOD ||
-      data.paymentReceipt.length > 0,
-    { message: "Upload your GCash payment receipt", path: ["paymentReceipt"] }
-  )
+  .superRefine((data, ctx) => {
+    const feeIsWaived = isFreeClearancePurpose(data.purpose) || data.eligibleForFreeCertification;
+
+    if (
+      !feeIsWaived &&
+      data.receiveVia === ONLINE_SOFT_COPY_DELIVERY_METHOD &&
+      data.paymentReceipt.length === 0
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Upload your GCash payment receipt",
+        path: ["paymentReceipt"],
+      });
+    }
+
+    if (data.eligibleForFreeCertification && data.supportingDocuments.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Upload at least one supporting document",
+        path: ["supportingDocuments"],
+      });
+    }
+  })
   .superRefine(checkPreferredClaimAt);
 
 export type ClearanceDocumentRequestFormValues = z.infer<

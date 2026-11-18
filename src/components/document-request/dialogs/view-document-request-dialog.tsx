@@ -131,6 +131,15 @@ export default function ViewDocumentRequestDialog({
               </p>
             </Field>
 
+            {request.documentType === "Barangay Clearance" && (
+              <Field>
+                <FieldLabel>Eligible for Free Certification</FieldLabel>
+                <p className="text-sm">
+                  {request.eligibleForFreeCertification ? "Yes" : "No"}
+                </p>
+              </Field>
+            )}
+
             {request.situationDescription && (
               <Field>
                 <FieldLabel>Brief Description of the Situation</FieldLabel>
@@ -147,7 +156,11 @@ export default function ViewDocumentRequestDialog({
 
             {supportingDocuments.length > 0 && (
               <Field>
-                <FieldLabel>Supporting Documents</FieldLabel>
+                <FieldLabel>
+                  {request.eligibleForFreeCertification
+                    ? "Free Certification Supporting Documents"
+                    : "Supporting Documents"}
+                </FieldLabel>
                 <MediaPreviewList items={supportingDocuments} />
               </Field>
             )}
