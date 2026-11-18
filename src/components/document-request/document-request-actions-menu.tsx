@@ -117,7 +117,11 @@ export default function DocumentRequestActionsMenu({
                 <DropdownMenuSubContent>
                   {/* Online soft copies are claimed automatically when the requester opens them. */}
                   {documentRequestStatusEnum.enumValues
-                    .filter((status) => status !== "Claimed" || request.receiveVia === PICKUP_DELIVERY_METHOD)
+                    .filter(
+                      (status) =>
+                        status !== "Claimed" ||
+                        (request.receiveVia === PICKUP_DELIVERY_METHOD && request.status === "Ready for Pickup")
+                    )
                     .map((status) => (
                       <DropdownMenuItem
                         key={status}

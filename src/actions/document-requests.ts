@@ -292,8 +292,11 @@ export async function setDocumentRequestStatus(
     .from(documentRequestsTable)
     .where(eq(documentRequestsTable.id, id));
   if (!existing) throw new Error("Document request not found");
+  if (status === "Claimed" && existing.status !== "Ready for Pickup") {
+    throw new Error("Only requests that are Ready for Pickup can be marked as Claimed.");
+  }
 
-  await db
+  const updated = await db
     .update(documentRequestsTable)
     .set({
       status,
@@ -313,7 +316,19 @@ export async function setDocumentRequestStatus(
           : {}
         : { rejectionReason: null, rejectionAttachments: [] }),
     })
-    .where(eq(documentRequestsTable.id, id));
+    .where(
+      status === "Claimed"
+        ? and(
+            eq(documentRequestsTable.id, id),
+            eq(documentRequestsTable.status, "Ready for Pickup")
+          )
+        : eq(documentRequestsTable.id, id)
+    )
+    .returning({ id: documentRequestsTable.id });
+
+  if (status === "Claimed" && updated.length === 0) {
+    throw new Error("Only requests that are Ready for Pickup can be marked as Claimed.");
+  }
 
   await notifyStatusChange({
     userId: existing.requesterId,

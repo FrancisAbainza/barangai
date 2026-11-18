@@ -39,14 +39,14 @@ Pending ──► Processing ──► Ready for Pickup ──► Claimed
    └──────────────┴──────────► Rejected
 ```
 
-That's the intended flow, but an admin can set any status from any other with the actions menu's **Set status**. Setting a status:
+Admins can set statuses with the actions menu's **Set status**, subject to the Claimed transition rule below. Setting a status:
 
 | Status | What happens |
 |---|---|
 | Pending | Clears `handlerId`. Clears any pickup and rejection details |
 | Processing | Sets `handlerId` to the admin |
 | Ready for Pickup | Opens the **Pickup Details** dialog: a message for the requester (required) and up to 5 attachments (`document-requests/pickup-attachments`). For a soft copy, the attachment is the document. Coming back from Claimed skips the dialog and keeps the details |
-| Claimed | Only offered for pickups. Sets `claimedAt` and keeps the pickup details |
+| Claimed | Available only for pickup requests already marked Ready for Pickup. Sets `claimedAt` and keeps the pickup details |
 | Rejected | Opens the rejection dialog: a reason (required) and up to 5 attachments |
 
 Moving away from Ready for Pickup/Claimed or Rejected clears that status's message and deletes its attachments from R2 (the actions menu does this before calling `setDocumentRequestStatus`).
