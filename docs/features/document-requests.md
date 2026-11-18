@@ -29,7 +29,7 @@ For a paid purpose, residents who declare that they are a PWD, Senior Citizen, 4
 
 Every form asks how the resident wants to receive the document:
 
-- **Pickup at Barangay Hall** (`PICKUP_DELIVERY_METHOD`). The resident picks a preferred claim date and time with `PreferredClaimField`: today onward, Tuesday to Friday, 9:00 AM to 5:00 PM, in 30-minute steps. The browser turns the local `"YYYY-MM-DDTHH:MM"` into a `Date` before sending it, and the action stores it in `preferredClaimAt`. The shared `checkPreferredClaimAt` refinement makes the field required only for pickups.
+- **Pickup at Barangay Hall** (`PICKUP_DELIVERY_METHOD`). The resident picks a preferred claim date and time with `PreferredClaimField`: today onward, Monday to Friday, 8:00 AM to 5:00 PM, in 30-minute steps. The earliest offered time is the next half-hour slot at least 15 minutes from the current Philippine time. If that slot is outside office hours, the field suggests 9:00 AM on the next weekday. The browser turns the local `"YYYY-MM-DDTHH:MM"` into a `Date` before sending it, and the action stores it in `preferredClaimAt`. The shared `checkPreferredClaimAt` refinement makes the field required only for pickups.
 - **Online Soft Copy** (`ONLINE_SOFT_COPY_DELIVERY_METHOD`). The admin attaches the finished document when marking the request Ready for Pickup, and the resident downloads it from the request's Submission Info.
 
 ## Statuses
