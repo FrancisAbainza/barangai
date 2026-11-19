@@ -128,6 +128,7 @@ export type Official = typeof officialsTable.$inferSelect;
 
 export const documentRequestTypeEnum = pgEnum("document_request_type", [
   "Barangay Clearance",
+  "Additional Transactions",
   "Certificate of Residency",
   "Certificate of No Objection",
   "Certificate of Indigency",

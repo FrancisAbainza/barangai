@@ -131,7 +131,8 @@ export default function ViewDocumentRequestDialog({
               </p>
             </Field>
 
-            {request.documentType === "Barangay Clearance" && (
+            {(request.documentType === "Barangay Clearance" ||
+              request.documentType === "Additional Transactions") && (
               <Field>
                 <FieldLabel>Eligible for Free Certification</FieldLabel>
                 <p className="text-sm">

@@ -35,7 +35,11 @@ export async function createDocumentRequest(data: CreateDocumentRequestInput) {
 
   if (
     data.eligibleForFreeCertification &&
-    (data.documentType !== "Barangay Clearance" || !data.supportingDocuments?.length)
+    (
+      (data.documentType !== "Barangay Clearance" &&
+        data.documentType !== "Additional Transactions") ||
+      !data.supportingDocuments?.length
+    )
   ) {
     throw new Error("Free certification eligibility requires supporting documents.");
   }
