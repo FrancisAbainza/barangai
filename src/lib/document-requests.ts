@@ -1,6 +1,7 @@
 import type { DocumentRequest } from "@/db/schema";
 import { createReferenceNumbers } from "@/lib/reference-numbers";
 import type { ClearancePurposeFees } from "@/schemas/clearance-document-request-schema";
+import type { AdditionalTransactionsPurposeFees } from "@/schemas/additional-transactions-document-request-schema";
 
 export const DEFAULT_CLEARANCE_PURPOSE_FEES: ClearancePurposeFees = {
   "Clearance for Local Employment": 60,
@@ -8,6 +9,11 @@ export const DEFAULT_CLEARANCE_PURPOSE_FEES: ClearancePurposeFees = {
   "Business Clearance - Small Business": 280,
   "Business Clearance - Medium Business": 530,
   "Business Clearance - Large Business": 1030,
+};
+
+export const DEFAULT_ADDITIONAL_TRANSACTIONS_PURPOSE_FEES: AdditionalTransactionsPurposeFees = {
+  "Tel Net Tower": 5030,
+  "Fiber Optic Cable": 2030,
 };
 
 export function statusBadgeVariant(status: DocumentRequest["status"]) {

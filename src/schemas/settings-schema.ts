@@ -1,4 +1,5 @@
 import z from "zod";
+import { ADDITIONAL_TRANSACTION_PURPOSES } from "@/schemas/additional-transactions-document-request-schema";
 import { PAID_CLEARANCE_PURPOSES } from "@/schemas/clearance-document-request-schema";
 
 export const documentRequestSettingsFormSchema = z.object({
@@ -8,6 +9,10 @@ export const documentRequestSettingsFormSchema = z.object({
     .max(13, "Enter a valid GCash number"),
   clearancePurposeFees: z.record(
     z.enum(PAID_CLEARANCE_PURPOSES),
+    z.number({ error: "Enter a fee" }).nonnegative("Fee must be zero or greater")
+  ),
+  additionalTransactionsPurposeFees: z.record(
+    z.enum(ADDITIONAL_TRANSACTION_PURPOSES),
     z.number({ error: "Enter a fee" }).nonnegative("Fee must be zero or greater")
   ),
 });

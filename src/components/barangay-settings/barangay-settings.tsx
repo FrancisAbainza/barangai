@@ -47,6 +47,7 @@ export default function BarangaySettings() {
   const pricing = settings && {
     gcashNumber: settings.gcashNumber,
     clearancePurposeFees: settings.clearancePurposeFees,
+    additionalTransactionsPurposeFees: settings.additionalTransactionsPurposeFees,
   };
   const courtFees = settings && {
     courtDayRate: settings.courtDayRate,
@@ -74,14 +75,14 @@ export default function BarangaySettings() {
           <div>
             <CardTitle className="text-lg">Document Pricing</CardTitle>
             <CardDescription>
-              The clearance fees shown to residents on request forms, and the GCash number used for
-              both document and court reservation payments.
+              The clearance and additional transaction fees shown to residents on request forms,
+              and the GCash number used for document and court reservation payments.
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           {isLoading || !pricing ? (
-            <FormSkeleton fields={4} />
+            <FormSkeleton fields={8} />
           ) : (
             <DocumentPricingForm
               key={JSON.stringify(pricing)}

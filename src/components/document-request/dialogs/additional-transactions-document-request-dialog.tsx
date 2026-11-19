@@ -1,10 +1,10 @@
 "use client";
 
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useDialogPrefill } from "@/hooks/use-dialog-param";
-import AdditionalTransactionsDocumentRequestForm, {
-  type AdditionalTransactionsDocumentRequestFormValues,
-} from "../forms/additional-transactions-document-request-form";
+import AdditionalTransactionsDocumentRequestForm from "../forms/additional-transactions-document-request-form";
+import type { AdditionalTransactionsDocumentRequestFormValues } from "@/schemas/additional-transactions-document-request-schema";
 
 interface AdditionalTransactionsDocumentRequestDialogProps {
   open: boolean;
@@ -16,6 +16,9 @@ export default function AdditionalTransactionsDocumentRequestDialog({
   onOpenChange,
 }: AdditionalTransactionsDocumentRequestDialogProps) {
   const prefill = useDialogPrefill("additional-transactions-request");
+  const handleSubmitRequest = async (data: AdditionalTransactionsDocumentRequestFormValues) => {
+    toast.info(`${data.purpose} request submission isn't connected yet.`);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -26,6 +29,7 @@ export default function AdditionalTransactionsDocumentRequestDialog({
 
         <AdditionalTransactionsDocumentRequestForm
           defaultValues={prefill as Partial<AdditionalTransactionsDocumentRequestFormValues>}
+          onSubmit={handleSubmitRequest}
           onCancel={() => onOpenChange(false)}
         />
       </DialogContent>

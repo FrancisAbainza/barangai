@@ -1,6 +1,10 @@
 import z from "zod";
 import { PORTAL_NAVIGATION_TARGETS, type PortalNavigationTargetId } from "@/lib/ai-assistant/portal-navigation";
 import { parseDateValue, toDateValue } from "@/lib/utils";
+import {
+  ADDITIONAL_TRANSACTION_PURPOSES,
+  ADDITIONAL_TRANSACTIONS_DELIVERY_METHODS,
+} from "@/schemas/additional-transactions-document-request-schema";
 import { BUSINESS_CATEGORIES } from "@/schemas/business-schema";
 import { CLEARANCE_DELIVERY_METHODS, CLEARANCE_PURPOSES } from "@/schemas/clearance-document-request-schema";
 import { INDIGENCY_DELIVERY_METHODS, INDIGENCY_REQUEST_PURPOSES } from "@/schemas/indigency-document-request-schema";
@@ -139,12 +143,11 @@ export const PORTAL_DIALOG_TARGETS = {
   "additional-transactions-request": {
     label: "Request Additional Transactions",
     page: "document-request",
-    description:
-      "Request a Tel. Net. Tower (₱5,030) or Fiber Optic Cable (₱2,030) transaction.",
+    description: "Request a Tel Net Tower or Fiber Optic Cable transaction.",
     audience: "resident",
     prefill: z.object({
-      purpose: z.enum(["Tel. Net. Tower", "Fiber Optic Cable"]),
-      receiveVia: z.enum(CLEARANCE_DELIVERY_METHODS),
+      purpose: z.enum(ADDITIONAL_TRANSACTION_PURPOSES),
+      receiveVia: z.enum(ADDITIONAL_TRANSACTIONS_DELIVERY_METHODS),
     }),
   },
   "submit-business": {

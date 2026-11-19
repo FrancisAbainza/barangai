@@ -16,13 +16,18 @@ import {
   barangayVision,
   DEFAULT_GCASH_NUMBER,
 } from "@/lib/barangay-data";
-import { DEFAULT_CLEARANCE_PURPOSE_FEES } from "@/lib/document-requests";
+import {
+  DEFAULT_ADDITIONAL_TRANSACTIONS_PURPOSE_FEES,
+  DEFAULT_CLEARANCE_PURPOSE_FEES,
+} from "@/lib/document-requests";
 import { DEFAULT_COURT_DAY_RATE, DEFAULT_COURT_NIGHT_RATE } from "@/lib/court-reservations";
 import { PAID_CLEARANCE_PURPOSES, type ClearancePurposeFees } from "@/schemas/clearance-document-request-schema";
+import type { AdditionalTransactionsPurposeFees } from "@/schemas/additional-transactions-document-request-schema";
 
 export type BarangaySettingsValues = {
   gcashNumber: string;
   clearancePurposeFees: ClearancePurposeFees;
+  additionalTransactionsPurposeFees: AdditionalTransactionsPurposeFees;
   courtDayRate: number;
   courtNightRate: number;
   goal: string;
@@ -37,6 +42,7 @@ export type BarangaySettingsValues = {
 const DEFAULT_SETTINGS: BarangaySettingsValues = {
   gcashNumber: DEFAULT_GCASH_NUMBER,
   clearancePurposeFees: DEFAULT_CLEARANCE_PURPOSE_FEES,
+  additionalTransactionsPurposeFees: DEFAULT_ADDITIONAL_TRANSACTIONS_PURPOSE_FEES,
   courtDayRate: DEFAULT_COURT_DAY_RATE,
   courtNightRate: DEFAULT_COURT_NIGHT_RATE,
   goal: barangayGoal,
@@ -57,6 +63,10 @@ export async function getBarangaySettings(): Promise<BarangaySettingsValues> {
     clearancePurposeFees: {
       ...DEFAULT_CLEARANCE_PURPOSE_FEES,
       ...settings.clearancePurposeFees,
+    },
+    additionalTransactionsPurposeFees: {
+      ...DEFAULT_ADDITIONAL_TRANSACTIONS_PURPOSE_FEES,
+      ...settings.additionalTransactionsPurposeFees,
     },
     courtDayRate: settings.courtDayRate,
     courtNightRate: settings.courtNightRate,
@@ -86,6 +96,12 @@ const SETTINGS_AUDIT_LABELS = {
 const CLEARANCE_FEE_AUDIT_LABELS = Object.fromEntries(
   PAID_CLEARANCE_PURPOSES.map((purpose) => [purpose, `Clearance Fee (${purpose})`])
 );
+const ADDITIONAL_TRANSACTION_FEE_AUDIT_LABELS = Object.fromEntries(
+  Object.keys(DEFAULT_ADDITIONAL_TRANSACTIONS_PURPOSE_FEES).map((purpose) => [
+    purpose,
+    `Additional Transaction Fee (${purpose})`,
+  ])
+);
 
 // Accepts a partial update so each Barangay Settings page section can submit only the
 // fields it owns without clobbering the rest of this single shared settings row.
@@ -110,6 +126,11 @@ export async function updateBarangaySettings(data: Partial<BarangaySettingsValue
   const changes = [
     ...getAuditChanges(current, merged, SETTINGS_AUDIT_LABELS),
     ...getAuditChanges(current.clearancePurposeFees, merged.clearancePurposeFees, CLEARANCE_FEE_AUDIT_LABELS),
+    ...getAuditChanges(
+      current.additionalTransactionsPurposeFees,
+      merged.additionalTransactionsPurposeFees,
+      ADDITIONAL_TRANSACTION_FEE_AUDIT_LABELS
+    ),
   ];
   if (changes.length > 0) {
     await logAudit({

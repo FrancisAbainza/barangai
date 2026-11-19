@@ -92,7 +92,7 @@ const documentTypes: DocumentType[] = [
   },
   {
     name: ADDITIONAL_TRANSACTIONS_DOCUMENT_NAME,
-    description: "Request a Tel. Net. Tower or Fiber Optic Cable transaction.",
+    description: "Request a Tel Net Tower or Fiber Optic Cable transaction.",
     icon: Cable,
   },
 ];

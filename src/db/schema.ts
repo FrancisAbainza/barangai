@@ -36,6 +36,7 @@ import {
   barangayVision,
 } from "@/lib/barangay-data";
 import type { ClearancePurposeFees } from "@/schemas/clearance-document-request-schema";
+import type { AdditionalTransactionsPurposeFees } from "@/schemas/additional-transactions-document-request-schema";
 import { KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS } from "@/lib/ai-assistant/knowledge-base";
 import type { AuditAction, AuditChange, AuditEntityType } from "@/lib/audit-logs";
 
@@ -422,6 +423,7 @@ export const barangaySettingsTable = pgTable("barangay_settings", {
   id: integer().primaryKey().default(1),
   gcashNumber: varchar({ length: 20 }).notNull(),
   clearancePurposeFees: json().$type<ClearancePurposeFees>().notNull(),
+  additionalTransactionsPurposeFees: json().$type<AdditionalTransactionsPurposeFees>().notNull(),
   courtDayRate: integer().notNull(),
   courtNightRate: integer().notNull(),
   goal: text().notNull().default(barangayGoal),

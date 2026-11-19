@@ -6,10 +6,12 @@ import {
   documentRequestSettingsFormSchema,
   DocumentRequestSettingsFormValues,
 } from "@/schemas/settings-schema";
+import { ADDITIONAL_TRANSACTION_PURPOSES } from "@/schemas/additional-transactions-document-request-schema";
 import { PAID_CLEARANCE_PURPOSES } from "@/schemas/clearance-document-request-schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { Separator } from "@/components/ui/separator";
 import { Loader2, Save } from "lucide-react";
 
 interface DocumentPricingFormProps {
@@ -30,7 +32,6 @@ export default function DocumentPricingForm({
     resolver: zodResolver(documentRequestSettingsFormSchema),
     defaultValues,
   });
-
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <fieldset disabled={isSubmitting} className="space-y-4">
@@ -48,6 +49,9 @@ export default function DocumentPricingForm({
           <FieldError errors={[errors.gcashNumber]} />
         </Field>
 
+        <Separator />
+        <h3 className="text-sm font-semibold">Barangay Clearance Fees</h3>
+
         {PAID_CLEARANCE_PURPOSES.map((purpose) => (
           <Controller
             key={purpose}
@@ -60,7 +64,7 @@ export default function DocumentPricingForm({
                   id={`fee-${purpose}`}
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="1"
                   value={field.value ?? ""}
                   onChange={(e) => {
                     const value = e.target.value;
@@ -68,6 +72,38 @@ export default function DocumentPricingForm({
                       value === "" || Number.isNaN(e.target.valueAsNumber)
                         ? null
                         : e.target.valueAsNumber
+                    );
+                  }}
+                  aria-invalid={fieldState.invalid}
+                />
+                <FieldError errors={[fieldState.error]} />
+              </Field>
+            )}
+          />
+        ))}
+
+        <Separator />
+        <h3 className="text-sm font-semibold">Additional Transactions Fees</h3>
+        {ADDITIONAL_TRANSACTION_PURPOSES.map((purpose) => (
+          <Controller
+            key={purpose}
+            name={`additionalTransactionsPurposeFees.${purpose}`}
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={`fee-${purpose}`}>{purpose} Fee</FieldLabel>
+                <Input
+                  id={`fee-${purpose}`}
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={field.value ?? ""}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    field.onChange(
+                      value === "" || Number.isNaN(event.target.valueAsNumber)
+                        ? null
+                        : event.target.valueAsNumber
                     );
                   }}
                   aria-invalid={fieldState.invalid}
