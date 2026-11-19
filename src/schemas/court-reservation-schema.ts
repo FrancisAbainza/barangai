@@ -3,6 +3,7 @@ import type { MediaItem } from "@/components/file-uploader";
 import {
   isPastCourtReservationStartTime,
   isFridayCourtReservationDate,
+  isBeyondCourtReservationMaxDate,
   COURT_CLOSE,
   COURT_LAST_START,
   COURT_OPEN_START,
@@ -33,6 +34,10 @@ export function getCourtReservationFormSchema(isAdmin: boolean) {
     .refine(
       ({ date }) => !isFridayCourtReservationDate(date),
       { path: ["date"], message: "Court reservations are not available on Fridays." }
+    )
+    .refine(
+      ({ date }) => !isBeyondCourtReservationMaxDate(date),
+      { path: ["date"], message: "Reservations may only be made up to 3 months from today." }
     )
     .refine(
       ({ date, startTime }) => {

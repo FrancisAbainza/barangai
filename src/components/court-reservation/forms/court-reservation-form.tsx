@@ -22,6 +22,8 @@ import {
   formatFee,
   formatTimeRange,
   getCourtHourCharges,
+  getCourtReservationMaxDate,
+  getCourtReservationTodayDate,
   maxDurationHours,
   parseTimeInput,
   rangesOverlap,
@@ -44,6 +46,7 @@ import { Loader2, Send } from "lucide-react";
 import FileUploader from "@/components/file-uploader";
 import DatePicker from "@/components/date-picker";
 import TimePicker from "@/components/time-picker";
+import { parseDateValue } from "@/lib/utils";
 
 interface CourtReservationFormProps {
   defaultValues?: Partial<CourtReservationFormValues>;
@@ -66,7 +69,8 @@ export default function CourtReservationForm({
 }: CourtReservationFormProps) {
   const { user } = useUser();
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
-  const [today] = useState(() => new Date());
+  const [today] = useState(() => parseDateValue(getCourtReservationTodayDate()));
+  const [maximumDate] = useState(() => parseDateValue(getCourtReservationMaxDate()));
 
   const {
     register,
@@ -140,8 +144,13 @@ export default function CourtReservationForm({
                 value={field.value}
                 onChange={field.onChange}
                 required
-                disabledDays={[{ before: today }, { dayOfWeek: [5] }]}
+                disabledDays={[
+                  { before: today },
+                  { after: maximumDate },
+                  { dayOfWeek: [5] },
+                ]}
                 startMonth={today}
+                endMonth={maximumDate}
                 aria-invalid={fieldState.invalid}
               />
               <FieldError errors={[fieldState.error]} />

@@ -12,6 +12,7 @@ import type { MediaItem } from "@/components/file-uploader";
 import {
   calculateCourtFee,
   isFridayCourtReservationDate,
+  isBeyondCourtReservationMaxDate,
   formatReferenceNumber,
   formatReservationDate,
   getReservationRange,
@@ -62,6 +63,10 @@ export async function createCourtReservation(data: CreateCourtReservationInput) 
 
   if (isFridayCourtReservationDate(data.date)) {
     return { error: "Court reservations are not available on Fridays." };
+  }
+
+  if (isBeyondCourtReservationMaxDate(data.date)) {
+    return { error: "Reservations may only be made up to 3 months from today." };
   }
 
   if (

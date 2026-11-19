@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -12,7 +13,11 @@ export default function PortalHeader() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-card/90 py-2 px-4 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/75 md:hidden">
       <div className="container flex h-full m-auto items-center justify-between">
-        <div className="flex items-center gap-3">
+        <Link
+          href="/"
+          aria-label={`${barangayName} Website home`}
+          className="flex items-center gap-3"
+        >
           <Image
             src={barangayLogoSrc}
             alt={`${barangayName} logo`}
@@ -27,7 +32,7 @@ export default function PortalHeader() {
               {barangayName}
             </p>
           </div>
-        </div>
+        </Link>
         <Button variant="ghost" size="icon" onClick={toggleSidebar} aria-label="Toggle sidebar">
           <Menu className="h-5 w-5" />
         </Button>

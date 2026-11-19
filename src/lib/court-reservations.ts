@@ -42,6 +42,26 @@ export function isFridayCourtReservationDate(date: string | Date): boolean {
   return parsed.getDay() === 5;
 }
 
+export function getCourtReservationTodayDate(): string {
+  return getPhilippineTime().date;
+}
+
+export function getCourtReservationMaxDate(): string {
+  const [year, month, day] = getCourtReservationTodayDate().split("-").map(Number);
+  const targetMonth = month - 1 + 3;
+  const targetYear = year + Math.floor(targetMonth / 12);
+  const normalizedMonth = targetMonth % 12;
+  const lastDayOfTargetMonth = new Date(Date.UTC(targetYear, normalizedMonth + 1, 0)).getUTCDate();
+  const targetDay = Math.min(day, lastDayOfTargetMonth);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${targetYear}-${pad(normalizedMonth + 1)}-${pad(targetDay)}`;
+}
+
+export function isBeyondCourtReservationMaxDate(date: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  return date > getCourtReservationMaxDate();
+}
+
 export function getCourtRateForHour(hour: number, dayRate: number, nightRate: number): number {
   return hour >= COURT_DAY_START / 60 && hour < COURT_DAY_END / 60 ? dayRate : nightRate;
 }

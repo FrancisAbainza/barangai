@@ -125,7 +125,11 @@ export default function PortalSidebar() {
         {/* Header */}
         {!collapsed && (
           <SidebarHeader className="flex flex-row items-center justify-center border-b border-sidebar-border py-4">
-            <div className="flex flex-col items-center gap-2">
+            <Link
+              href="/"
+              aria-label={`${barangayName} Website home`}
+              className="flex flex-col items-center gap-2"
+            >
               <Image
                 src={barangayLogoSrc}
                 alt={`${barangayName} logo`}
@@ -133,7 +137,7 @@ export default function PortalSidebar() {
                 height={150}
               />
               <span className="font-semibold text-sm">{barangayName} Website</span>
-            </div>
+            </Link>
 
           </SidebarHeader>
         )}
