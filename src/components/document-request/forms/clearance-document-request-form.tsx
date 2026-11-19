@@ -92,7 +92,7 @@ export default function ClearanceDocumentRequestForm({
         })
       )}
     >
-      <fieldset disabled={isSubmitting} className="space-y-4">
+      <fieldset disabled={isSubmitting} className="min-w-0 space-y-4">
         <Controller
           name="purpose"
           control={control}

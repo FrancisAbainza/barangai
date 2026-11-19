@@ -40,7 +40,7 @@ export default function DocumentRequestRejectionForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <fieldset disabled={isSubmitting} className="space-y-4">
+      <fieldset disabled={isSubmitting} className="min-w-0 space-y-4">
         <Field data-invalid={!!errors.reason}>
           <FieldLabel htmlFor="reason">Reason</FieldLabel>
           <FieldDescription>Let the requester know why their request was rejected.</FieldDescription>

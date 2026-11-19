@@ -40,7 +40,7 @@ export default function DocumentRequestPickupForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <fieldset disabled={isSubmitting} className="space-y-4">
+      <fieldset disabled={isSubmitting} className="min-w-0 space-y-4">
         <Field data-invalid={!!errors.message}>
           <FieldLabel htmlFor="message">Message</FieldLabel>
           <FieldDescription>Let the requester know their document is ready for pickup.</FieldDescription>
