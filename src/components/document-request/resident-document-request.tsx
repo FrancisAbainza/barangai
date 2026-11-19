@@ -167,7 +167,7 @@ export default function ResidentDocumentRequest() {
                   : "grid grid-cols-2 gap-4 sm:mx-auto sm:w-3/4 sm:grid-cols-3"
               }
             >
-              {row.map(({ name, description, icon }) => (
+              {row.map(({ name, description, icon }, itemIndex) => (
                 <button
                   key={name}
                   type="button"
@@ -182,7 +182,11 @@ export default function ResidentDocumentRequest() {
                     else if (name === ADDITIONAL_TRANSACTIONS_DOCUMENT_NAME)
                       setIsAdditionalTransactionsDialogOpen(true);
                   }}
-                  className={shortcutTileClassName}
+                  className={`${shortcutTileClassName} ${
+                    rowIndex === 1 && itemIndex === row.length - 1
+                      ? "col-span-2 w-1/2 justify-self-center sm:col-span-1 sm:w-full"
+                      : ""
+                  }`}
                 >
                   <ShortcutTileContent icon={icon} title={name} description={description} />
                 </button>
