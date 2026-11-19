@@ -23,6 +23,7 @@ import NoObjectionDocumentRequestDialog from "@/components/document-request/dial
 import IndigencyDocumentRequestDialog from "@/components/document-request/dialogs/indigency-document-request-dialog";
 import SoloParentDocumentRequestDialog from "@/components/document-request/dialogs/solo-parent-document-request-dialog";
 import MedicalAssistanceDocumentRequestDialog from "@/components/document-request/dialogs/medical-assistance-document-request-dialog";
+import AdditionalTransactionsDocumentRequestDialog from "@/components/document-request/dialogs/additional-transactions-document-request-dialog";
 import ViewDocumentRequestDialog from "@/components/document-request/dialogs/view-document-request-dialog";
 import { getDocumentRequestById, getMyDocumentRequests } from "@/actions/document-requests";
 import { getResidentProfile } from "@/actions/resident-profile";
@@ -30,6 +31,7 @@ import { useDialogParam } from "@/hooks/use-dialog-param";
 import { useViewParam } from "@/hooks/use-view-param";
 import { formatReferenceNumber, statusBadgeVariant } from "@/lib/document-requests";
 import {
+  Cable,
   FileText,
   FileUser,
   HandHeart,
@@ -46,6 +48,7 @@ const NO_OBJECTION_DOCUMENT_NAME = "Certificate of No Objection";
 const INDIGENCY_DOCUMENT_NAME = "Certificate of Indigency";
 const SOLO_PARENT_DOCUMENT_NAME = "Solo Parent Certification";
 const MEDICAL_ASSISTANCE_DOCUMENT_NAME = "Medical / Lab Assistance";
+const ADDITIONAL_TRANSACTIONS_DOCUMENT_NAME = "Additional Transactions";
 
 interface DocumentType {
   name: string;
@@ -55,37 +58,42 @@ interface DocumentType {
 
 const documentTypes: DocumentType[] = [
   {
-    name: "Certificate of Indigency",
+    name: INDIGENCY_DOCUMENT_NAME,
     description:
       "Proof of low-income status for financial assistance, medical, or scholarship applications.",
     icon: HandHeart,
   },
   {
-    name: "Certificate of Residency",
+    name: RESIDENCY_DOCUMENT_NAME,
     description: "Confirms that you currently live within the barangay.",
     icon: Home,
   },
   {
-    name: "Barangay Clearance",
+    name: CLEARANCE_DOCUMENT_NAME,
     description:
       "General clearance commonly required for employment, business, or legal transactions.",
     icon: FileUser,
   },
   {
-    name: "Certificate of No Objection",
+    name: NO_OBJECTION_DOCUMENT_NAME,
     description: "States that the barangay has no objection to a specific request or activity.",
     icon: Truck,
   },
   {
-    name: "Solo Parent Certification",
+    name: SOLO_PARENT_DOCUMENT_NAME,
     description:
       "Certifies solo parent status for benefits under the Solo Parents' Welfare Act.",
     icon: Users,
   },
   {
-    name: "Medical / Lab Assistance",
+    name: MEDICAL_ASSISTANCE_DOCUMENT_NAME,
     description: "Request for medical or laboratory financial assistance.",
     icon: HeartPulse,
+  },
+  {
+    name: ADDITIONAL_TRANSACTIONS_DOCUMENT_NAME,
+    description: "Request a Tel. Net. Tower or Fiber Optic Cable transaction.",
+    icon: Cable,
   },
 ];
 
@@ -101,6 +109,8 @@ export default function ResidentDocumentRequest() {
   const [isSoloParentDialogOpen, setIsSoloParentDialogOpen] = useDialogParam("solo-parent-request");
   const [isMedicalAssistanceDialogOpen, setIsMedicalAssistanceDialogOpen] =
     useDialogParam("medical-assistance-request");
+  const [isAdditionalTransactionsDialogOpen, setIsAdditionalTransactionsDialogOpen] =
+    useDialogParam("additional-transactions-request");
 
   // `?view=<id>` (set by clicking a row, or by links like a notification) opens that submission's
   // Submission Info dialog. It's fetched by id since it may not be in the loaded list.
@@ -147,24 +157,37 @@ export default function ResidentDocumentRequest() {
           description="You need to fill up your Resident Credentials form before you can request any document."
         />
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {documentTypes.map(({ name, description, icon }) => (
-            <button
-              key={name}
-              type="button"
-              onClick={() => {
-                if (name === CLEARANCE_DOCUMENT_NAME) setIsClearanceDialogOpen(true);
-                else if (name === RESIDENCY_DOCUMENT_NAME) setIsResidencyDialogOpen(true);
-                else if (name === NO_OBJECTION_DOCUMENT_NAME) setIsNoObjectionDialogOpen(true);
-                else if (name === INDIGENCY_DOCUMENT_NAME) setIsIndigencyDialogOpen(true);
-                else if (name === SOLO_PARENT_DOCUMENT_NAME) setIsSoloParentDialogOpen(true);
-                else if (name === MEDICAL_ASSISTANCE_DOCUMENT_NAME)
-                  setIsMedicalAssistanceDialogOpen(true);
-              }}
-              className={shortcutTileClassName}
+        <div className="space-y-4">
+          {[documentTypes.slice(0, 4), documentTypes.slice(4)].map((row, rowIndex) => (
+            <div
+              key={rowIndex}
+              className={
+                rowIndex === 0
+                  ? "grid grid-cols-2 gap-4 sm:grid-cols-4"
+                  : "grid grid-cols-2 gap-4 sm:mx-auto sm:w-3/4 sm:grid-cols-3"
+              }
             >
-              <ShortcutTileContent icon={icon} title={name} description={description} />
-            </button>
+              {row.map(({ name, description, icon }) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => {
+                    if (name === CLEARANCE_DOCUMENT_NAME) setIsClearanceDialogOpen(true);
+                    else if (name === RESIDENCY_DOCUMENT_NAME) setIsResidencyDialogOpen(true);
+                    else if (name === NO_OBJECTION_DOCUMENT_NAME) setIsNoObjectionDialogOpen(true);
+                    else if (name === INDIGENCY_DOCUMENT_NAME) setIsIndigencyDialogOpen(true);
+                    else if (name === SOLO_PARENT_DOCUMENT_NAME) setIsSoloParentDialogOpen(true);
+                    else if (name === MEDICAL_ASSISTANCE_DOCUMENT_NAME)
+                      setIsMedicalAssistanceDialogOpen(true);
+                    else if (name === ADDITIONAL_TRANSACTIONS_DOCUMENT_NAME)
+                      setIsAdditionalTransactionsDialogOpen(true);
+                  }}
+                  className={shortcutTileClassName}
+                >
+                  <ShortcutTileContent icon={icon} title={name} description={description} />
+                </button>
+              ))}
+            </div>
           ))}
         </div>
       )}
@@ -265,6 +288,11 @@ export default function ResidentDocumentRequest() {
       <MedicalAssistanceDocumentRequestDialog
         open={isMedicalAssistanceDialogOpen && hasResidentProfile}
         onOpenChange={setIsMedicalAssistanceDialogOpen}
+      />
+
+      <AdditionalTransactionsDocumentRequestDialog
+        open={isAdditionalTransactionsDialogOpen && hasResidentProfile}
+        onOpenChange={setIsAdditionalTransactionsDialogOpen}
       />
 
       {viewedRequest && viewId !== null && (

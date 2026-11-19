@@ -136,6 +136,17 @@ export const PORTAL_DIALOG_TARGETS = {
       receiveVia: z.enum(MEDICAL_ASSISTANCE_DELIVERY_METHODS),
     }),
   },
+  "additional-transactions-request": {
+    label: "Request Additional Transactions",
+    page: "document-request",
+    description:
+      "Request a Tel. Net. Tower (₱5,030) or Fiber Optic Cable (₱2,030) transaction.",
+    audience: "resident",
+    prefill: z.object({
+      purpose: z.enum(["Tel. Net. Tower", "Fiber Optic Cable"]),
+      receiveVia: z.enum(CLEARANCE_DELIVERY_METHODS),
+    }),
+  },
   "submit-business": {
     label: "Submit a Business",
     page: "community-hub",
