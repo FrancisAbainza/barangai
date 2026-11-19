@@ -15,8 +15,9 @@ interface PreferredClaimFieldProps {
 // Used through a `Controller` on `preferredClaimAt`; forms only render it for pickups. Claims can
 // be made from today onward, Monday to Friday, from 8:00 AM to 5:00 PM.
 export default function PreferredClaimField({ value, onChange, error }: PreferredClaimFieldProps) {
+  const now = getPhilippineTime();
+
   function getNextClaimDateTime() {
-    const now = getPhilippineTime();
     const fifteenMinutesFromNow = now.minutes + 15;
     const earliestOfficeTime = Math.max(fifteenMinutesFromNow, 8 * 60);
     const candidateMinutes = Math.ceil(earliestOfficeTime / 30) * 30;
@@ -40,6 +41,8 @@ export default function PreferredClaimField({ value, onChange, error }: Preferre
   }
 
   const nextClaim = getNextClaimDateTime();
+  const latestClaimDate = parseDateValue(now.date);
+  latestClaimDate.setDate(latestClaimDate.getDate() + 7);
   const suggestedValue = value || `${nextClaim.date}T${nextClaim.time}`;
 
   useEffect(() => {
@@ -53,13 +56,13 @@ export default function PreferredClaimField({ value, onChange, error }: Preferre
         id="preferredClaimAt"
         value={suggestedValue}
         onChange={onChange}
-        disabledDays={[{ before: new Date() }, { dayOfWeek: [0, 6] }]}
+        disabledDays={[{ before: new Date() }, { after: latestClaimDate }, { dayOfWeek: [0, 6] }]}
         minTime={nextClaim.time}
         maxTime="17:00"
         step={30}
         aria-invalid={!!error}
       />
-      <FieldDescription>Claiming is Monday to Friday, 8:00 AM to 5:00 PM.</FieldDescription>
+      <FieldDescription>Claiming is Monday to Friday, 8:00 AM to 5:00 PM, within the next 7 days.</FieldDescription>
       <FieldError errors={[error]} />
     </Field>
   );
