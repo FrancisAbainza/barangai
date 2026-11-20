@@ -57,7 +57,11 @@ export default function PreferredClaimField({ value, onChange, error }: Preferre
         id="preferredClaimAt"
         value={suggestedValue}
         onChange={onChange}
-        disabledDays={[{ before: new Date() }, { after: latestClaimDate }, { dayOfWeek: [0, 6] }]}
+        disabledDays={[
+          { before: parseDateValue(nextClaim.date) },
+          { after: latestClaimDate },
+          { dayOfWeek: [0, 6] },
+        ]}
         minTime={selectedDate === now.date ? nextClaim.time : "08:00"}
         maxTime="17:00"
         step={30}

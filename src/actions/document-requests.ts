@@ -14,6 +14,7 @@ import {
   PICKUP_DELIVERY_METHOD,
   referenceNumberSearchPattern,
 } from "@/lib/document-requests";
+import { getPhilippineTime } from "@/lib/utils";
 import type { MediaItem } from "@/components/file-uploader";
 
 export type CreateDocumentRequestInput = {
@@ -30,6 +31,56 @@ export type CreateDocumentRequestInput = {
   preferredClaimAt?: Date | null;
 };
 
+function validatePreferredClaimAt(receiveVia: string, preferredClaimAt?: Date | null) {
+  if (receiveVia !== PICKUP_DELIVERY_METHOD) return;
+  if (!(preferredClaimAt instanceof Date) || Number.isNaN(preferredClaimAt.getTime())) {
+    throw new Error("Please select a valid preferred claim date and time.");
+  }
+
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(preferredClaimAt);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? "";
+  const claimDate = `${part("year")}-${part("month")}-${part("day")}`;
+  const claimMinutes = Number(part("hour")) * 60 + Number(part("minute"));
+  const claimWeekday = new Date(`${claimDate}T00:00:00Z`).getUTCDay();
+  const now = getPhilippineTime();
+  const latestDate = new Date(`${now.date}T00:00:00Z`);
+  latestDate.setUTCDate(latestDate.getUTCDate() + 7);
+  const latestClaimDate = latestDate.toISOString().slice(0, 10);
+
+  if (claimDate < now.date || claimDate > latestClaimDate) {
+    throw new Error("Preferred claim date must be within the next 7 days.");
+  }
+  if (claimWeekday === 0 || claimWeekday === 6) {
+    throw new Error("Claims can only be scheduled Monday to Friday.");
+  }
+  if (
+    claimMinutes < 8 * 60 ||
+    claimMinutes > 17 * 60 ||
+    claimMinutes % 30 !== 0 ||
+    part("second") !== "00" ||
+    preferredClaimAt.getUTCMilliseconds() !== 0
+  ) {
+    throw new Error("Claims must be scheduled every 30 minutes from 8:00 AM to 5:00 PM.");
+  }
+
+  if (claimDate === now.date) {
+    const earliestToday = Math.ceil(Math.max(now.minutes + 15, 8 * 60) / 30) * 30;
+    if (earliestToday > 17 * 60 || claimMinutes < earliestToday) {
+      throw new Error("Today's available claim times have passed. Please choose another date or time.");
+    }
+  }
+}
+
 export async function createDocumentRequest(data: CreateDocumentRequestInput) {
   const { userId } = await requireSubmitter();
 
@@ -45,6 +96,7 @@ export async function createDocumentRequest(data: CreateDocumentRequestInput) {
   }
 
   const isPickup = data.receiveVia === PICKUP_DELIVERY_METHOD;
+  validatePreferredClaimAt(data.receiveVia, data.preferredClaimAt);
   await db.insert(documentRequestsTable).values({
     documentType: data.documentType,
     requesterId: userId,
@@ -86,6 +138,7 @@ export async function updateDocumentRequest(id: number, data: UpdateDocumentRequ
   }
 
   const isPickup = data.receiveVia === PICKUP_DELIVERY_METHOD;
+  validatePreferredClaimAt(data.receiveVia, data.preferredClaimAt);
   const [updatedRequest] = await db
     .update(documentRequestsTable)
     .set({
