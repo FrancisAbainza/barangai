@@ -31,6 +31,7 @@ interface ClearanceDocumentRequestFormProps {
   defaultValues?: Partial<ClearanceDocumentRequestFormValues>;
   onSubmit: (data: ClearanceDocumentRequestFormValues) => Promise<void>;
   onCancel?: () => void;
+  submitLabel?: string;
 }
 
 function formatFee(amount: number) {
@@ -50,6 +51,7 @@ export default function ClearanceDocumentRequestForm({
   defaultValues,
   onSubmit,
   onCancel,
+  submitLabel = "Submit Request",
 }: ClearanceDocumentRequestFormProps) {
   const {
     control,
@@ -71,12 +73,16 @@ export default function ClearanceDocumentRequestForm({
     queryFn: () => getBarangaySettings(),
   });
   const gcashNumber = settings?.gcashNumber ?? DEFAULT_GCASH_NUMBER;
-  const purposeFees = settings?.clearancePurposeFees ?? DEFAULT_CLEARANCE_PURPOSE_FEES;
+  const purposeFees = {
+    ...DEFAULT_CLEARANCE_PURPOSE_FEES,
+    ...settings?.clearancePurposeFees,
+  };
 
-  const feeLabel = (option: string) =>
-    isFreeClearancePurpose(option)
-      ? "Free"
-      : formatFee(purposeFees[option as keyof typeof purposeFees]);
+  const feeLabel = (option: string) => {
+    if (isFreeClearancePurpose(option)) return "Free";
+    const fee = purposeFees[option as keyof typeof purposeFees];
+    return typeof fee === "number" ? formatFee(fee) : "Fee unavailable";
+  };
 
   return (
     <form
@@ -244,12 +250,12 @@ export default function ClearanceDocumentRequestForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Submitting
+                {submitLabel === "Submit Request" ? "Submitting" : "Saving"}
               </>
             ) : (
               <>
                 <Send className="size-4" />
-                Submit Request
+                {submitLabel}
               </>
             )}
           </Button>

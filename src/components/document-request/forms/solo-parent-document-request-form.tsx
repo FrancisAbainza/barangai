@@ -28,6 +28,7 @@ interface SoloParentDocumentRequestFormProps {
   defaultValues?: Partial<SoloParentDocumentRequestFormValues>;
   onSubmit: (data: SoloParentDocumentRequestFormValues) => Promise<void>;
   onCancel?: () => void;
+  submitLabel?: string;
 }
 
 const baseDefaults: SoloParentDocumentRequestFormValues = {
@@ -43,6 +44,7 @@ export default function SoloParentDocumentRequestForm({
   defaultValues,
   onSubmit,
   onCancel,
+  submitLabel = "Submit Request",
 }: SoloParentDocumentRequestFormProps) {
   const {
     register,
@@ -178,12 +180,12 @@ export default function SoloParentDocumentRequestForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Submitting
+                {submitLabel === "Submit Request" ? "Submitting" : "Saving"}
               </>
             ) : (
               <>
                 <Send className="size-4" />
-                Submit Request
+                {submitLabel}
               </>
             )}
           </Button>

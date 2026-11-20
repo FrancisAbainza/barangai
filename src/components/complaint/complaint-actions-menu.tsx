@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Eye, ListChecks, ListX, MoreHorizontal, ScrollText, Trash2 } from "lucide-react";
+import { Eye, ListChecks, ListX, MoreHorizontal, Pencil, ScrollText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +26,7 @@ import DeleteComplaintDialog from "@/components/complaint/dialogs/delete-complai
 import AdminResolveComplaintDialog from "@/components/complaint/dialogs/admin-resolve-complaint-dialog";
 import AdminDismissComplaintDialog from "@/components/complaint/dialogs/admin-dismiss-complaint-dialog";
 import RecordAuditLogsDialog from "@/components/audit-logs/record-audit-logs-dialog";
+import EditComplaintDialog from "@/components/complaint/dialogs/edit-complaint-dialog";
 
 export default function ComplaintActionsMenu({
   complaint,
@@ -33,6 +34,7 @@ export default function ComplaintActionsMenu({
   complaint: ComplaintWithComplainant;
 }) {
   const [viewOpen, setViewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [dismissOpen, setDismissOpen] = useState(false);
@@ -107,6 +109,13 @@ export default function ComplaintActionsMenu({
             Submission Info
           </DropdownMenuItem>
 
+          {isOwnComplaint && complaint.status === "Pending" && (
+            <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+              <Pencil />
+              Edit complaint
+            </DropdownMenuItem>
+          )}
+
           {isSuperAdmin && (
             <DropdownMenuItem onSelect={() => setAuditLogsOpen(true)}>
               <ScrollText />
@@ -154,6 +163,9 @@ export default function ComplaintActionsMenu({
       </DropdownMenu>
 
       <ViewComplaintDialog complaint={complaint} open={viewOpen} onOpenChange={setViewOpen} />
+      {isOwnComplaint && complaint.status === "Pending" && (
+        <EditComplaintDialog complaint={complaint} open={editOpen} onOpenChange={setEditOpen} />
+      )}
       <DeleteComplaintDialog complaint={complaint} open={deleteOpen} onOpenChange={setDeleteOpen} />
       {isAdmin && (
         <>

@@ -15,6 +15,7 @@ interface ComplaintFormProps {
   defaultValues?: Partial<ComplaintFormValues>;
   onSubmit: (data: ComplaintFormValues) => Promise<void>;
   onCancel?: () => void;
+  submitLabel?: string;
 }
 
 const baseDefaults: Partial<ComplaintFormValues> = {
@@ -23,7 +24,12 @@ const baseDefaults: Partial<ComplaintFormValues> = {
   evidence: [],
 };
 
-export default function ComplaintForm({ defaultValues, onSubmit, onCancel }: ComplaintFormProps) {
+export default function ComplaintForm({
+  defaultValues,
+  onSubmit,
+  onCancel,
+  submitLabel = "Submit Complaint",
+}: ComplaintFormProps) {
   const {
     register,
     control,
@@ -99,12 +105,12 @@ export default function ComplaintForm({ defaultValues, onSubmit, onCancel }: Com
             {isSubmitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Submitting
+                {submitLabel === "Submit Complaint" ? "Submitting" : "Saving"}
               </>
             ) : (
               <>
                 <Send className="size-4" />
-                Submit Complaint
+                {submitLabel}
               </>
             )}
           </Button>

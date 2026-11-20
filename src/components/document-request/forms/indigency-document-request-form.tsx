@@ -28,6 +28,7 @@ interface IndigencyDocumentRequestFormProps {
   defaultValues?: Partial<IndigencyDocumentRequestFormValues>;
   onSubmit: (data: IndigencyDocumentRequestFormValues) => Promise<void>;
   onCancel?: () => void;
+  submitLabel?: string;
 }
 
 const baseDefaults: IndigencyDocumentRequestFormValues = {
@@ -43,6 +44,7 @@ export default function IndigencyDocumentRequestForm({
   defaultValues,
   onSubmit,
   onCancel,
+  submitLabel = "Submit Request",
 }: IndigencyDocumentRequestFormProps) {
   const {
     register,
@@ -178,12 +180,12 @@ export default function IndigencyDocumentRequestForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Submitting
+                {submitLabel === "Submit Request" ? "Submitting" : "Saving"}
               </>
             ) : (
               <>
                 <Send className="size-4" />
-                Submit Request
+                {submitLabel}
               </>
             )}
           </Button>

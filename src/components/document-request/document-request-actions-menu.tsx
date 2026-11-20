@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Eye, ListChecks, MoreHorizontal, ScrollText, Trash2 } from "lucide-react";
+import { Eye, ListChecks, MoreHorizontal, Pencil, ScrollText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,6 +27,7 @@ import DeleteDocumentRequestDialog from "@/components/document-request/dialogs/d
 import AdminReadyForPickupDialog from "@/components/document-request/dialogs/admin-ready-for-pickup-dialog";
 import AdminRejectDocumentRequestDialog from "@/components/document-request/dialogs/admin-reject-document-request-dialog";
 import RecordAuditLogsDialog from "@/components/audit-logs/record-audit-logs-dialog";
+import EditDocumentRequestDialog from "@/components/document-request/dialogs/edit-document-request-dialog";
 
 export default function DocumentRequestActionsMenu({
   request,
@@ -34,6 +35,7 @@ export default function DocumentRequestActionsMenu({
   request: DocumentRequestWithRequester;
 }) {
   const [viewOpen, setViewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [readyForPickupOpen, setReadyForPickupOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -105,6 +107,13 @@ export default function DocumentRequestActionsMenu({
             Submission Info
           </DropdownMenuItem>
 
+          {isOwnRequest && request.status === "Pending" && (
+            <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+              <Pencil />
+              Edit request
+            </DropdownMenuItem>
+          )}
+
           {isSuperAdmin && (
             <DropdownMenuItem onSelect={() => setAuditLogsOpen(true)}>
               <ScrollText />
@@ -152,6 +161,9 @@ export default function DocumentRequestActionsMenu({
       </DropdownMenu>
 
       <ViewDocumentRequestDialog request={request} open={viewOpen} onOpenChange={setViewOpen} />
+      {isOwnRequest && request.status === "Pending" && (
+        <EditDocumentRequestDialog request={request} open={editOpen} onOpenChange={setEditOpen} />
+      )}
       <DeleteDocumentRequestDialog request={request} open={deleteOpen} onOpenChange={setDeleteOpen} />
       {isAdmin && (
         <>

@@ -18,7 +18,7 @@ import {
 import BusinessForm from "@/components/community-hub/forms/business-form";
 import { updateBusiness } from "@/actions/business";
 import { isAdminRole } from "@/lib/roles";
-import { deleteFile, uploadFile } from "@/lib/storage";
+import { deleteRemovedFiles, uploadAddedFiles } from "@/lib/storage";
 import type { BusinessFormValues } from "@/schemas/business-schema";
 import type { Business } from "@/db/schema";
 import type { MediaItem } from "@/components/file-uploader";
@@ -45,21 +45,8 @@ export default function EditBusinessDialog({ business, open, onOpenChange }: Edi
     isPending: isSaving,
   } = useMutation({
     mutationFn: async (data: BusinessFormValues) => {
-      const uploadedPhotos = await Promise.all(
-        (data.photos ?? []).map(async (item) => {
-          if (!item.file) return item;
-          const key = await uploadFile(item.file, "community-hub/photos");
-          return { ...item, key, file: undefined };
-        })
-      );
-
-      const uploadedPermit = await Promise.all(
-        data.permit.map(async (item) => {
-          if (!item.file) return item;
-          const key = await uploadFile(item.file, "community-hub/permits");
-          return { ...item, key, file: undefined };
-        })
-      );
+      const uploadedPhotos = await uploadAddedFiles(data.photos ?? [], "community-hub/photos");
+      const uploadedPermit = await uploadAddedFiles(data.permit, "community-hub/permits");
 
       await updateBusiness(business.id, {
         ...data,
@@ -67,17 +54,19 @@ export default function EditBusinessDialog({ business, open, onOpenChange }: Edi
         permit: uploadedPermit,
       });
 
-      // A resident's edit sends a rejected business back to Pending, which clears the rejection,
-      // so its attachments are deleted like when an admin changes the status.
-      if (!isAdmin && business.status === "Rejected") {
-        const rejectionAttachments = business.rejectionAttachments as MediaItem[];
-        const keys = rejectionAttachments.map((item) => item.key).filter(Boolean) as string[];
-        await Promise.all(keys.map((key) => deleteFile(key)));
-      }
+      const cleanupResults = await Promise.all([
+        deleteRemovedFiles(business.photos as MediaItem[], uploadedPhotos),
+        deleteRemovedFiles(business.permit as MediaItem[], uploadedPermit),
+        !isAdmin && business.status === "Rejected"
+          ? deleteRemovedFiles(business.rejectionAttachments as MediaItem[], [])
+          : Promise.resolve(false),
+      ]);
+      return cleanupResults.some(Boolean);
     },
-    onSuccess: () => {
+    onSuccess: (cleanupFailed) => {
       queryClient.invalidateQueries({ queryKey: ["businesses"] });
       toast.success("Business updated successfully.");
+      if (cleanupFailed) toast.error("Some removed business files could not be deleted.");
       setConfirmingData(null);
       onOpenChange(false);
     },

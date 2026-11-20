@@ -110,6 +110,35 @@ export async function createComplaint(data: CreateComplaintInput) {
   });
 }
 
+export async function updateComplaint(id: number, data: CreateComplaintInput) {
+  const { userId } = await requireSubmitter();
+
+  const [updatedComplaint] = await db
+    .update(complaintsTable)
+    .set({
+      subject: data.subject,
+      description: data.description,
+      location: data.location,
+      evidence: data.evidence,
+      category: data.category,
+      priority: data.priority,
+      aiInsight: null,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(complaintsTable.id, id),
+        eq(complaintsTable.complainantId, userId),
+        eq(complaintsTable.status, "Pending")
+      )
+    )
+    .returning({ id: complaintsTable.id });
+
+  if (!updatedComplaint) {
+    return { error: "This complaint can no longer be edited." };
+  }
+}
+
 const MY_COMPLAINTS_PAGE_SIZE = 10;
 
 export type ComplaintWithComplainant = Complaint & {
@@ -323,6 +352,68 @@ export async function followComplaint(id: number) {
   if (!complaint) throw new Error("This complaint can no longer be followed.");
 
   await db.insert(complaintFollowersTable).values({ complaintId: id, userId }).onConflictDoNothing();
+}
+
+export async function resolveDuplicateComplaint(id: number, duplicateId: number) {
+  const { userId } = await requireSubmitter();
+  const [existing] = await db
+    .select()
+    .from(complaintsTable)
+    .where(
+      and(
+        eq(complaintsTable.id, id),
+        eq(complaintsTable.complainantId, userId),
+        eq(complaintsTable.status, "Pending")
+      )
+    );
+  if (!existing) throw new Error("This complaint can no longer be edited.");
+
+  const [duplicate] = await db
+    .select({ id: complaintsTable.id })
+    .from(complaintsTable)
+    .where(and(eq(complaintsTable.id, duplicateId), ...matchableBy(userId)));
+  if (!duplicate) throw new Error("This complaint can no longer be followed.");
+
+  const [newFollower] = await db
+    .insert(complaintFollowersTable)
+    .values({ complaintId: duplicateId, userId })
+    .onConflictDoNothing()
+    .returning({ id: complaintFollowersTable.id });
+
+  const followers = await db
+    .select({ userId: complaintFollowersTable.userId })
+    .from(complaintFollowersTable)
+    .where(eq(complaintFollowersTable.complaintId, id));
+
+  const [deleted] = await db
+    .delete(complaintsTable)
+    .where(
+      and(
+        eq(complaintsTable.id, id),
+        eq(complaintsTable.complainantId, userId),
+        eq(complaintsTable.status, "Pending")
+      )
+    )
+    .returning({ id: complaintsTable.id });
+  if (!deleted) {
+    if (newFollower) {
+      await db
+        .delete(complaintFollowersTable)
+        .where(
+          and(eq(complaintFollowersTable.complaintId, duplicateId), eq(complaintFollowersTable.userId, userId))
+        );
+    }
+    throw new Error("This complaint can no longer be edited.");
+  }
+
+  await notifyDeletion({
+    userId: existing.complainantId,
+    followerIds: followers.map((follower) => follower.userId),
+    actorId: userId,
+    type: "complaint",
+    referenceId: id,
+    subject: `complaint "${existing.subject}"`,
+  });
 }
 
 export async function unfollowComplaint(id: number) {

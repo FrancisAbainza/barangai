@@ -26,6 +26,7 @@ interface NoObjectionDocumentRequestFormProps {
   defaultValues?: Partial<NoObjectionDocumentRequestFormValues>;
   onSubmit: (data: NoObjectionDocumentRequestFormValues) => Promise<void>;
   onCancel?: () => void;
+  submitLabel?: string;
 }
 
 const baseDefaults: NoObjectionDocumentRequestFormValues = {
@@ -39,6 +40,7 @@ export default function NoObjectionDocumentRequestForm({
   defaultValues,
   onSubmit,
   onCancel,
+  submitLabel = "Submit Request",
 }: NoObjectionDocumentRequestFormProps) {
   const {
     register,
@@ -140,12 +142,12 @@ export default function NoObjectionDocumentRequestForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Submitting
+                {submitLabel === "Submit Request" ? "Submitting" : "Saving"}
               </>
             ) : (
               <>
                 <Send className="size-4" />
-                Submit Request
+                {submitLabel}
               </>
             )}
           </Button>

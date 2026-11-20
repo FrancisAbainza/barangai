@@ -26,6 +26,7 @@ interface ResidencyDocumentRequestFormProps {
   defaultValues?: Partial<ResidencyDocumentRequestFormValues>;
   onSubmit: (data: ResidencyDocumentRequestFormValues) => Promise<void>;
   onCancel?: () => void;
+  submitLabel?: string;
 }
 
 const baseDefaults: ResidencyDocumentRequestFormValues = {
@@ -39,6 +40,7 @@ export default function ResidencyDocumentRequestForm({
   defaultValues,
   onSubmit,
   onCancel,
+  submitLabel = "Submit Request",
 }: ResidencyDocumentRequestFormProps) {
   const {
     register,
@@ -140,12 +142,12 @@ export default function ResidencyDocumentRequestForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Submitting
+                {submitLabel === "Submit Request" ? "Submitting" : "Saving"}
               </>
             ) : (
               <>
                 <Send className="size-4" />
-                Submit Request
+                {submitLabel}
               </>
             )}
           </Button>

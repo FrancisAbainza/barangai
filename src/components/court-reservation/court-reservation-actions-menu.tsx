@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Eye, ListChecks, MoreHorizontal, ScrollText, Trash2 } from "lucide-react";
+import { Eye, ListChecks, MoreHorizontal, Pencil, ScrollText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,6 +25,7 @@ import DeleteCourtReservationDialog from "@/components/court-reservation/dialogs
 import RejectCourtReservationDialog from "@/components/court-reservation/dialogs/reject-court-reservation-dialog";
 import RecordAuditLogsDialog from "@/components/audit-logs/record-audit-logs-dialog";
 import type { MediaItem } from "@/components/file-uploader";
+import EditCourtReservationDialog from "@/components/court-reservation/dialogs/edit-court-reservation-dialog";
 
 export default function CourtReservationActionsMenu({
   reservation,
@@ -32,6 +33,7 @@ export default function CourtReservationActionsMenu({
   reservation: CourtReservationWithRequester;
 }) {
   const [viewOpen, setViewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [auditLogsOpen, setAuditLogsOpen] = useState(false);
@@ -89,6 +91,13 @@ export default function CourtReservationActionsMenu({
             Submission Info
           </DropdownMenuItem>
 
+          {isOwnReservation && reservation.status === "Pending" && (
+            <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+              <Pencil />
+              Edit reservation
+            </DropdownMenuItem>
+          )}
+
           {isSuperAdmin && (
             <DropdownMenuItem onSelect={() => setAuditLogsOpen(true)}>
               <ScrollText />
@@ -128,6 +137,13 @@ export default function CourtReservationActionsMenu({
       </DropdownMenu>
 
       <ViewCourtReservationDialog reservation={reservation} open={viewOpen} onOpenChange={setViewOpen} />
+      {isOwnReservation && reservation.status === "Pending" && (
+        <EditCourtReservationDialog
+          reservation={reservation}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
+      )}
       <DeleteCourtReservationDialog reservation={reservation} open={deleteOpen} onOpenChange={setDeleteOpen} />
       {isAdmin && (
         <RejectCourtReservationDialog reservation={reservation} open={rejectOpen} onOpenChange={setRejectOpen} />

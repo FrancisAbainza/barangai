@@ -28,6 +28,7 @@ interface MedicalAssistanceDocumentRequestFormProps {
   defaultValues?: Partial<MedicalAssistanceDocumentRequestFormValues>;
   onSubmit: (data: MedicalAssistanceDocumentRequestFormValues) => Promise<void>;
   onCancel?: () => void;
+  submitLabel?: string;
 }
 
 const baseDefaults: MedicalAssistanceDocumentRequestFormValues = {
@@ -43,6 +44,7 @@ export default function MedicalAssistanceDocumentRequestForm({
   defaultValues,
   onSubmit,
   onCancel,
+  submitLabel = "Submit Request",
 }: MedicalAssistanceDocumentRequestFormProps) {
   const {
     register,
@@ -178,12 +180,12 @@ export default function MedicalAssistanceDocumentRequestForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Submitting
+                {submitLabel === "Submit Request" ? "Submitting" : "Saving"}
               </>
             ) : (
               <>
                 <Send className="size-4" />
-                Submit Request
+                {submitLabel}
               </>
             )}
           </Button>

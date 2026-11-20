@@ -59,6 +59,60 @@ export async function createDocumentRequest(data: CreateDocumentRequestInput) {
   });
 }
 
+export type UpdateDocumentRequestInput = Omit<CreateDocumentRequestInput, "documentType">;
+
+export async function updateDocumentRequest(id: number, data: UpdateDocumentRequestInput) {
+  const { userId } = await requireSubmitter();
+  const [request] = await db
+    .select({ documentType: documentRequestsTable.documentType })
+    .from(documentRequestsTable)
+    .where(
+      and(
+        eq(documentRequestsTable.id, id),
+        eq(documentRequestsTable.requesterId, userId),
+        eq(documentRequestsTable.status, "Pending")
+      )
+    );
+
+  if (!request) return { error: "This request can no longer be edited." };
+
+  if (
+    data.eligibleForFreeCertification &&
+    ((request.documentType !== "Barangay Clearance" &&
+      request.documentType !== "Additional Transactions") ||
+      !data.supportingDocuments?.length)
+  ) {
+    throw new Error("Free certification eligibility requires supporting documents.");
+  }
+
+  const isPickup = data.receiveVia === PICKUP_DELIVERY_METHOD;
+  const [updatedRequest] = await db
+    .update(documentRequestsTable)
+    .set({
+      purpose: data.purpose,
+      otherPurpose: data.otherPurpose,
+      situationDescription: data.situationDescription,
+      paymentReceipt: data.paymentReceipt ?? [],
+      supportingDocuments: data.supportingDocuments ?? [],
+      eligibleForFreeCertification: data.eligibleForFreeCertification ?? false,
+      receiveVia: data.receiveVia,
+      preferredClaimAt: isPickup ? data.preferredClaimAt : null,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(documentRequestsTable.id, id),
+        eq(documentRequestsTable.requesterId, userId),
+        eq(documentRequestsTable.status, "Pending")
+      )
+    )
+    .returning({ id: documentRequestsTable.id });
+
+  if (!updatedRequest) {
+    return { error: "This request can no longer be edited." };
+  }
+}
+
 export type DocumentRequestWithRequester = DocumentRequest & {
   requesterName: string;
   requesterEmail: string;

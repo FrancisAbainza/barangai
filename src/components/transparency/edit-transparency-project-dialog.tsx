@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import TransparencyProjectForm from "./transparency-project-form";
 import type { TransparencyProjectFormValues } from "@/schemas/transparency-schema";
 import type { MediaItem } from "../file-uploader";
-import { uploadFile, deleteFile } from "@/lib/storage";
+import { deleteRemovedFiles, uploadAddedFiles } from "@/lib/storage";
 import { updateTransparencyProject } from "@/actions/transparency";
 import type { TransparencyProjectWithAuthor } from "@/actions/transparency";
 import { toast } from "sonner";
@@ -35,45 +35,24 @@ export default function EditTransparencyProjectDialog({
 
   const { mutateAsync: submitProject } = useMutation({
     mutationFn: async (data: TransparencyProjectFormValues) => {
-      const uploadedMedia: MediaItem[] = await Promise.all(
-        (data.media ?? []).map(async (item) => {
-          if (!item.file) return item;
-          const key = await uploadFile(item.file, "transparency/media");
-          return { ...item, key, file: undefined };
-        })
-      );
-
-      const uploadedAttachments: MediaItem[] = await Promise.all(
-        (data.attachments ?? []).map(async (item) => {
-          if (!item.file) return item;
-          const key = await uploadFile(item.file, "transparency/attachments");
-          return { ...item, key, file: undefined };
-        })
-      );
-
-      const originalMediaKeys = (project.media as MediaItem[]).map((i) => i.key).filter(Boolean);
-      const finalMediaKeys = new Set(uploadedMedia.map((i) => i.key).filter(Boolean));
-      const removedMediaKeys = originalMediaKeys.filter((k) => !finalMediaKeys.has(k));
-
-      const originalAttachmentKeys = (project.attachments as MediaItem[])
-        .map((i) => i.key)
-        .filter(Boolean);
-      const finalAttachmentKeys = new Set(uploadedAttachments.map((i) => i.key).filter(Boolean));
-      const removedAttachmentKeys = originalAttachmentKeys.filter((k) => !finalAttachmentKeys.has(k));
-
-      await Promise.all(
-        [...removedMediaKeys, ...removedAttachmentKeys].map((key) => deleteFile(key!))
-      );
+      const uploadedMedia = await uploadAddedFiles(data.media ?? [], "transparency/media");
+      const uploadedAttachments = await uploadAddedFiles(data.attachments ?? [], "transparency/attachments");
 
       await updateTransparencyProject(project.id, {
         ...data,
         media: uploadedMedia,
         attachments: uploadedAttachments,
       });
+      const cleanupResults = await Promise.all([
+        deleteRemovedFiles(project.media as MediaItem[], uploadedMedia),
+        deleteRemovedFiles(project.attachments as MediaItem[], uploadedAttachments),
+      ]);
+      return cleanupResults.some(Boolean);
     },
-    onSuccess: () => {
+    onSuccess: (cleanupFailed) => {
       queryClient.invalidateQueries({ queryKey: ["transparency-projects"] });
       toast.success("Project updated successfully.");
+      if (cleanupFailed) toast.error("Some removed project files could not be deleted.");
       onOpenChange(false);
     },
     onError: () => {
@@ -90,7 +69,9 @@ export default function EditTransparencyProjectDialog({
         <TransparencyProjectForm
           mode="edit"
           defaultValues={defaultValues}
-          onSubmit={submitProject}
+          onSubmit={async (data) => {
+            await submitProject(data);
+          }}
           onCancel={() => onOpenChange(false)}
         />
       </DialogContent>

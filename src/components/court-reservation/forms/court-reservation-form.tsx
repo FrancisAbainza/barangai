@@ -52,6 +52,7 @@ interface CourtReservationFormProps {
   defaultValues?: Partial<CourtReservationFormValues>;
   onSubmit: (data: CourtReservationFormValues) => Promise<void>;
   onCancel?: () => void;
+  submitLabel?: string;
 }
 
 const baseDefaults: CourtReservationFormValues = {
@@ -66,6 +67,7 @@ export default function CourtReservationForm({
   defaultValues,
   onSubmit,
   onCancel,
+  submitLabel = "Reserve Court",
 }: CourtReservationFormProps) {
   const { user } = useUser();
   const isAdmin = isAdminRole(user?.publicMetadata?.role as string | undefined);
@@ -307,12 +309,12 @@ export default function CourtReservationForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Submitting
+                {submitLabel === "Reserve Court" ? "Submitting" : "Saving"}
               </>
             ) : (
               <>
                 <Send className="size-4" />
-                Reserve Court
+                {submitLabel}
               </>
             )}
           </Button>

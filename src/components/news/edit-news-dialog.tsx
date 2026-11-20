@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import NewsForm from "./news-form";
 import type { NewsFormValues } from "@/schemas/news-schema";
 import type { MediaItem } from "../file-uploader";
-import { uploadFile, deleteFile } from "@/lib/storage";
+import { deleteRemovedFiles, uploadAddedFiles } from "@/lib/storage";
 import { updateNews } from "@/actions/news";
 import type { NewsWithAuthor } from "@/actions/news";
 import { toast } from "sonner";
@@ -30,39 +30,20 @@ export default function EditNewsDialog({ news, open, onOpenChange }: EditNewsDia
 
   const { mutateAsync: submitNews } = useMutation({
     mutationFn: async (data: NewsFormValues) => {
-      const uploadedMedia: MediaItem[] = await Promise.all(
-        (data.media ?? []).map(async (item) => {
-          if (!item.file) return item;
-          const key = await uploadFile(item.file, "news/media");
-          return { ...item, key, file: undefined };
-        })
-      );
-
-      const uploadedAttachments: MediaItem[] = await Promise.all(
-        (data.attachments ?? []).map(async (item) => {
-          if (!item.file) return item;
-          const key = await uploadFile(item.file, "news/attachments");
-          return { ...item, key, file: undefined };
-        })
-      );
-
-      const originalMediaKeys = (news.media as MediaItem[]).map((i) => i.key).filter(Boolean);
-      const finalMediaKeys = new Set(uploadedMedia.map((i) => i.key).filter(Boolean));
-      const removedMediaKeys = originalMediaKeys.filter((k) => !finalMediaKeys.has(k));
-
-      const originalAttachmentKeys = (news.attachments as MediaItem[]).map((i) => i.key).filter(Boolean);
-      const finalAttachmentKeys = new Set(uploadedAttachments.map((i) => i.key).filter(Boolean));
-      const removedAttachmentKeys = originalAttachmentKeys.filter((k) => !finalAttachmentKeys.has(k));
-
-      await Promise.all(
-        [...removedMediaKeys, ...removedAttachmentKeys].map((key) => deleteFile(key!))
-      );
+      const uploadedMedia = await uploadAddedFiles(data.media ?? [], "news/media");
+      const uploadedAttachments = await uploadAddedFiles(data.attachments ?? [], "news/attachments");
 
       await updateNews(news.id, { ...data, media: uploadedMedia, attachments: uploadedAttachments });
+      const cleanupResults = await Promise.all([
+        deleteRemovedFiles(news.media as MediaItem[], uploadedMedia),
+        deleteRemovedFiles(news.attachments as MediaItem[], uploadedAttachments),
+      ]);
+      return cleanupResults.some(Boolean);
     },
-    onSuccess: () => {
+    onSuccess: (cleanupFailed) => {
       queryClient.invalidateQueries({ queryKey: ["news"] });
       toast.success("News post updated successfully.");
+      if (cleanupFailed) toast.error("Some removed news files could not be deleted.");
       onOpenChange(false);
     },
     onError: () => {
@@ -79,7 +60,9 @@ export default function EditNewsDialog({ news, open, onOpenChange }: EditNewsDia
         <NewsForm
           mode="edit"
           defaultValues={defaultValues}
-          onSubmit={submitNews}
+          onSubmit={async (data) => {
+            await submitNews(data);
+          }}
           onCancel={() => onOpenChange(false)}
         />
       </DialogContent>

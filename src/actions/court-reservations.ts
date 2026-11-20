@@ -107,6 +107,90 @@ export async function createCourtReservation(data: CreateCourtReservationInput) 
   });
 }
 
+export type UpdateCourtReservationInput = CreateCourtReservationInput;
+
+export async function updateCourtReservation(id: number, data: UpdateCourtReservationInput) {
+  const { userId } = await requireSubmitter();
+
+  const [reservation] = await db
+    .select({ id: courtReservationsTable.id })
+    .from(courtReservationsTable)
+    .where(
+      and(
+        eq(courtReservationsTable.id, id),
+        eq(courtReservationsTable.requesterId, userId),
+        eq(courtReservationsTable.status, "Pending")
+      )
+    );
+  if (!reservation) return { error: "This reservation can no longer be edited." };
+
+  const parsedDate = new Date(`${data.date}T00:00:00.000Z`);
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(data.date) ||
+    Number.isNaN(parsedDate.getTime()) ||
+    parsedDate.toISOString().slice(0, 10) !== data.date
+  ) {
+    return { error: "Invalid reservation date." };
+  }
+
+  if (isFridayCourtReservationDate(data.date)) {
+    return { error: "Court reservations are not available on Fridays." };
+  }
+
+  if (isBeyondCourtReservationMaxDate(data.date)) {
+    return { error: "Reservations may only be made up to 3 months from today." };
+  }
+
+  if (
+    !Number.isInteger(data.startTime) ||
+    !Number.isInteger(data.durationHours) ||
+    data.startTime < COURT_OPEN_START ||
+    data.startTime > COURT_LAST_START ||
+    data.durationHours < 1 ||
+    data.startTime + data.durationHours * 60 > COURT_CLOSE
+  ) {
+    return { error: "Invalid reservation time. Reservations are available from 8:00 AM to 10:00 PM." };
+  }
+
+  const range = getReservationRange(data);
+  const takenRanges = await getTakenTimeRanges(data.date, id);
+  if (takenRanges.some((taken) => rangesOverlap(range, taken))) {
+    return { error: "The selected time overlaps an existing reservation." };
+  }
+
+  const settings = await getBarangaySettings();
+  const totalAmount = calculateCourtFee(
+    data.startTime,
+    data.durationHours,
+    settings.courtDayRate,
+    settings.courtNightRate
+  );
+
+  const [updatedReservation] = await db
+    .update(courtReservationsTable)
+    .set({
+      date: data.date,
+      purpose: data.purpose,
+      startTime: data.startTime,
+      durationHours: data.durationHours,
+      gcashPayment: data.gcashPayment,
+      totalAmount: totalAmount.toString(),
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(courtReservationsTable.id, id),
+        eq(courtReservationsTable.requesterId, userId),
+        eq(courtReservationsTable.status, "Pending")
+      )
+    )
+    .returning({ id: courtReservationsTable.id });
+
+  if (!updatedReservation) {
+    return { error: "This reservation can no longer be edited." };
+  }
+}
+
 export type CourtReservationWithRequester = CourtReservation & {
   requesterName: string;
   requesterEmail: string;

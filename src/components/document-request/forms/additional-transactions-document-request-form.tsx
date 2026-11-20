@@ -32,6 +32,7 @@ interface AdditionalTransactionsDocumentRequestFormProps {
   defaultValues?: Partial<AdditionalTransactionsDocumentRequestFormValues>;
   onSubmit: (data: AdditionalTransactionsDocumentRequestFormValues) => Promise<void>;
   onCancel?: () => void;
+  submitLabel?: string;
 }
 
 function formatFee(amount: number) {
@@ -51,6 +52,7 @@ export default function AdditionalTransactionsDocumentRequestForm({
   defaultValues,
   onSubmit,
   onCancel,
+  submitLabel = "Submit Request",
 }: AdditionalTransactionsDocumentRequestFormProps) {
   const {
     control,
@@ -72,10 +74,15 @@ export default function AdditionalTransactionsDocumentRequestForm({
     queryFn: () => getBarangaySettings(),
   });
   const gcashNumber = settings?.gcashNumber ?? DEFAULT_GCASH_NUMBER;
-  const purposeFees = settings?.additionalTransactionsPurposeFees ?? DEFAULT_ADDITIONAL_TRANSACTIONS_PURPOSE_FEES;
+  const purposeFees = {
+    ...DEFAULT_ADDITIONAL_TRANSACTIONS_PURPOSE_FEES,
+    ...settings?.additionalTransactionsPurposeFees,
+  };
 
-  const feeLabel = (option: string) =>
-    formatFee(purposeFees[option as keyof typeof purposeFees]);
+  const feeLabel = (option: string) => {
+    const fee = purposeFees[option as keyof typeof purposeFees];
+    return typeof fee === "number" ? formatFee(fee) : "Fee unavailable";
+  };
 
   return (
     <form
@@ -241,12 +248,12 @@ export default function AdditionalTransactionsDocumentRequestForm({
             {isSubmitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Submitting
+                {submitLabel === "Submit Request" ? "Submitting" : "Saving"}
               </>
             ) : (
               <>
                 <Send className="size-4" />
-                Submit Request
+                {submitLabel}
               </>
             )}
           </Button>
