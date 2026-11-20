@@ -69,7 +69,7 @@ export function buildCalculateCourtFeeTool({ settings: { courtDayRate, courtNigh
         ),
         total: formatFee(calculateCourtFee(start, hours, courtDayRate, courtNightRate)),
         instruction:
-          "Give the total and the breakdown. If the user already said they want to reserve, call getFormLink for the court reservation form now. Otherwise, if they may want to reserve, ask whether they'd like the reservation form.",
+          "Give the total and the breakdown. If the user wants to reserve, make sure you have their date and duration, then call checkCourtAvailability with wantsToReserve true. That tool returns the reservation form link only after the date, time, and availability checks pass. Otherwise, ask whether they'd like to reserve.",
       };
     },
   });

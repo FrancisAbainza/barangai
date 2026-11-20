@@ -49,7 +49,7 @@ If no excerpt covers the question, the assistant says it doesn't have that infor
 |---|---|---|
 | "Magkano kung mag-reserve ako 4:30 to 7:30 PM?", "How much for 3 hours from 5 PM?" | `calculateCourtFee` | The total and its hour-by-hour breakdown. An hour that crosses 6:00 AM or 6:00 PM is billed at the night rate |
 | "Bakante ba ang court sa Sabado ng gabi?", "Anong oras pa available bukas?", "Pwede ba 8 to 10 PM sa Biyernes?" | `checkCourtAvailability` | The booked and open times on up to 7 dates, cut to the hours asked about, with a plain yes or no when a specific time is taken. Past dates and today's past hours are left out |
-| "Pa-reserve ako ng court sa Sabado, 3 to 5 PM, para sa basketball practice" | `getFormLink` | The reservation form with the date, start time, hours and purpose filled in |
+| "Pa-reserve ako ng court sa Sabado, 3 to 5 PM, para sa basketball practice" | `checkCourtAvailability` | The reservation form with the date, start time, hours and purpose filled in only if the date and time are valid and available |
 
 "Bukas", "sa Sabado" and other days are looked up in the coming week's calendar that the tool's description lists, so the dates are right.
 

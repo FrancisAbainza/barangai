@@ -44,7 +44,9 @@ const ROLES = {
 // said filled in (`&prefill=<json>`, which the page checks against the form's `prefill` schema).
 export function buildGetFormLinkTool(role: keyof typeof ROLES) {
   const { otherRole, otherForms, prefillExample } = ROLES[role];
-  const formIds = FORM_IDS.filter((id) => PORTAL_DIALOG_TARGETS[id].audience !== otherRole) as [
+  const formIds = FORM_IDS.filter(
+    (id) => PORTAL_DIALOG_TARGETS[id].audience !== otherRole && id !== "court-reservation",
+  ) as [
     PortalDialogTargetId,
     ...PortalDialogTargetId[],
   ];
@@ -58,7 +60,8 @@ export function buildGetFormLinkTool(role: keyof typeof ROLES) {
       "to fill in one of them now, or asks how to, even when they haven't given any details, and once for each form " +
       "when they ask for several. Only for a form that matches what they asked for, never the closest one. Never ask " +
       "for a form's details in the chat: they fill them in on the form, which also has fields you can't fill (uploads, " +
-      "map locations, most dates). Forms, with the fields you can prefill:\n" +
+      "map locations, most dates). Court reservation links are returned by checkCourtAvailability only after all " +
+      "reservation checks pass. Other forms, with the fields you can prefill:\n" +
       formIds.map(describeForm).join("\n") +
       `\n${otherForms(otherFormLabels)}`,
     inputSchema: z.object({

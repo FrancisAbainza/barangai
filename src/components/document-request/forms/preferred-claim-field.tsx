@@ -44,6 +44,7 @@ export default function PreferredClaimField({ value, onChange, error }: Preferre
   const latestClaimDate = parseDateValue(now.date);
   latestClaimDate.setDate(latestClaimDate.getDate() + 7);
   const suggestedValue = value || `${nextClaim.date}T${nextClaim.time}`;
+  const selectedDate = suggestedValue.split("T")[0];
 
   useEffect(() => {
     if (!value && suggestedValue) onChange(suggestedValue);
@@ -57,7 +58,7 @@ export default function PreferredClaimField({ value, onChange, error }: Preferre
         value={suggestedValue}
         onChange={onChange}
         disabledDays={[{ before: new Date() }, { after: latestClaimDate }, { dayOfWeek: [0, 6] }]}
-        minTime={nextClaim.time}
+        minTime={selectedDate === now.date ? nextClaim.time : "08:00"}
         maxTime="17:00"
         step={30}
         aria-invalid={!!error}
